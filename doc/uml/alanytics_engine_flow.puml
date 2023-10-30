@@ -1,0 +1,31 @@
+@startuml
+
+title: Реализация прецедентов движка
+
+actor "Пользователь" as user
+participant Handler
+participant CmdComparator
+participant Session
+database БД as DB
+
+user --> Handler ++: execute(Request)
+
+    Handler -> CmdComparator ++: compare(command)
+        CmdComparator -> DB ++: select_asyncCommands()
+            return List<Synonyms>
+        
+        |||
+        CmdComparator -> DB ++: select_currentCommands()
+            return List<Synonyms>
+
+        return nextState
+
+    Handler -> DB ++: select_Context()
+        return State
+
+    Handler -> Session ++: set_context(State)
+    Session -> DB--: insert_userContext(user, State)
+
+    return Response
+
+@enduml
