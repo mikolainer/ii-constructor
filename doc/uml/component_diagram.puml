@@ -1,0 +1,36 @@
+@startuml
+
+title: диаграмма компоненотв
+
+component "яндекс диалоги" as ya
+interface "HTTP" as ya_http
+interface "TCP" as db_tcp
+
+component "движок" as engine {
+    component "обработчик\nвебхуков" as hook_handler
+    component "парсер\nкоманд" as cmd_parser
+    component "логгер" as logger
+}
+
+component "инструмент заполнения БД" as dbTool {
+    component "инструмент\nописания\nсостояний" as dbTool_state
+    component "инструмент\nописания\nпоследовательностей" as dbTool_flow
+    component "инструмент\nвзаимодействия\nс БД" as dbTool_conn
+}
+
+database "база данных" as db{
+    component "команды" as db_cmd
+    component "состояния" as db_state
+    component "переходы" as db_flow
+    component "синонимы" as db_words
+    component "логи" as db_logs
+}
+
+ya - ya_http
+hook_handler --> ya_http
+
+db -- db_tcp
+db_tcp <-- dbTool_conn
+hook_handler --> db_tcp
+
+@enduml

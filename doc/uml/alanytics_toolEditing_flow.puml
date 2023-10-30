@@ -1,0 +1,31 @@
+@startuml
+
+title: Реализация прецедентов изменений сценария
+
+actor "Пользователь" as user
+participant Scenario
+participant State
+participant Synonyms
+participant CommandVector
+participant Flow
+
+group "создание состояния"
+    user --> State **: text
+end
+
+group "создание второстепенного сценария"
+    user --> Flow ** : name, cmd, enter, back 
+end
+
+group "создание перехода"
+    user --> State: addCommandVector(name, next, text)
+    State --> CommandVector **: name, next, text
+    CommandVector -> Synonyms **: text
+end
+
+group "создание синонима"
+    user --> CommandVector : addSynonym(text)
+    CommandVector -> Synonyms: add_value(text)
+end
+
+@enduml

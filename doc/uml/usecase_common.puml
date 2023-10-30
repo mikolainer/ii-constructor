@@ -1,0 +1,55 @@
+@startuml
+
+left to right direction
+
+title: общая диаграмма прецедентов
+
+actor пользователь as user
+actor продуктовик as owner
+actor разработчик as coder
+
+rectangle Движок {
+    usecase "вход в сценарий" as start_flow
+    usecase "переход по сценарию" as flow_step
+    usecase "выход из сценария" as exit_flow
+
+    usecase "запрос команды" as subflow
+    usecase "запрос справки" as help
+    usecase "переход назад" as step_back
+}
+
+usecase "создание навыка" as create_skill
+usecase "просмотр логов" as view_log
+usecase "просмотр уведомлений" as view_messages
+
+rectangle Утилита {
+'    usecase "автоматическое\nтестирование\nсценария" as testing
+    usecase "создание сценария" as create_flow
+    usecase "изменение сценария" as refresh_flow
+    usecase "редакторивание\nсценария" as edit_flow
+
+    usecase "настройка\nпользовательских\nпеременных" as edit_config
+    usecase "создание\nпользовательских\nпеременных" as create_config
+}
+
+user -- start_flow
+user -- flow_step
+user -- exit_flow
+
+user -- subflow
+user -- help
+user -- step_back
+
+coder -- create_skill
+coder -- view_log
+coder -- view_messages
+'coder -- testing
+
+coder -- create_flow
+coder -- edit_flow
+coder -- refresh_flow
+
+coder -- create_config
+owner -- edit_config
+
+@enduml

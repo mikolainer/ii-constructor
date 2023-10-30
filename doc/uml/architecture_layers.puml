@@ -1,0 +1,69 @@
+@startuml
+
+left to right direction
+
+title: слои архитектуры
+
+rectangle "область видимости фреймворка" {
+
+    component DataAccess
+
+    rectangle "область видимости сервисов" {
+
+        component Handlers
+        component Comands
+
+        Comands --> Handlers
+
+        rectangle "область видимости домена" as domen {
+            component UseCases{
+                [UseCase]
+            }
+            component Models{
+                component Entities
+                component Agregates
+            }
+
+            UseCase +-- Agregates
+            Agregates *- Entities
+        }
+    }
+
+    interface HTTPS
+
+    [GUI] -- Comands 
+
+    Handlers -> UseCase
+    Handlers .> Agregates
+    DataAccess <-- Comands
+    HTTPS -- Comands
+}
+
+cloud "яндекс диалоги" as ya
+cloud "Telegramm" as tg
+
+ya ..> HTTPS
+tg ..> HTTPS
+
+DataAccess --> db
+
+database "БД" as db{
+    package "сценарий" as flow_db {
+        component "пользовательские\nпеременные"
+        component "машина состояний"{
+            package "состояния"
+            package "переходы"
+        }
+    }
+
+    package "межсессионное\nхранилище данных" as data_db {
+        package "пользователи"
+        package "персональные\nданные"
+        package "уровни доступа"
+        package "сохранённые\nконтексты"
+    }
+
+    flow_db -- data_db #White
+}
+
+@enduml

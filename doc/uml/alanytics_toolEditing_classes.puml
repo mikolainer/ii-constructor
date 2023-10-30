@@ -1,0 +1,49 @@
+@startuml
+
+title: Классы анализа прецедентов изменений сценария
+
+class Scenario{
+    name: string
+    mainFlow_enter: State
+    subflow_enter: List<Flow>
+    synonymsList: List<Synonyms>
+}
+
+class State{
+    id: int
+    text: string
+    cmdList: <CommandVector>
+    addCommandVector(name, next, text)
+}
+
+class Synonyms{
+    values: List<string>
+    keyword_sets
+    vector: CommandVector
+    add_value(string)
+}
+
+class CommandVector{
+    name: string
+    nextState: State
+    button: string
+    synonyms: Synonyms
+    addSynonym(string)
+}
+
+class Flow{
+    name: string
+    command: Synonyms
+    enter: State
+    backTo: State
+    set_name(string)
+    set_backState(State)
+}
+
+Scenario *- Flow
+State *- CommandVector
+CommandVector -- Synonyms
+State <-- Flow
+Flow -> Synonyms
+
+@enduml
