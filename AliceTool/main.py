@@ -1,15 +1,13 @@
 import sys
-from PySide6 import QtCore, QtWidgets, QtGui
-from experiments import DialogForTesting
+from PySide6 import QtWidgets
+from experiments import sandbox
+
+from . import test
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
-    dialog = DialogForTesting.DialogForTesting()
+    dialog = sandbox.DialogForTesting()
     dialog.exec()
-    app.quit()
-
-    sys.exit(app.exec())
-
-
-
+#    app.quit(0)
+#    sys.exit(app.exec())
