@@ -24,4 +24,8 @@ class NewProjectDialog(QtWidgets.QDialog):
             'редактор ответа "Помощь"': QtWidgets.QTextEdit(),
             'редактор ответа "Что ты умеешь?"': QtWidgets.QTextEdit(),
             'кнопка "Начать"': QtWidgets.QPushButton(),
+            'диалог подтверждения перезаписи': {
+                'ok': QtWidgets.QPushButton(),
+                'cancel': QtWidgets.QPushButton(),
+            }
         }
