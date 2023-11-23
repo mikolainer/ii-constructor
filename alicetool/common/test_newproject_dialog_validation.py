@@ -94,14 +94,87 @@ def test_iovalidation_dbname(dialog: NewProjectDialog, qtbot):
     # expected = 'AZaz09'
     # qtbot.keyClicks(editor, input)
     # assert editor.text() == expected
-    # editor.clear()
-
+    # editor.clear()  
 
 def test_iovalidation_hello(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор приветственной фразы']
 
-    input = "hello phrase of the skill for Alice"
+    # 1024 символа
+    input = (
+        'Lorem ipsum dolor sit amet, consectetuer'
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
     expected = input
+    qtbot.keyClicks(editor, input)
+    assert editor.toPlainText() == expected
+    editor.clear()
+
+    # 1024 символа не учитывая перенос
+    input1 = 'Lorem ipsum dolor sit amet, consectetuer'
+    input2 = (
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
+    expected = '\n'.join([input1, input2])
+    qtbot.keyClicks(editor, input1)
+    qtbot.keyPress(editor, QtCore.Qt.Key.Key_Enter)
+    qtbot.keyClicks(editor, input2)
+    assert editor.toPlainText() == expected
+    editor.clear()
+
+    # 1025 символов
+    input = (
+        '!Lorem ipsum dolor sit amet, consectetuer'
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
+    expected = input[:-1]
     qtbot.keyClicks(editor, input)
     assert editor.toPlainText() == expected
     editor.clear()
@@ -111,42 +184,83 @@ def test_iovalidation_hello(dialog: NewProjectDialog, qtbot):
 def test_iovalidation_help(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор ответа "Помощь"']
 
-    input = "hello phrase of the skill for Alice"
+    # 1024 символа
+    input = (
+        'Lorem ipsum dolor sit amet, consectetuer'
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
     expected = input
     qtbot.keyClicks(editor, input)
     assert editor.toPlainText() == expected
     editor.clear()
 
-    # 1024 символа
-    input = 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent lupta'
-    expected = input
-    qtbot.keyClicks(editor, input)
-    assert editor.toPlainText() == expected
-    editor.clear()
-
-    # 1024 символа
+    # 1024 символа не учитывая перенос
     input1 = 'Lorem ipsum dolor sit amet, consectetuer'
-    input2 = ('adipiscing elit, sed diam nonummy nibh '
-    'euismod tincidunt ut laoreet dolore magna aliquam '
-    'erat volutpat. Ut wisi enim ad minim veniam, quis '
-    'nostrud exerci tation ullamcorper suscipit lobortis '
-    'nisl ut aliquip ex ea commodo consequat. '
-    'Duis autem vel eum iriure dolor in hendrerit in vulputate '
-    'velit esse molestie consequat, vel illum dolore eu feugiat '
-    'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
-    'qui blandit praesent luptatum zzril delenit augue duis dolore te '
-    'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
-    'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
-    'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
-    'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
-    'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
-    'in hendrerit in vulputate velit esse molestie consequat, vel illum '
-    'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
-    'odio dignissim qui blandit praesent lupta')
+    input2 = (
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
     expected = '\n'.join([input1, input2])
     qtbot.keyClicks(editor, input1)
     qtbot.keyPress(editor, QtCore.Qt.Key.Key_Enter)
     qtbot.keyClicks(editor, input2)
+    assert editor.toPlainText() == expected
+    editor.clear()
+
+    # 1025 символов
+    input = (
+        '!Lorem ipsum dolor sit amet, consectetuer'
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
+    expected = input[:-1]
+    qtbot.keyClicks(editor, input)
     assert editor.toPlainText() == expected
     editor.clear()
 
@@ -162,18 +276,81 @@ def test_iovalidation_info(dialog: NewProjectDialog, qtbot):
     editor.clear()
 
     # 1024 символа
-    input = 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent lupta'
+    input = (
+        'Lorem ipsum dolor sit amet, consectetuer'
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
     expected = input
     qtbot.keyClicks(editor, input)
     assert editor.toPlainText() == expected
     editor.clear()
 
-    # 1024 символа
+    # 1024 символа не учитывая перенос
     input1 = 'Lorem ipsum dolor sit amet, consectetuer'
-    input2 = 'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent lupta'
+    input2 = (
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
     expected = '\n'.join([input1, input2])
     qtbot.keyClicks(editor, input1)
     qtbot.keyPress(editor, QtCore.Qt.Key.Key_Enter)
     qtbot.keyClicks(editor, input2)
+    assert editor.toPlainText() == expected
+    editor.clear()
+
+    # 1025 символов
+    input = (
+        '!Lorem ipsum dolor sit amet, consectetuer'
+        'adipiscing elit, sed diam nonummy nibh '
+        'euismod tincidunt ut laoreet dolore magna aliquam '
+        'erat volutpat. Ut wisi enim ad minim veniam, quis '
+        'nostrud exerci tation ullamcorper suscipit lobortis '
+        'nisl ut aliquip ex ea commodo consequat. '
+        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+        'velit esse molestie consequat, vel illum dolore eu feugiat '
+        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+        'odio dignissim qui blandit praesent lupta'
+    )
+    expected = input[:-1]
+    qtbot.keyClicks(editor, input)
     assert editor.toPlainText() == expected
     editor.clear()
