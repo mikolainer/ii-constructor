@@ -1,5 +1,5 @@
 from .states import State, StatesRepository
-from .flows import Flow, MainFlow, FlowsRepository
+from .flows import BaseFlow, Flow, FlowsRepository
 from .commands import Synonyms, SynonymsRepository
 
 
@@ -35,7 +35,7 @@ class Project:
         self.file_path: str = '' if data is None else data.file_path
         
         hello: str = '' if data is None else data.hello
-        self.scenario: MainFlow(hello)
+        self.scenario: BaseFlow(hello)
         
         help: str = '' if data is None else data.help
         help_flow: Flow = self.flows.create(

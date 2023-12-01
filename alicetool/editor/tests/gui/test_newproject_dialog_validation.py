@@ -5,7 +5,7 @@ import PySide6
 from PySide6 import QtCore
 from PySide6.QtTest import QTest
 
-from .gui import NewProjectDialog
+from alicetool.editor.infrastructure.gui import NewProjectDialog
 
 @pytest.fixture
 def dialog(qtbot) -> NewProjectDialog:

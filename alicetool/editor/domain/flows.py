@@ -1,7 +1,7 @@
-class Flow:
+class BaseFlow:
     pass
 
-class MainFlow:
+class Flow:
     pass
 
 class FlowActionsNotifier:

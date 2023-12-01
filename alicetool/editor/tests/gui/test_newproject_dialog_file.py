@@ -11,9 +11,9 @@ import PySide6
 from PySide6 import QtCore
 from PySide6.QtWidgets import QPushButton, QLineEdit, QTextEdit, QDialog
 
-from .gui import NewProjectDialog
+from alicetool.editor.infrastructure.gui import NewProjectDialog
 
-FILENAME:str = 'azaza.aliceproj' #'C:\\Games\\azaza.alicepro'
+FILENAME:str = 'azaza.aliceproj'
 TOOLTIP_WARNING_PATHEXISTS = 'Файл существует. Продолжение приведёт к удалению исходного файла!'
 INPUT_DEFAULT = 'Test123'
 OLDFILE_TEST_CONTENT = 'test\n'
