@@ -1,4 +1,4 @@
-class Commands:
+class Command:
     pass
 
 class Synonyms:

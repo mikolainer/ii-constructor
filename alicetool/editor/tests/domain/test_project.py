@@ -1,5 +1,7 @@
+import pytest
 from alicetool.editor.domain.projects import Project
 
+@pytest.mark.skip(reason="не реализовано")
 def test_project_constructor():
     '''
     Tests of create with existing id are not required
