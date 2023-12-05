@@ -2,17 +2,23 @@ import pytest
 from alicetool.editor.domain.commands import Command, Synonyms
 from alicetool.editor.domain.states import State
 
-STATE = State(0)
-SYNONYMS_NAME = 'Synonyms group'
-SYNONYMS_VALUES = ['val 0', 'val 1', 'val 2']
-SYNONYMS = Synonyms(0, values = SYNONYMS_VALUES)
-COMMAND = Command(0, next_state = STATE, cmd = SYNONYMS)
-
 def test_synonyms_constructor():
     '''
     Tests of create with existing id are not required
-    it will be processed by SynonymsRepository
+    it will be processed by SynonymsRepository.
     '''
+    ok = False
+    try:
+        STATE = State(0)
+        SYNONYMS_NAME = 'Synonyms group'
+        SYNONYMS_VALUES = ['val 0', 'val 1', 'val 2']
+        SYNONYMS = Synonyms(0, values = SYNONYMS_VALUES)
+        COMMAND = Command(0, next_state = STATE, cmd = SYNONYMS)
+        ok = True
+    except(...):
+        pass
+    
+    assert ok, 'something wrong with constructors State, Synonyms, Command'
 
     # without args
     ok = True
@@ -98,6 +104,17 @@ def test_command_constructor():
     Tests of create with existing id are not required
     it will be processed by State
     '''
+
+    ok = False
+    try:
+        STATE = State(0)
+        SYNONYMS_VALUES = ['val 0', 'val 1', 'val 2']
+        SYNONYMS = Synonyms(0, values = SYNONYMS_VALUES)
+        ok = True
+    except(...):
+        pass
+    
+    assert ok, 'something wrong with constructors State, Synonyms'
 
     # without args
     ok = True
