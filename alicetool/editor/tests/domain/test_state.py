@@ -1,6 +1,6 @@
 from alicetool.editor.domain.states import State
 
-DEFAULT_STATE_CONTENT: str = 'text'
+DEFAULT_STATE_CONTENT: str = State._State__content # hack for tests
 
 def test_state_constructor():
     '''
@@ -33,8 +33,7 @@ def test_state_constructor():
 
     # user content
     id = 1
-    obj = State(id, USER_STATE_CONTENT)
-    data = obj.test_data()
+    obj = State(id, content = USER_STATE_CONTENT)
     assert obj.id() == id
     assert obj.name() == str(id)
     assert obj.content() == USER_STATE_CONTENT
@@ -44,7 +43,6 @@ def test_state_constructor():
     # user name
     id = 2
     obj = State(id, name = USER_STATE_NAME)
-    data = obj.test_data()
     assert obj.id() == id
     assert obj.name() == USER_STATE_NAME
     assert obj.content() == DEFAULT_STATE_CONTENT
