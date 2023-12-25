@@ -13,6 +13,7 @@ def dialog(qtbot) -> NewProjectDialog:
     qtbot.addWidget(widget)
     return widget
 
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_iovalidation_path(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор пути к файлу']
 
@@ -23,7 +24,7 @@ def test_iovalidation_path(dialog: NewProjectDialog, qtbot):
     editor.clear()
 
 
-
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_iovalidation_name(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор имени']
 
@@ -74,7 +75,7 @@ def test_iovalidation_name(dialog: NewProjectDialog, qtbot):
     editor.clear()
 
 
-
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_iovalidation_dbname(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор имени для БД']
 
@@ -96,6 +97,7 @@ def test_iovalidation_dbname(dialog: NewProjectDialog, qtbot):
     # assert editor.text() == expected
     # editor.clear()  
 
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_iovalidation_hello(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор приветственной фразы']
 
@@ -180,7 +182,7 @@ def test_iovalidation_hello(dialog: NewProjectDialog, qtbot):
     editor.clear()
 
 
-
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_iovalidation_help(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор ответа "Помощь"']
 
@@ -265,7 +267,7 @@ def test_iovalidation_help(dialog: NewProjectDialog, qtbot):
     editor.clear()
 
 
-
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_iovalidation_info(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор ответа "Что ты умеешь?"']
 

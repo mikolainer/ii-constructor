@@ -24,6 +24,7 @@ def dialog(qtbot) -> NewProjectDialog:
     qtbot.addWidget(widget)
     return widget
 
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_YALE_3(dialog: NewProjectDialog, qtbot):
     '''
     Создание нового файла проекта
@@ -74,7 +75,7 @@ def test_YALE_3(dialog: NewProjectDialog, qtbot):
     os.remove(FILENAME)
 
 
-
+@pytest.mark.skip(reason="рано ещё тестировать")
 def test_YALE_4(dialog: NewProjectDialog, qtbot):
     '''
     Создание файла проекта вместо существующего

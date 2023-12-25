@@ -1,63 +1,110 @@
-from .states import State, StatesRepository
-from .flows import BaseFlow, Flow, FlowsRepository
-from .commands import Synonyms, SynonymsRepository
+from alicetool.editor.domain.core import *
 
+class StateMachineInterface:
+    ''' предварительное объявление '''
+
+class StateMachine(StateMachineInterface):
+    def __init__(self):
+        super().__init__()
+        self.__states: StateFactory = StateFactory()
+        self.__synonyms: SynonymsFactory = SynonymsFactory()
+        self.__content: FlowFactory = FlowFactory()
+
+class StateMachineInterface(StateInterface, SynonymsInterface, FlowInterface):
+    pass
+
+class StateMachineNotifier(StateActionsNotifier, SynonymsActionsNotifier, FlowActionsNotifier):
+    pass
 
 class Project:
-    _HELPFLOW_NAME = 'Помощь'
-    _INFOFLOW_NAME = 'Что ты умеешь?'
+    def __init__(self):
+        self.__id: int = None
+        self.__name: str = 'scenario name'
+        self.__db_name: str = 'db_name'
+        self.__file_path: str = 'path.proj'
+        self.__content: StateMachine = StateMachine()
+        self.__notifier: FlowActionsNotifier = None
+        self.__entry_point: State = None
 
-    class ProjectData:
-        def __init__(self):
-            self.name: str = 'name'
-            self.db_name: str = 'db_name'
-            self.file_path: str = 'file_path'
-            self.hello: State = 'hello'
-            self.help: State = 'help'
-            self.info: State = 'info'
+    def interface(self) -> StateMachineInterface:
+        pass
 
-    class StartProjectData:
-        def __init__(self):
-            self.name: str = 'name'
-            self.db_name: str = 'db_name'
-            self.file_path: str = 'file_path'
-            self.hello: str = 'hello'
-            self.help: str = 'help'
-            self.info: str = 'info'
+class ProjectsActionsNotifier:
+    def created(id:int, data):
+        ...
 
-    def __init__(self, data:StartProjectData = None):
-        self.states: StatesRepository
-        self.flows: FlowsRepository
-        self.synonyms: SynonymsRepository
+    def saved(id:int, data):
+        ...
 
-        self.name: str = '' if data is None else data.name
-        self.db_name: str = '' if data is None else data.db_name
-        self.file_path: str = '' if data is None else data.file_path
-        
-        hello: str = '' if data is None else data.hello
-        self.scenario: BaseFlow(hello)
-        
-        help: str = '' if data is None else data.help
-        help_flow: Flow = self.flows.create(
-            project = self, 
-            name = self._HELPFLOW_NAME, 
-            content = help, 
-            cmd = Synonyms(['Помощь'])
-        )
-        
-        info: str = '' if data is None else data.info
-        info_flow: Flow = self.flows.create(
-            project = self,
-            name = self._INFOFLOW_NAME,
-            content = info,
-            cmd = Synonyms(['Что ты умеешь?', 'Информация'])
-        )
+    def updated(id:int, new_data):
+        ...
 
-class ProjectActionsNotifier:
-    pass
+    def removed(id:int):
+        ...
 
-class ProjectInterface:
-    pass
+class ProjectsInterface:
+    def create(data) -> int:
+        raise NotImplementedError()
+    
+    def read(id: int):
+        raise NotImplementedError()
+    
+    def read(db_name: str):
+        raise NotImplementedError()
+    
+    def update(id: int, data):
+        raise NotImplementedError()
+    
+    def delete(id: int):
+        raise NotImplementedError()
+    
+    def open_file(path: str):
+        raise NotImplementedError()
+    
+    def save_file(id: int):
+        raise NotImplementedError()
+    
+    def publish(id: int):
+        raise NotImplementedError()
+    
+    def set_notifier(id: int):
+        raise NotImplementedError()
 
-class ProjectsRepository:
-    pass
+class ProjectsManager(ProjectsInterface):
+    __items: list[Project] = []
+    __notifier: ProjectsActionsNotifier = None
+
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.__instance = super(ProjectsManager, cls).__new__(cls)
+        return cls.__instance
+    
+    def instance(self) -> ProjectsInterface:
+        return ProjectsManager()
+    
+    def create(self, data) -> int:
+        pass
+    
+    def read(self, id: int):
+        pass
+    
+    def read(self, db_name: str):
+        pass
+    
+    def update(self, id: int, data):
+        pass
+    
+    def delete(self, id: int):
+        pass
+    
+    def open_file(self, path: str):
+        pass
+    
+    def save_file(self, id: int):
+        pass
+    
+    def publish(self, id: int):
+        pass
+    
+    def set_notifier(self, id: int):
+        pass
