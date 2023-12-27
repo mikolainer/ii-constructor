@@ -10,6 +10,12 @@ class Synonyms: pass
 
 class Command:
     def __init__(self, next_state: State , cmd: Synonyms):
+        if not isinstance(next_state, State):
+            raise TypeError('"next_state" должен обыть объектом типа State')
+        
+        if not isinstance(cmd, Synonyms):
+            raise TypeError('"cmd" должен обыть объектом типа Synonyms')
+
         self.__next_state : State = next_state
         self.__cmd: Synonyms = cmd
 
@@ -82,14 +88,17 @@ class State:
 
     def __init__(self, id: int, **kwargs):
         if type(id) is not int:
-            raise TypeError('first argument "id" must be integer')
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
         
         self.__id: int = id
-        
+        self.update(**kwargs)
+
+        if 'name' not in kwargs.keys():
+            self.__name: str = str(self.__id)
+
+    def update(self, **kwargs):
         if 'name' in kwargs.keys():
             self.__name: str = kwargs['name']
-        else:
-            self.__name: str = str(self.__id)
 
         if 'content' in kwargs.keys():
             self.__content: str = kwargs['content']
@@ -106,7 +115,10 @@ class State:
     def steps(self):
         return self.__steps
     
-    def newStep(self, nextState: State, cmd: Synonyms) -> Command:
+    def new_step(self, nextState: State, cmd: Synonyms) -> Command:
+        pass
+
+    def remove_step(self, cmd: Command):
         pass
 
 class Flow:
@@ -115,8 +127,55 @@ class Flow:
     __required :bool = False
     __enter :Command = None
 
-    def __init__(self, id: int):
+    def __init__(self, id: int, **kwargs):
+        if type(id) is not int:
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
+        
         self.__id :int = id
+
+        arg_names = kwargs.keys()
+
+        if 'name' in arg_names:
+            if type(kwargs['name']) is not str:
+                raise TypeError('"name" должен быть строкой')
+            self.__name: str = kwargs['name']
+
+        if 'description' in arg_names:
+            if type(kwargs['description']) is not str:
+                raise TypeError('"description" должен быть строкой')
+            self.__description: str = kwargs['description']
+
+        if 'required' in arg_names:
+            if type(kwargs['required']) is not bool:
+                raise TypeError('"required" должен быть булевым')
+            self.__required: str = kwargs['required']
+
+        # TODO: обращение к фабрикам состояний и синонимов
+        _state = State(0)
+        if 'start_content' in arg_names:
+            if type(kwargs['start_content']) is not str:
+                raise TypeError('"start_content" должен быть объектом Command или None')
+            
+            _state = State(0, content = kwargs['start_content'])
+        
+        else:
+            _state = State(0)
+
+        _synonyms = Synonyms(0)
+        self.__enter = Command(_state, _synonyms)
+        _synonyms.add_command(self.__enter)
+
+    def id(self) -> int:
+        return self.__id
+    
+    def name(self) -> str:
+        return self.__name
+    
+    def description(self) -> str:
+        return self.__description
+
+    def enter(self) -> Command:
+        return self.__enter
 
     def is_required(self) -> bool:
         return self.__required
@@ -129,19 +188,70 @@ class Synonyms:
     __values :list[str] = []
     __commands :list[Command] = []
 
-    def __init__(self, id: int):
+    def __init__(self, id: int, **kwargs):
+        if type(id) is not int:
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
+        
         self.__id :int = id
 
+        arg_names = kwargs.keys()
+
+        if 'name' in arg_names:
+            if not isinstance(kwargs['name'], str):
+                raise TypeError('"name" должен быть строкой')
+            self.__name = kwargs['name']
+
+        if 'values' in arg_names:
+            if not (
+                isinstance(kwargs['values'], list) and
+                all(isinstance(x, str) for x in kwargs['values'])
+            ):
+                raise TypeError('"values" должен быть списком строк')
+           
+            self.__values = kwargs['values']
+
+        if 'commands' in arg_names:
+            if not (
+                isinstance(kwargs['commands'], list) and
+                all(isinstance(x, Command) for x in kwargs['commands'])
+            ):
+                raise TypeError('"commands" должен быть списком объектов Command')
+            
+            self.__commands = kwargs['commands']
+        else:
+            self.__commands = []
+        
+    def id(self) -> int:
+        return self.__id
+
+    def name(self):
+        return str(self.__id) if self.__name is None else self.__name
+
     def add_value(self, value: str):
-        pass
+        if not isinstance(value, str):
+            raise TypeError('"value" должен быть строкой')
+        self.__values.append(value)
 
     def remove_value(self, value: str):
-        pass
+        if value not in self.__values:
+            raise ValueError(f'синонима {value} нет в этом наборе')
+        self.__values.remove(value)
+
+    def add_command(self, cmd: Command):
+        if not isinstance(cmd, Command):
+            raise TypeError('"cmd" должен быть объектом Command')
+        self.__commands.append(cmd)
+
+    def remove_command(self, cmd: Command):
+        if cmd not in self.__commands:
+            raise ValueError(f'команда {cmd} не связана с этими синонимами')
+        self.__commands.remove(cmd)
 
     def values(self) -> list[str]:
-        return self.values.copy()
+        return self.__values.copy()
 
-
+    def commands(self) -> list[Command]:
+        return self.__commands.copy()
 
 ''' интерфейсы обратной связи '''
 

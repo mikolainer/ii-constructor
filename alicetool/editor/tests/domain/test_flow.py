@@ -41,12 +41,13 @@ def test_flow_constructor():
     obj = Flow(id)
     assert obj.id() == id, 'не тот id'
     assert obj.name() == DEFAULT_FLOW_NAME, (
-           f'имя по умолчанию не соответствует "{DEFAULT_FLOW_NAME}"')
+        f'имя по умолчанию не соответствует "{DEFAULT_FLOW_NAME}"')
     assert obj.description() == DEFAULT_FLOW_DESCRIPTION, (
-           f'описание по умолчанию не соответствует "{DEFAULT_FLOW_DESCRIPTION}"')
-    assert obj.start() == DEFAULT_FLOW_START_CONTENT, (
-           f'начальный текст по умолчанию не соответствует "{DEFAULT_FLOW_START_CONTENT}"')
-    assert obj.is_required() is False,('по умолчанию должен быть не обязательным')
+        f'описание по умолчанию не соответствует "{DEFAULT_FLOW_DESCRIPTION}"')
+    assert obj.is_required() is False, (
+        'по умолчанию должен быть не обязательным')
+    assert obj.enter().next_state().content() == DEFAULT_FLOW_START_CONTENT, (
+        f'начальный текст по умолчанию не соответствует "{DEFAULT_FLOW_START_CONTENT}"')
     
     # инициализация с пользовательскими данными
     id = 1
@@ -60,8 +61,9 @@ def test_flow_constructor():
     assert obj.id() == id,('не тот id')
     assert obj.name() == USER_FLOW_NAME,('не то имя')
     assert obj.description() == USER_FLOW_DESCRIPTION,(
-           'не то описание')
-    assert obj.start() == USER_FLOW_START_CONTENT,(
-           'не тот начальный текст')
+        'не то описание')
     assert obj.is_required() is True,(
-           'обязательный создался не обязательным')
+        'обязательный создался не обязательным')
+    assert obj.enter().next_state().content() == USER_FLOW_START_CONTENT,(
+        'не тот начальный текст')
+    
