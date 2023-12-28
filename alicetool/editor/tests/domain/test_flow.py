@@ -1,4 +1,4 @@
-from alicetool.editor.domain.core import Flow, Synonyms, State
+from alicetool.editor.domain.core import Flow, FlowFactory
 
 DEFAULT_FLOW_NAME = 'Flow name'
 DEFAULT_FLOW_DESCRIPTION = 'Flow description'
@@ -67,3 +67,49 @@ def test_flow_constructor():
     assert obj.enter().next_state().content() == USER_FLOW_START_CONTENT,(
         'не тот начальный текст')
     
+def test_flow():
+    state = Flow(0)
+    assert state.__str__() == 'id=0; required=false; name="Flow name"; description="Flow description"'
+
+    parse_result = Flow.parse('id=0; required=true; name="name"; description="azaza"')
+    assert parse_result['id'] == 0
+    assert parse_result['name'] == 'name'
+    assert parse_result['description'] == 'azaza'
+    assert parse_result['required'] == True
+
+def test_flow_factory():
+    repo = FlowFactory()
+    assert len(repo.flows()) == 0, 'фабрика конструируется не пустой'
+    
+    id = repo.create_flow('')
+    assert id == 1
+    assert len(repo.flows()) == 1, 'фабрика не создала первый объект'
+    assert repo.read_flow(id) == 'id=1; required=false; name="Flow name"; description="Flow description"'
+
+    id = repo.create_flow('name="kek"; required=true; description="lol"')
+    assert id == 2
+    assert len(repo.flows()) == 2, 'фабрика не создала второй объект'
+    assert repo.read_flow(id) == 'id=2; required=true; name="kek"; description="lol"'
+    assert repo.flows() == {1, 2}
+
+    repo.delete_flow(1)
+    assert repo.flows() == {2}, 'фабрика не удалила объект'
+
+    id = repo.create_flow('')
+    assert id == 1
+    assert repo.flows() == {1, 2}, 'фабрика не создала пропущенный объект'
+
+    ok = True
+    try:
+        repo.delete_flow(10)
+        ok = False # normally unreachable
+    except(ValueError):
+        pass
+    assert ok, 'нет проверки существования Flow с полученным id при удалении'
+
+    try:
+        repo.read_flow(10)
+        ok = False # normally unreachable
+    except(ValueError):
+        pass
+    assert ok, 'нет проверки существования Flow с полученным id при чтении'

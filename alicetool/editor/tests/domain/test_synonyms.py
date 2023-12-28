@@ -1,5 +1,5 @@
 import pytest
-from alicetool.editor.domain.core import Synonyms, State, Command
+from alicetool.editor.domain.core import Synonyms, SynonymsFactory, State, Command
 
 def test_synonyms_constructor():
     '''
@@ -68,6 +68,16 @@ def test_synonyms_constructor():
 
     assert ok, 'тип "values" не прроверяется'
 
+def test_synonyms():
+    state = Synonyms(0)
+    assert len(state.values()) == 0, 'состояние по умолчанию должно быть без переходов'
+    assert state.__str__() == 'id=0; name=; values='
+
+    parse_result = Synonyms.parse('id=0; name=name; values="kek","lol"')
+    assert parse_result['id'] == 0
+    assert parse_result['name'] == 'name'
+    assert parse_result['values'] == ['kek', 'lol']
+
 def test_command_constructor():
     ok = False
     try:
@@ -124,3 +134,41 @@ def test_command_constructor():
         pass
     
     assert ok, 'тип "cmd" не проверяется'
+
+
+def test_synonyms_factory():
+    repo = SynonymsFactory()
+    assert len(repo.synonyms()) == 0, 'фабрика конструируется не пустой'
+    
+    id = repo.create_synonyms('')
+    assert id == 1
+    assert len(repo.synonyms()) == 1, 'фабрика не создала первый объект'
+    assert repo.read_synonyms(id) == 'id=1; name=; values='
+
+    id = repo.create_synonyms('name=kek; values="azaza","pupupu"')
+    assert id == 2
+    assert len(repo.synonyms()) == 2, 'фабрика не создала второй объект'
+    assert repo.read_synonyms(id) == 'id=2; name=kek; values="azaza","pupupu"'
+    assert repo.synonyms() == {1, 2}
+
+    repo.delete_synonyms(1)
+    assert repo.synonyms() == {2}, 'фабрика не удалила объект'
+
+    id = repo.create_synonyms('')
+    assert id == 1
+    assert repo.synonyms() == {1, 2}, 'фабрика не создала пропущенный объект'
+
+    ok = True
+    try:
+        repo.delete_synonyms(10)
+        ok = False # normally unreachable
+    except(ValueError):
+        pass
+    assert ok, 'нет проверки существования группы синонимов с полученным id при удалении'
+
+    try:
+        repo.read_synonyms(10)
+        ok = False # normally unreachable
+    except(ValueError):
+        pass
+    assert ok, 'нет проверки существования группы синонимов с полученным id при чтении'

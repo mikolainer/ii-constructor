@@ -127,6 +127,63 @@ class Flow:
     __required :bool = False
     __enter :Command = None
 
+    def __str__(self):
+        is_required = 'true' if self.__required else 'false'
+        name = str(self.__id) if self.__name is None else f'"{self.__name}"'
+        description = '' if self.__description is None else f'"{self.__description}"'
+
+        return '; '.join([
+            f'id={self.__id}',
+            f'required={is_required}',
+            f'name={name}',
+            f'description={description}',
+        ])
+
+    def parse(data:str):
+        _data = {}
+
+        if data == '':
+            return _data
+
+        for item in data.split('; '):
+            _item = item.split('=')
+
+            if len(_item) != 2:
+                raise AttributeError(
+                    f'Плохие данные: синтаксическая ошибка "{item}"'
+                )
+            
+            key = _item[0]
+            value = _item[1]
+
+            if key not in ['id', 'name', 'description', 'required']:
+                raise AttributeError(
+                    f'Плохие данные: неизвестный ключ "{key}"'
+                )
+            
+            if key == 'id':
+                _data[key] = int(value)
+
+            elif key == 'required':
+                true_values = ['true', 'True', '1']
+                false_values = ['false', 'False', '0']
+                if value in true_values:
+                    _data[key] = True
+                elif value in false_values:
+                    _data[key] = False
+                else:
+                    raise AttributeError(
+                        'Плохие данные: required должен быть булевым значением'
+                    )
+
+            else:
+                if value[0] == '"' and value[-1] == '"':
+                    _data[key] = value[1:-1]
+                else:
+                    _data[key] = value
+
+        return _data
+
     def __init__(self, id: int, **kwargs):
         if type(id) is not int:
             raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
@@ -138,12 +195,23 @@ class Flow:
         if 'name' in arg_names:
             if type(kwargs['name']) is not str:
                 raise TypeError('"name" должен быть строкой')
-            self.__name: str = kwargs['name']
+            
+            if kwargs['name'][0] == '"' and kwargs['name'][-1] == '"':
+                value = kwargs['name'][1:-1]
+            else:
+                value = kwargs['name']
+
+            self.__name = value
 
         if 'description' in arg_names:
             if type(kwargs['description']) is not str:
                 raise TypeError('"description" должен быть строкой')
-            self.__description: str = kwargs['description']
+            
+            if kwargs['description'][0] == '"' and kwargs['description'][-1] == '"':
+                value = kwargs['description'][1:-1]
+            else:
+                value = kwargs['description']
+            self.__description = value
 
         if 'required' in arg_names:
             if type(kwargs['required']) is not bool:
@@ -187,6 +255,70 @@ class Synonyms:
     __name :str = None
     __values :list[str] = []
     __commands :list[Command] = []
+
+    def __str__(self):
+        if self.__values == []:
+            values_str = ''
+        else:
+            values_str = '"' + '","'.join(self.__values) + '"'
+
+        name = '' if self.__name is None else self.__name
+        return '; '.join([
+            f'id={self.__id}',
+            f'name={name}',
+            f'values={values_str}',
+        ])
+
+    def parse(data:str):
+        _data = {}
+
+        if data == '':
+            return _data
+
+        for item in data.split('; '):
+            _item = item.split('=')
+
+            if len(_item) != 2:
+                raise AttributeError(
+                    f'Плохие данные: синтаксическая ошибка "{item}"'
+                )
+            
+            key = _item[0]
+            value = _item[1]
+
+            if key not in ['id', 'name', 'values']:
+                raise AttributeError(
+                    f'Плохие данные: неизвестный ключ "{key}"'
+                )
+            
+            if key == 'id':
+                _data[key] = int(value)
+
+            elif key == 'values':
+                values = []
+
+                if value != '':
+                    val_list = value.split(',')
+
+                    if len(val_list) == 1:
+                        quoted = (
+                            val_list[1][0] == '"'
+                            and
+                            val_list[1][-1] == '"'
+                        )
+                        values = val_list[1][1:-1] if quoted else val_list[1]
+                    
+                    else:
+                        for val in val_list:
+                            if len(val) > 1:
+                                values.append(val[1:-1])
+
+                _data[key] = values
+
+            else:
+                _data[key] = value
+
+        return _data
 
     def __init__(self, id: int, **kwargs):
         if type(id) is not int:
@@ -293,7 +425,7 @@ class FlowInterface:
     def create_flow(self, data) -> int:
         raise NotImplementedError()
     
-    def read_flow(self, id: int) -> Flow:
+    def read_flow(self, id: int) -> str:
         raise NotImplementedError()
 
     def update_flow(self, id: int, new_data):
@@ -331,7 +463,7 @@ class SynonymsInterface:
     def create_synonyms(self, data) -> int:
         raise NotImplementedError()
     
-    def read_synonyms(self, id: int) -> Synonyms:
+    def read_synonyms(self, id: int) -> str:
         raise NotImplementedError()
 
     def update_synonyms(self, id: int, new_data):
@@ -353,9 +485,125 @@ class FlowFactory(FlowInterface):
     __items: dict[int, Flow] = {}
     __notifier: FlowActionsNotifier = None
 
+    def create_flow(self, data) -> int:
+        ''' создать Flow и вернуть id '''
+        id = 1
+        
+        current_len = len(self.__items)
+        if current_len > 0:
+            current_keys = list(self.__items.keys())
+            last_key = current_keys[-1]
+
+            # проверяем пропуски в id
+            if current_len - last_key == 0:
+                id = last_key + 1
+            else:
+                id = (set(range(1, last_key+1)) - set(current_keys) ).pop()
+
+        self.__items[id] = Flow(id, **Flow.parse(data))
+        if self.__notifier is not None:
+            self.__notifier.state_created(None, id, data)
+        
+        return id
+    
+    def read_flow(self, id: int) -> str:
+        ''' получить данные Flow '''
+        if id not in self.__items.keys():
+            raise ValueError(f'состояние с id={id} не существует')
+
+        return self.__items[id].__str__()
+
+    def update_flow(self, id: int, new_data):
+        ''' обновить Flow '''
+        
+        # TODO: реализовать изменение Flow
+
+        if self.__notifier is not None:
+            self.__notifier.flow_updated(None, id, new_data)
+
+    def delete_flow(self, id: int):
+        ''' удалить Flow '''
+        
+        if id not in self.__items.keys():
+            raise ValueError(f'группа синонимов с id={id} не существует')
+        
+        del self.__items[id]
+
+        if self.__notifier is not None:
+            self.__notifier.flow_removed(0, id)
+
+    def flows(self) -> set[int]:
+        ''' вернуть id существующих Folw '''
+        return set(self.__items.keys())
+
+    def set_flow_notifier(self, notifier: FlowActionsNotifier):
+        ''' установить обработчик коллбэков '''
+        if isinstance(notifier, FlowActionsNotifier):
+            raise ValueError('notifier должен быть наследником StateActionsNotifier')
+
+        self.__notifier = notifier
+
 class SynonymsFactory(SynonymsInterface):
     __items: dict[int, Synonyms] = {}
     __notifier: SynonymsActionsNotifier = None
+
+    def create_synonyms(self, data) -> int:
+        ''' создать и вернуть id '''
+        id = 1
+        
+        current_len = len(self.__items)
+        if current_len > 0:
+            current_keys = list(self.__items.keys())
+            last_key = current_keys[-1]
+
+            # проверяем пропуски в id
+            if current_len - last_key == 0:
+                id = last_key + 1
+            else:
+                id = (set(range(1, last_key+1)) - set(current_keys) ).pop()
+
+        self.__items[id] = Synonyms(id, **Synonyms.parse(data))
+        if self.__notifier is not None:
+            self.__notifier.synonyms_created(None, id, data)
+        
+        return id
+    
+    def read_synonyms(self, id: int) -> str:
+        ''' получить данные группы синонимов '''
+        if id not in self.__items.keys():
+            raise ValueError(f'состояние с id={id} не существует')
+
+        return self.__items[id].__str__()
+
+    def update_synonyms(self, id: int, new_data):
+        ''' обновить группу синонимов '''
+        
+        # TODO: реализовать изменение группу синонимов
+
+        if self.__notifier is not None:
+            self.__notifier.synonyms_updated(None, id, new_data)
+
+    def delete_synonyms(self, id: int):
+        ''' удалить группу синонимов '''
+        
+        if id not in self.__items.keys():
+            raise ValueError(f'группа синонимов с id={id} не существует')
+        
+        del self.__items[id]
+
+        if self.__notifier is not None:
+            self.__notifier.synonyms_removed(0, id)
+
+    def synonyms(self) -> set[int]:
+        ''' вернуть id существующих групп синонимов '''
+        return set(self.__items.keys())
+    
+    def set_synonyms_notifier(self, notifier: SynonymsActionsNotifier):
+        ''' установить обработчик коллбэков '''
+        if isinstance(notifier, SynonymsActionsNotifier):
+            raise ValueError('notifier должен быть наследником StateActionsNotifier')
+
+        self.__notifier = notifier
 
 class StateFactory(StateInterface):
     __items: dict[int, State] = {}
@@ -411,8 +659,11 @@ class StateFactory(StateInterface):
 
     def states(self) -> set[int]:
         ''' возвращает id существующих состояний проекта '''
-        return self.__items.keys()
+        return set(self.__items.keys())
 
     def set_state_notifier(self, notifier: StateActionsNotifier):
         ''' сеттер обработчика коллбэков '''
+        if isinstance(notifier, StateActionsNotifier):
+            raise ValueError('notifier должен быть наследником StateActionsNotifier')
+
         self.__notifier = notifier
