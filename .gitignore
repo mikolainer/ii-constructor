@@ -1,3 +1,4 @@
 *.pyc
 alicetool.egg-info/*
 .vscode/launch.json
+.vscode/settings.json
