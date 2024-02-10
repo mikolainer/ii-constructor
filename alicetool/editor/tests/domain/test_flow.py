@@ -1,4 +1,4 @@
-from alicetool.editor.domain.core import Flow, FlowFactory
+from alicetool.editor.domain.core import Flow, FlowFactory, Command, State, Synonyms
 
 DEFAULT_FLOW_NAME = 'Flow name'
 DEFAULT_FLOW_DESCRIPTION = 'Flow description'
@@ -46,8 +46,6 @@ def test_flow_constructor():
         f'описание по умолчанию не соответствует "{DEFAULT_FLOW_DESCRIPTION}"')
     assert obj.is_required() is False, (
         'по умолчанию должен быть не обязательным')
-    assert obj.enter().next_state().content() == DEFAULT_FLOW_START_CONTENT, (
-        f'начальный текст по умолчанию не соответствует "{DEFAULT_FLOW_START_CONTENT}"')
     
     # инициализация с пользовательскими данными
     id = 1
@@ -55,8 +53,7 @@ def test_flow_constructor():
         id,
         required = True,
         name = USER_FLOW_NAME,
-        description = USER_FLOW_DESCRIPTION,
-        start_content = USER_FLOW_START_CONTENT
+        description = USER_FLOW_DESCRIPTION
     )
     assert obj.id() == id,('не тот id')
     assert obj.name() == USER_FLOW_NAME,('не то имя')
@@ -64,8 +61,6 @@ def test_flow_constructor():
         'не то описание')
     assert obj.is_required() is True,(
         'обязательный создался не обязательным')
-    assert obj.enter().next_state().content() == USER_FLOW_START_CONTENT,(
-        'не тот начальный текст')
     
 def test_flow():
     state = Flow(0)
@@ -81,12 +76,12 @@ def test_flow_factory():
     repo = FlowFactory()
     assert len(repo.flows()) == 0, 'фабрика конструируется не пустой'
     
-    id = repo.create_flow('')
+    id = repo.create_flow('', cmd = Command(State(0), Synonyms(0)))
     assert id == 1
     assert len(repo.flows()) == 1, 'фабрика не создала первый объект'
     assert repo.read_flow(id) == 'id=1; required=false; name="Flow name"; description="Flow description"'
 
-    id = repo.create_flow('name="kek"; required=true; description="lol"')
+    id = repo.create_flow('name="kek"; required=true; description="lol"', cmd = Command(State(0), Synonyms(0)))
     assert id == 2
     assert len(repo.flows()) == 2, 'фабрика не создала второй объект'
     assert repo.read_flow(id) == 'id=2; required=true; name="kek"; description="lol"'
@@ -95,7 +90,7 @@ def test_flow_factory():
     repo.delete_flow(1)
     assert repo.flows() == {2}, 'фабрика не удалила объект'
 
-    id = repo.create_flow('')
+    id = repo.create_flow('', cmd = Command(State(0), Synonyms(0)))
     assert id == 1
     assert repo.flows() == {1, 2}, 'фабрика не создала пропущенный объект'
 

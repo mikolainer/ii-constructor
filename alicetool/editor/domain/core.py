@@ -26,6 +26,8 @@ class Command:
         return self.__cmd
 
 class State:
+    TEXT_MAX_LEN:int = 1024
+
     __steps: list[Command] = []
     __content: str = 'text'
     __name: str = None
@@ -79,7 +81,8 @@ class State:
                 _data[key] = int(value)
 
             else:
-                _data[key] = value
+                quoted :bool = len(value) >= 2 and value[0] == '"' and value[-1] == '"'
+                _data[key] = value[1:-1] if quoted else value
 
 #        if 'id' not in _data.keys():
 #            raise AttributeError('Плохие данные: нет обязательного ключа "id"')
@@ -126,6 +129,45 @@ class Flow:
     __description :str = 'Flow description'
     __required :bool = False
     __enter :Command = None
+
+    def __init__(self, id: int, **kwargs):
+        if type(id) is not int:
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
+        
+        self.__id :int = id
+
+        arg_names = kwargs.keys()
+
+        if 'name' in arg_names:
+            if type(kwargs['name']) is not str:
+                raise TypeError('"name" должен быть строкой')
+            
+            if kwargs['name'][0] == '"' and kwargs['name'][-1] == '"':
+                value = kwargs['name'][1:-1]
+            else:
+                value = kwargs['name']
+
+            self.__name = value
+
+        if 'description' in arg_names:
+            if type(kwargs['description']) is not str:
+                raise TypeError('"description" должен быть строкой')
+            
+            if kwargs['description'][0] == '"' and kwargs['description'][-1] == '"':
+                value = kwargs['description'][1:-1]
+            else:
+                value = kwargs['description']
+            self.__description = value
+
+        if 'required' in arg_names:
+            if type(kwargs['required']) is not bool:
+                raise TypeError('"required" должен быть булевым')
+            self.__required: str = kwargs['required']
+
+        if 'enter' in arg_names:
+            if type(kwargs['enter']) is not Command:
+                raise TypeError('"enter" должен быть объектом класса Command')
+            self.__enter: Command = kwargs['enter']
 
     def __str__(self):
         is_required = 'true' if self.__required else 'false'
@@ -183,55 +225,6 @@ class Flow:
                     _data[key] = value
 
         return _data
-
-    def __init__(self, id: int, **kwargs):
-        if type(id) is not int:
-            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
-        
-        self.__id :int = id
-
-        arg_names = kwargs.keys()
-
-        if 'name' in arg_names:
-            if type(kwargs['name']) is not str:
-                raise TypeError('"name" должен быть строкой')
-            
-            if kwargs['name'][0] == '"' and kwargs['name'][-1] == '"':
-                value = kwargs['name'][1:-1]
-            else:
-                value = kwargs['name']
-
-            self.__name = value
-
-        if 'description' in arg_names:
-            if type(kwargs['description']) is not str:
-                raise TypeError('"description" должен быть строкой')
-            
-            if kwargs['description'][0] == '"' and kwargs['description'][-1] == '"':
-                value = kwargs['description'][1:-1]
-            else:
-                value = kwargs['description']
-            self.__description = value
-
-        if 'required' in arg_names:
-            if type(kwargs['required']) is not bool:
-                raise TypeError('"required" должен быть булевым')
-            self.__required: str = kwargs['required']
-
-        # TODO: обращение к фабрикам состояний и синонимов
-        _state = State(0)
-        if 'start_content' in arg_names:
-            if type(kwargs['start_content']) is not str:
-                raise TypeError('"start_content" должен быть объектом Command или None')
-            
-            _state = State(0, content = kwargs['start_content'])
-        
-        else:
-            _state = State(0)
-
-        _synonyms = Synonyms(0)
-        self.__enter = Command(_state, _synonyms)
-        _synonyms.add_command(self.__enter)
 
     def id(self) -> int:
         return self.__id
@@ -422,7 +415,7 @@ class StateActionsNotifier:
 ''' интерфейсы управления '''
 
 class FlowInterface:
-    def create_flow(self, data) -> int:
+    def create_flow(self, data, cmd:Command) -> int:
         raise NotImplementedError()
     
     def read_flow(self, id: int) -> str:
@@ -482,10 +475,17 @@ class SynonymsInterface:
 
 ''' фабрики '''
 class FlowFactory(FlowInterface):
-    __items: dict[int, Flow] = {}
-    __notifier: FlowActionsNotifier = None
+    def __init__(self):
+        self.__items: dict[int, Flow] = {}
+        self.__notifier: FlowActionsNotifier = None
 
-    def create_flow(self, data) -> int:
+    def flow_obj(self, id: int) -> Flow:
+        if id not in self.__items.keys():
+            raise ValueError(f'Flow с id={id} не существует')
+        
+        return self.__items[id]
+
+    def create_flow(self, data, cmd:Command) -> int:
         ''' создать Flow и вернуть id '''
         id = 1
         
@@ -500,7 +500,7 @@ class FlowFactory(FlowInterface):
             else:
                 id = (set(range(1, last_key+1)) - set(current_keys) ).pop()
 
-        self.__items[id] = Flow(id, **Flow.parse(data))
+        self.__items[id] = Flow(id, **Flow.parse(data), enter = cmd)
         if self.__notifier is not None:
             self.__notifier.state_created(None, id, data)
         
@@ -509,13 +509,15 @@ class FlowFactory(FlowInterface):
     def read_flow(self, id: int) -> str:
         ''' получить данные Flow '''
         if id not in self.__items.keys():
-            raise ValueError(f'состояние с id={id} не существует')
+            raise ValueError(f'Flow с id={id} не существует')
 
         return self.__items[id].__str__()
 
     def update_flow(self, id: int, new_data):
         ''' обновить Flow '''
-        
+        if id not in self.__items.keys():
+            raise ValueError(f'Flow с id={id} не существует')
+
         # TODO: реализовать изменение Flow
 
         if self.__notifier is not None:
@@ -544,8 +546,15 @@ class FlowFactory(FlowInterface):
         self.__notifier = notifier
 
 class SynonymsFactory(SynonymsInterface):
-    __items: dict[int, Synonyms] = {}
-    __notifier: SynonymsActionsNotifier = None
+    def __init__(self):
+        self.__items: dict[int, Synonyms] = {}
+        self.__notifier: SynonymsActionsNotifier = None
+
+    def synonyms_obj(self, id: int) -> Synonyms:
+        if id not in self.__items.keys():
+            raise ValueError(f'группы синонимов с id={id} не существует')
+
+        return self.__items[id]
 
     def create_synonyms(self, data) -> int:
         ''' создать и вернуть id '''
@@ -571,12 +580,14 @@ class SynonymsFactory(SynonymsInterface):
     def read_synonyms(self, id: int) -> str:
         ''' получить данные группы синонимов '''
         if id not in self.__items.keys():
-            raise ValueError(f'состояние с id={id} не существует')
+            raise ValueError(f'группы синонимов с id={id} не существует')
 
         return self.__items[id].__str__()
 
     def update_synonyms(self, id: int, new_data):
         ''' обновить группу синонимов '''
+        if id not in self.__items.keys():
+            raise ValueError(f'группы синонимов с id={id} не существует')
         
         # TODO: реализовать изменение группу синонимов
 
@@ -606,8 +617,15 @@ class SynonymsFactory(SynonymsInterface):
         self.__notifier = notifier
 
 class StateFactory(StateInterface):
-    __items: dict[int, State] = {}
-    __notifier: StateActionsNotifier = None
+    def __init__(self):
+        self.__items: dict[int, State] = {}
+        self.__notifier: StateActionsNotifier = None
+
+    def state_obj(self, id: int) -> State:
+        if id not in self.__items.keys():
+            raise ValueError(f'состояние с id={id} не существует')
+
+        return self.__items[id]
 
     def create_state(self, data) -> int:
         ''' создать состояние и вернуть его id '''

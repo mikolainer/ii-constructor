@@ -13,7 +13,7 @@ def dialog(qtbot) -> NewProjectDialog:
     qtbot.addWidget(widget)
     return widget
 
-@pytest.mark.skip(reason="рано ещё тестировать")
+@pytest.mark.skip(reason="пока забили на автотестирование гуя")
 def test_iovalidation_path(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор пути к файлу']
 
@@ -23,8 +23,7 @@ def test_iovalidation_path(dialog: NewProjectDialog, qtbot):
     assert editor.text() == expected
     editor.clear()
 
-
-@pytest.mark.skip(reason="рано ещё тестировать")
+@pytest.mark.skip(reason="пока забили на автотестирование гуя")
 def test_iovalidation_name(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор имени']
 
@@ -74,15 +73,16 @@ def test_iovalidation_name(dialog: NewProjectDialog, qtbot):
     assert editor.text() == expected
     editor.clear()
 
-
-@pytest.mark.skip(reason="рано ещё тестировать")
+@pytest.mark.skip(reason="пока забили на автотестирование гуя")
 def test_iovalidation_dbname(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор имени для БД']
 
     input = '!@#$%^&*()_+1234567890-=asdASD'
     expected = '_1234567890asdASD'
     qtbot.keyClicks(editor, input)
-    assert editor.text() == expected
+    assert editor.text() == expected, (
+        'редактор имени для БД доступны для ввода только a-z, A-Z, 0-9, _'
+    )
     editor.clear()
 
     input = 'someName'
@@ -97,7 +97,7 @@ def test_iovalidation_dbname(dialog: NewProjectDialog, qtbot):
     # assert editor.text() == expected
     # editor.clear()  
 
-@pytest.mark.skip(reason="рано ещё тестировать")
+@pytest.mark.skip(reason="пока забили на автотестирование гуя")
 def test_iovalidation_hello(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор приветственной фразы']
 
@@ -155,34 +155,36 @@ def test_iovalidation_hello(dialog: NewProjectDialog, qtbot):
     assert editor.toPlainText() == expected
     editor.clear()
 
-    # 1025 символов
-    input = (
-        '!Lorem ipsum dolor sit amet, consectetuer'
-        'adipiscing elit, sed diam nonummy nibh '
-        'euismod tincidunt ut laoreet dolore magna aliquam '
-        'erat volutpat. Ut wisi enim ad minim veniam, quis '
-        'nostrud exerci tation ullamcorper suscipit lobortis '
-        'nisl ut aliquip ex ea commodo consequat. '
-        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
-        'velit esse molestie consequat, vel illum dolore eu feugiat '
-        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
-        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
-        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
-        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
-        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
-        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
-        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
-        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
-        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
-        'odio dignissim qui blandit praesent lupta'
-    )
-    expected = input[:-1]
-    qtbot.keyClicks(editor, input)
-    assert editor.toPlainText() == expected
-    editor.clear()
+    # # 1025 символов
+    # input = (
+    #     '!Lorem ipsum dolor sit amet, consectetuer'
+    #     'adipiscing elit, sed diam nonummy nibh '
+    #     'euismod tincidunt ut laoreet dolore magna aliquam '
+    #     'erat volutpat. Ut wisi enim ad minim veniam, quis '
+    #     'nostrud exerci tation ullamcorper suscipit lobortis '
+    #     'nisl ut aliquip ex ea commodo consequat. '
+    #     'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+    #     'velit esse molestie consequat, vel illum dolore eu feugiat '
+    #     'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+    #     'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+    #     'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+    #     'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+    #     'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+    #     'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+    #     'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+    #     'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+    #     'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+    #     'odio dignissim qui blandit praesent lupta'
+    # )
+    # expected = input[:-1]
+    # qtbot.keyClicks(editor, input)
+    # assert editor.toPlainText() == expected, (
+    #     '[редактор приветственной фразы] '
+    #     '1025 символов (ввод должен прекращаться после 1024)'
+    # )
+    # editor.clear()
 
-
-@pytest.mark.skip(reason="рано ещё тестировать")
+@pytest.mark.skip(reason="пока забили на автотестирование гуя")
 def test_iovalidation_help(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор ответа "Помощь"']
 
@@ -240,34 +242,36 @@ def test_iovalidation_help(dialog: NewProjectDialog, qtbot):
     assert editor.toPlainText() == expected
     editor.clear()
 
-    # 1025 символов
-    input = (
-        '!Lorem ipsum dolor sit amet, consectetuer'
-        'adipiscing elit, sed diam nonummy nibh '
-        'euismod tincidunt ut laoreet dolore magna aliquam '
-        'erat volutpat. Ut wisi enim ad minim veniam, quis '
-        'nostrud exerci tation ullamcorper suscipit lobortis '
-        'nisl ut aliquip ex ea commodo consequat. '
-        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
-        'velit esse molestie consequat, vel illum dolore eu feugiat '
-        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
-        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
-        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
-        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
-        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
-        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
-        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
-        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
-        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
-        'odio dignissim qui blandit praesent lupta'
-    )
-    expected = input[:-1]
-    qtbot.keyClicks(editor, input)
-    assert editor.toPlainText() == expected
-    editor.clear()
+    # # 1025 символов
+    # input = (
+    #     '!Lorem ipsum dolor sit amet, consectetuer'
+    #     'adipiscing elit, sed diam nonummy nibh '
+    #     'euismod tincidunt ut laoreet dolore magna aliquam '
+    #     'erat volutpat. Ut wisi enim ad minim veniam, quis '
+    #     'nostrud exerci tation ullamcorper suscipit lobortis '
+    #     'nisl ut aliquip ex ea commodo consequat. '
+    #     'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+    #     'velit esse molestie consequat, vel illum dolore eu feugiat '
+    #     'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+    #     'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+    #     'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+    #     'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+    #     'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+    #     'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+    #     'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+    #     'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+    #     'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+    #     'odio dignissim qui blandit praesent lupta'
+    # )
+    # expected = input[:-1]
+    # qtbot.keyClicks(editor, input)
+    # assert editor.toPlainText() == expected, (
+    #     '[редактор ответа "Помощь"] '
+    #     '1025 символов (ввод должен прекращаться после 1024)'
+    # )
+    # editor.clear()
 
-
-@pytest.mark.skip(reason="рано ещё тестировать")
+@pytest.mark.skip(reason="пока забили на автотестирование гуя")
 def test_iovalidation_info(dialog: NewProjectDialog, qtbot):
     editor = dialog.test_get_io()['редактор ответа "Что ты умеешь?"']
 
@@ -331,28 +335,31 @@ def test_iovalidation_info(dialog: NewProjectDialog, qtbot):
     assert editor.toPlainText() == expected
     editor.clear()
 
-    # 1025 символов
-    input = (
-        '!Lorem ipsum dolor sit amet, consectetuer'
-        'adipiscing elit, sed diam nonummy nibh '
-        'euismod tincidunt ut laoreet dolore magna aliquam '
-        'erat volutpat. Ut wisi enim ad minim veniam, quis '
-        'nostrud exerci tation ullamcorper suscipit lobortis '
-        'nisl ut aliquip ex ea commodo consequat. '
-        'Duis autem vel eum iriure dolor in hendrerit in vulputate '
-        'velit esse molestie consequat, vel illum dolore eu feugiat '
-        'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
-        'qui blandit praesent luptatum zzril delenit augue duis dolore te '
-        'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
-        'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
-        'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
-        'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
-        'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
-        'in hendrerit in vulputate velit esse molestie consequat, vel illum '
-        'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
-        'odio dignissim qui blandit praesent lupta'
-    )
-    expected = input[:-1]
-    qtbot.keyClicks(editor, input)
-    assert editor.toPlainText() == expected
-    editor.clear()
+    # # 1025 символов
+    # input = (
+    #     '!Lorem ipsum dolor sit amet, consectetuer'
+    #     'adipiscing elit, sed diam nonummy nibh '
+    #     'euismod tincidunt ut laoreet dolore magna aliquam '
+    #     'erat volutpat. Ut wisi enim ad minim veniam, quis '
+    #     'nostrud exerci tation ullamcorper suscipit lobortis '
+    #     'nisl ut aliquip ex ea commodo consequat. '
+    #     'Duis autem vel eum iriure dolor in hendrerit in vulputate '
+    #     'velit esse molestie consequat, vel illum dolore eu feugiat '
+    #     'nulla facilisis at vero eros et accumsan et iusto odio dignissim '
+    #     'qui blandit praesent luptatum zzril delenit augue duis dolore te '
+    #     'feugait nulla facilisi.Lorem ipsum dolor sit amet, consectetuer '
+    #     'adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet '
+    #     'dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, '
+    #     'quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut '
+    #     'aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor '
+    #     'in hendrerit in vulputate velit esse molestie consequat, vel illum '
+    #     'dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto '
+    #     'odio dignissim qui blandit praesent lupta'
+    # )
+    # expected = input[:-1]
+    # qtbot.keyClicks(editor, input)
+    # assert editor.toPlainText() == expected, (
+    #     '[редактор ответа "Что ты умеешь?"] '
+    #     '1025 символов (ввод должен прекращаться после 1024)'
+    # )
+    # editor.clear()

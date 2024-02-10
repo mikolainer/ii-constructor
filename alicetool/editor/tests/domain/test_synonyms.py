@@ -69,9 +69,9 @@ def test_synonyms_constructor():
     assert ok, 'тип "values" не прроверяется'
 
 def test_synonyms():
-    state = Synonyms(0)
-    assert len(state.values()) == 0, 'состояние по умолчанию должно быть без переходов'
-    assert state.__str__() == 'id=0; name=; values='
+    obj = Synonyms(0)
+    assert len(obj.values()) == 0, 'состояние по умолчанию должно быть без переходов'
+    assert obj.__str__() == 'id=0; name=; values='
 
     parse_result = Synonyms.parse('id=0; name=name; values="kek","lol"')
     assert parse_result['id'] == 0
