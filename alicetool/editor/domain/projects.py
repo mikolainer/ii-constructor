@@ -191,16 +191,16 @@ class Project:
 
 class ProjectsActionsNotifier:
     def created(self, id:int, data):
-        ...
+        raise NotImplementedError()
 
     def saved(self, id:int, data):
-        ...
+        raise NotImplementedError()
 
     def updated(self, id:int, new_data):
-        ...
+        raise NotImplementedError()
 
     def removed(self, id:int):
-        ...
+        raise NotImplementedError()
 
 class ProjectsInterface:
     def create(self, data) -> int:
@@ -356,7 +356,7 @@ class ProjectsManager(ProjectsInterface):
     #     pass
     
     def set_notifier(self, notifier: ProjectsActionsNotifier):
-        if isinstance(notifier, ProjectsActionsNotifier):
-            raise ValueError('notifier должен быть объектом класса ProjectsActionsNotifier')
+        if not issubclass(type(notifier), ProjectsActionsNotifier):
+            raise ValueError('notifier должен быть наследником класса ProjectsActionsNotifier')
         
         self.__notifier = notifier

@@ -1,7 +1,7 @@
 import sys
 
-from PySide6.QtGui import QIcon, QPixmap, QValidator
-from PySide6.QtCore import Qt, QSize, QPoint
+from PySide6.QtGui import QIcon, QPixmap, QValidator, QFont, QCursor, QTransform
+from PySide6.QtCore import Qt, QSize, QPoint, QRectF
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -17,11 +17,12 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QTextEdit,
     QLabel,
+    QGraphicsView,
+    QGraphicsScene,
+    QGraphicsItem
 )
 
-from alicetool.editor.domain.projects import ProjectsManager, ProjectsActionsNotifier
-from alicetool.editor.domain.core import State
-
+from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
 class MainWindow(QMainWindow):
@@ -43,18 +44,18 @@ class MainWindow(QMainWindow):
         tool_bar_layout.setSpacing(10)
         tool_bar_layout.setContentsMargins(5, 3, 3, 5)
 
-        self.__content = QScrollArea(self.centralWidget())
-        QVBoxLayout(self.__content)
+        self.__flow_list = QScrollArea(self.centralWidget())
+        QVBoxLayout(self.__flow_list)
         
-        self.__editor = QTabWidget(self.centralWidget())
-        QVBoxLayout(self.__editor)
+        self.__workspaces = QTabWidget(self.centralWidget())
+        QVBoxLayout(self.__workspaces)
         
         main_splitter = QSplitter(
             self,
             Qt.Orientation.Horizontal
         )
-        main_splitter.addWidget(self.__content)
-        main_splitter.addWidget(self.__editor)
+        main_splitter.addWidget(self.__flow_list)
+        main_splitter.addWidget(self.__workspaces)
         main_splitter.setStretchFactor(0,0)
         main_splitter.setStretchFactor(1,1)
         
@@ -148,17 +149,8 @@ class PathValidator(QValidator):
         super().__init__()
 
 class NewProjectDialog(QDialog):
-    # # костыль
-    # def validate_1024text(self):
-    #     text_edit : QTextEdit = self.sender()
-    #     text = text_edit.toPlainText()
-    #     if len(text) > 1024:
-    #         pos = text_edit.cursor().pos()
-    #         text_edit.setText(text[:1024])
-    #         text_edit.cursor().setPos()
-
     def new_project(self):
-        self.proj_id = ProjectsManager.instance().create(
+        self.proj_id = EditorAPI().create_project(
             self.get_result()
         )
         self.close()
@@ -176,16 +168,6 @@ class NewProjectDialog(QDialog):
         self.__help_editor = QTextEdit(self)
         self.__info_editor = QTextEdit(self)
         self.__ok_button = QPushButton("Начать", self)
-
-        # # костыль
-        # for text_edit in {
-        #         self.__hello_editor,
-        #         self.__help_editor,
-        #         self.__info_editor
-        #     }:
-        #     text_edit.textChanged.connect(
-        #         self.validate_1024text
-        #     )
 
         lay.addWidget(QLabel('Путь к файлу'))
         lay.addWidget(self.__file_path_editor)
@@ -208,43 +190,7 @@ class NewProjectDialog(QDialog):
             f'name={self.__name_editor.text()}; '
             f'db_name={self.__db_name_editor.text()}; '
             f'file_path={self.__file_path_editor.text()}; '
-            f'hello={self.__hello_editor.toPlainText()[: State.TEXT_MAX_LEN]}; '
-            f'help={self.__help_editor.toPlainText()[: State.TEXT_MAX_LEN]}; '
-            f'info={self.__info_editor.toPlainText()[: State.TEXT_MAX_LEN]}'
+            f'hello={self.__hello_editor.toPlainText()[: EditorAPI.STATE_TEXT_MAX_LEN]}; '
+            f'help={self.__help_editor.toPlainText()[: EditorAPI.STATE_TEXT_MAX_LEN]}; '
+            f'info={self.__info_editor.toPlainText()[: EditorAPI.STATE_TEXT_MAX_LEN]}'
         )
-
-    def test_get_io(self):
-        '''
-        !!! ONLY FOR UNITTESTS !!!
-        returns dictionary with all io items
-        wich named as in test_*.py file
-        '''
-        return {
-            'редактор пути к файлу': self.__file_path_editor,
-            'редактор имени': self.__name_editor,
-            'редактор имени для БД': self.__db_name_editor,
-            'редактор приветственной фразы': self.__hello_editor,
-            'редактор ответа "Помощь"': self.__help_editor,
-            'редактор ответа "Что ты умеешь?"': self.__info_editor,
-            'кнопка "Начать"': self.__ok_button,
-            'диалог подтверждения перезаписи': {
-                'ok': QPushButton(),
-                'cancel': QPushButton(),
-            }
-        }
-    
-class EditorRefreshGuiService(ProjectsActionsNotifier):
-    def __init__(self, parent: MainWindow):
-        self.__parent = parent
-
-    def created(self, id:int, data):
-        self.__parent.addProject()
-
-    def saved(self, id:int, data):
-        ...
-
-    def updated(self, id:int, new_data):
-        ...
-
-    def removed(self, id:int):
-        ...
