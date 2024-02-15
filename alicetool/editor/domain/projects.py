@@ -94,7 +94,7 @@ class Project:
     __file_path: str = 'path.proj'
     __content: StateMachine = None
     __entry_point: State = None
-    __notifier: FlowActionsNotifier = None
+    __notifier: StateMachineNotifier = None
     
     def __str__(self):
         return '; '.join([
@@ -104,6 +104,7 @@ class Project:
             f'file_path={self.__file_path}',
         ])
 
+    @staticmethod
     def parse(data:str):
         _data = {}
 
@@ -188,6 +189,12 @@ class Project:
 
     def content_interface(self) -> StateMachineInterface:
         return self.__content
+    
+    def set_notifier(self, notifier: StateMachineNotifier):
+        if not issubclass(type(notifier), StateMachineNotifier):
+            raise ValueError('notifier должен быть наследником класса StateMachineNotifier')
+        
+        self.__notifier = notifier
 
 class ProjectsActionsNotifier:
     def created(self, id:int, data):
@@ -229,6 +236,11 @@ class ProjectsInterface:
     
     def set_notifier(self, notifier: ProjectsActionsNotifier):
         raise NotImplementedError()
+    
+    def set_content_notifier(self, 
+        project_id: int, notifier: StateMachineNotifier
+    ):
+        raise NotImplementedError()
 
 class ProjectsManager(ProjectsInterface):
     __items: dict[int, Project] = {}
@@ -241,7 +253,7 @@ class ProjectsManager(ProjectsInterface):
         return self.__items[id]
 
     def __new__(cls):
-        if not hasattr(cls, '__instance'):
+        if not hasattr(cls, '_ProjectsManager__instance'):
             cls.__instance = super(ProjectsManager, cls).__new__(cls)
         
         return cls.__instance
@@ -269,7 +281,7 @@ class ProjectsManager(ProjectsInterface):
         new_proj = Project(id, **_data)
         self.__items[id] = new_proj
         if self.__notifier is not None:
-            self.__notifier.created(id)
+            self.__notifier.created(id, new_proj.__str__())
 
         new_proj_content: StateMachine = new_proj.content_interface()
 
@@ -360,3 +372,8 @@ class ProjectsManager(ProjectsInterface):
             raise ValueError('notifier должен быть наследником класса ProjectsActionsNotifier')
         
         self.__notifier = notifier
+
+    def set_content_notifier(self, 
+        project_id: int, notifier: StateMachineNotifier
+    ):  
+        self.project(project_id).set_notifier(notifier)

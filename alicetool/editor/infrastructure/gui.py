@@ -19,11 +19,70 @@ from PySide6.QtWidgets import (
     QLabel,
     QGraphicsView,
     QGraphicsScene,
-    QGraphicsItem
+    QGraphicsWidget
 )
-
 from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
+
+class StateMachineQtController:
+    def __init__(self, proj_ctrl, flow_list):
+        self.__flow_list: FlowList = flow_list
+
+        self.__proj_ctrl: ProjectQtController = proj_ctrl
+        self.__scene = QGraphicsScene()
+        self.__proj_ctrl.editor().setScene(self.__scene)
+        self.__states: dict[int, QGraphicsWidget] = []
+        self.__flows: dict[int, QWidget] = []
+
+        item = self.__scene.addText("azaza")
+
+class ProjectQtController:
+    def __init__(self, flow_list):
+        self.__flow_list: FlowList = flow_list
+        self.__editor = QGraphicsView()
+
+    def editor(self) -> QGraphicsView:
+        return self.__editor
+
+class FlowList(QScrollArea):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+class Workspaces(QTabWidget):
+    def __init__(self, flow_list:FlowList, parent: QWidget = None):
+        super().__init__(parent)
+        self.__opened_projects: dict[int, StateMachineQtController] = {}
+        self.__flow_list: FlowList = flow_list
+
+    def add_project(self, id :int, data: dict):
+        if id in self.__opened_projects.keys():
+            return self.__opened_projects[id]
+        
+        if 'name' in data.keys():
+            tab_name = str(data['name'])
+        elif 'db_name' in data.keys():
+            tab_name = str(data['db_name'])
+        elif 'id' in data.keys():
+            tab_name = str(data['id'])
+        elif 'file_path' in data.keys():
+            tab_name = str(data['file_path'])
+        else:
+            raise RuntimeError(data)
+        
+        p_ctrl = ProjectQtController(self.__flow_list)
+        self.__opened_projects[id] = c_ctrl = StateMachineQtController(p_ctrl, self.__flow_list)
+        self.addTab(p_ctrl.editor(), tab_name)
+
+        return p_ctrl
+
+    def set_active_project(self, id: int):
+        self.__opened_projects[id]
+
+    def close_project(self, id: int):
+        ...
+
+    def project(self, id: int):
+        ...
 
 class MainWindow(QMainWindow):
     def __make_project(self):
@@ -43,12 +102,6 @@ class MainWindow(QMainWindow):
         tool_bar_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         tool_bar_layout.setSpacing(10)
         tool_bar_layout.setContentsMargins(5, 3, 3, 5)
-
-        self.__flow_list = QScrollArea(self.centralWidget())
-        QVBoxLayout(self.__flow_list)
-        
-        self.__workspaces = QTabWidget(self.centralWidget())
-        QVBoxLayout(self.__workspaces)
         
         main_splitter = QSplitter(
             self,
@@ -137,8 +190,11 @@ class MainWindow(QMainWindow):
             btn.setStyleSheet(style)
             layout.addWidget(btn)
 
-    def __init__(self):
+    def __init__(self, flow_list: FlowList, workspaces: Workspaces, parent: QWidget = None):
         super().__init__()
+
+        self.__flow_list = flow_list
+        self.__workspaces = workspaces
 
         self.__setup_ui()
         self.__setup_toolbar()
@@ -150,7 +206,7 @@ class PathValidator(QValidator):
 
 class NewProjectDialog(QDialog):
     def new_project(self):
-        self.proj_id = EditorAPI().create_project(
+        self.proj_id = EditorAPI.instance().create_project(
             self.get_result()
         )
         self.close()
@@ -190,7 +246,7 @@ class NewProjectDialog(QDialog):
             f'name={self.__name_editor.text()}; '
             f'db_name={self.__db_name_editor.text()}; '
             f'file_path={self.__file_path_editor.text()}; '
-            f'hello={self.__hello_editor.toPlainText()[: EditorAPI.STATE_TEXT_MAX_LEN]}; '
-            f'help={self.__help_editor.toPlainText()[: EditorAPI.STATE_TEXT_MAX_LEN]}; '
-            f'info={self.__info_editor.toPlainText()[: EditorAPI.STATE_TEXT_MAX_LEN]}'
+            f'hello={self.__hello_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}; '
+            f'help={self.__help_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}; '
+            f'info={self.__info_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}'
         )
