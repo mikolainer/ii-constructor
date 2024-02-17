@@ -131,7 +131,7 @@ class Project:
                 _data[key] = int(value)
 
             else:
-                quoted = value[0] == '"' and value[-1] == '"'
+                quoted = len(value) > 2 and value[0] == '"' and value[-1] == '"'
                 val = value[1:-1] if quoted else value
                 _data[key] = val
 
@@ -148,23 +148,23 @@ class Project:
         arg_names = kwargs.keys()
 
         if 'name' in arg_names:
-            quoted = kwargs['name'][0] == '"' and kwargs['name'][-1] == '"'
+            quoted = len(kwargs['name']) > 2 and kwargs['name'][0] == '"' and kwargs['name'][-1] == '"'
             value = kwargs['name'][1:-1] if quoted else kwargs['name']
             self.__name = value
         
         if 'db_name' in arg_names:
-            quoted = kwargs['db_name'][0] == '"' and kwargs['db_name'][-1] == '"'
+            quoted = len(kwargs['db_name']) > 2 and kwargs['db_name'][0] == '"' and kwargs['db_name'][-1] == '"'
             value = kwargs['db_name'][1:-1] if quoted else kwargs['db_name']
             self.__db_name = value
 
         if 'file_path' in arg_names:
-            quoted = kwargs['file_path'][0] == '"' and kwargs['file_path'][-1] == '"'
+            quoted = len(kwargs['file_path']) > 2 and kwargs['file_path'][0] == '"' and kwargs['file_path'][-1] == '"'
             value = kwargs['file_path'][1:-1] if quoted else kwargs['file_path']
             self.__file_path = value
 
         hello_msg = ''
         if 'hello' in arg_names:
-            quoted = kwargs['hello'][0] == '"' and kwargs['hello'][-1] == '"'
+            quoted = len(kwargs['hello']) > 2 and kwargs['hello'][0] == '"' and kwargs['hello'][-1] == '"'
             hello_msg = kwargs['hello'][1:-1] if quoted else kwargs['hello']
             if len(hello_msg) > 1024:
                 hello_msg = hello_msg[:1024]
@@ -279,9 +279,6 @@ class ProjectsManager(ProjectsInterface):
         _data: dict = Project.parse(data)
 
         new_proj = Project(id, **_data)
-        self.__items[id] = new_proj
-        if self.__notifier is not None:
-            self.__notifier.created(id, new_proj.__str__())
 
         new_proj_content: StateMachine = new_proj.content_interface()
 
@@ -334,6 +331,10 @@ class ProjectsManager(ProjectsInterface):
             f'description="Информация, например описание команд"',
             Command(state, synon)
         )
+
+        self.__items[id] = new_proj
+        if self.__notifier is not None:
+            self.__notifier.created(id, new_proj.__str__())
         
         return id
     

@@ -2,7 +2,32 @@ from alicetool.editor.domain.projects import Project, ProjectsActionsNotifier, S
 from alicetool.editor.infrastructure.gui import Workspaces, ProjectQtController, StateMachineQtController
 
 class StateMachineGuiRefresher(StateMachineNotifier):
-    pass
+    def state_created(self, project_id :int, id :int, data):
+        ...
+    
+    def state_updated(self, project_id :int, id :int, new_data):
+        ...
+    
+    def state_removed(self, project_id :int, id :int):
+        ...
+    
+    def synonyms_created(self, project_id :int, id :int, data):
+        ...
+    
+    def synonyms_updated(self, project_id :int, id :int, new_data):
+        ...
+    
+    def synonyms_removed(self, project_id :int, id :int):
+        ...
+    
+    def flow_created(self, project_id :int, id :int, data):
+        ...
+    
+    def flow_updated(self, project_id :int, id :int, new_data):
+        ...
+    
+    def flow_removed(self, project_id :int, id :int):
+        ...
         
 
 class EditorGuiRefresher(ProjectsActionsNotifier):

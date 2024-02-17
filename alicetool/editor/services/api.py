@@ -1,4 +1,4 @@
-from alicetool.editor.domain.projects import ProjectsManager, ProjectsActionsNotifier, StateMachineNotifier
+from alicetool.editor.domain.projects import ProjectsManager, ProjectsActionsNotifier, StateMachineNotifier, StateMachineInterface
 from alicetool.editor.domain.core import State
 
 class EditorAPI:
@@ -26,3 +26,15 @@ class EditorAPI:
 
     def set_content_notifier(self, project_id: int, notifier: StateMachineNotifier):
         ProjectsManager.instance().set_content_notifier(project_id, notifier)
+
+    def get_all_project_states(self, project_id: int) -> dict:
+        state_machinne: StateMachineInterface = (
+            ProjectsManager().project(project_id).content_interface()
+        )
+        result = {}
+        for state_id in state_machinne.states():
+            result[state_id] = State.parse(
+                state_machinne.read_state(state_id)
+            )
+
+        return result
