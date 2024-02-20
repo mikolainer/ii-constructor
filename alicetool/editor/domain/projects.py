@@ -63,7 +63,7 @@ class StateMachine(StateMachineInterface):
         return self.__synonyms.create_synonyms()
 
     def set_synonyms_notifier(self, notifier: SynonymsActionsNotifier):
-        return self.__synonyms.create_synonyms(notifier)
+        return self.__synonyms.set_synonyms_notifier(notifier)
 
     # flows
     def create_flow(self, data, cmd) -> int:
@@ -195,6 +195,9 @@ class Project:
             raise ValueError('notifier должен быть наследником класса StateMachineNotifier')
         
         self.__notifier = notifier
+        self.__content.set_flow_notifier(notifier)
+        self.__content.set_state_notifier(notifier)
+        self.__content.set_synonyms_notifier(notifier)
 
 class ProjectsActionsNotifier:
     def created(self, id:int, data):

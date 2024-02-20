@@ -175,10 +175,12 @@ class Flow:
         description = '' if self.__description is None else f'"{self.__description}"'
 
         return '; '.join([
-            f'id={self.__id}',
-            f'required={is_required}',
-            f'name={name}',
-            f'description={description}',
+            f'id={self.id()}',
+            f'required={self.is_required()}',
+            f'name={self.name()}',
+            f'description={self.description()}',
+            f'values={",".join(self.call_names())}',
+            f'enter_state_id={self.__enter.next_state().id()}'
         ])
 
     def parse(data:str):
@@ -197,13 +199,8 @@ class Flow:
             
             key = _item[0]
             value = _item[1]
-
-            if key not in ['id', 'name', 'description', 'required']:
-                raise AttributeError(
-                    f'Плохие данные: неизвестный ключ "{key}"'
-                )
             
-            if key == 'id':
+            if key in ['id', 'enter_state_id']:
                 _data[key] = int(value)
 
             elif key == 'required':
@@ -217,6 +214,9 @@ class Flow:
                     raise AttributeError(
                         'Плохие данные: required должен быть булевым значением'
                     )
+                
+            elif key == 'values':
+                _data[key] = value.split(',')
 
             else:
                 if value[0] == '"' and value[-1] == '"':
@@ -230,16 +230,16 @@ class Flow:
         return self.__id
     
     def name(self) -> str:
-        return self.__name
+        return str(self.__id) if self.__name is None else f'"{self.__name}"'
     
     def description(self) -> str:
-        return self.__description
+        return '' if self.__description is None else f'"{self.__description}"'
 
     def enter(self) -> Command:
         return self.__enter
 
     def is_required(self) -> bool:
-        return self.__required
+        return 'true' if self.__required else 'false'
     
     def call_names(self) -> list[str]:
         return self.__enter.cmd().values()
@@ -540,8 +540,8 @@ class FlowFactory(FlowInterface):
 
     def set_flow_notifier(self, notifier: FlowActionsNotifier):
         ''' установить обработчик коллбэков '''
-        if isinstance(notifier, FlowActionsNotifier):
-            raise ValueError('notifier должен быть наследником StateActionsNotifier')
+        if not issubclass(type(notifier), FlowActionsNotifier):
+            raise ValueError('notifier должен быть наследником FlowActionsNotifier')
 
         self.__notifier = notifier
 
@@ -611,8 +611,8 @@ class SynonymsFactory(SynonymsInterface):
     
     def set_synonyms_notifier(self, notifier: SynonymsActionsNotifier):
         ''' установить обработчик коллбэков '''
-        if isinstance(notifier, SynonymsActionsNotifier):
-            raise ValueError('notifier должен быть наследником StateActionsNotifier')
+        if not issubclass(type(notifier), SynonymsActionsNotifier):
+            raise ValueError('notifier должен быть наследником SynonymsActionsNotifier')
 
         self.__notifier = notifier
 
@@ -681,7 +681,7 @@ class StateFactory(StateInterface):
 
     def set_state_notifier(self, notifier: StateActionsNotifier):
         ''' сеттер обработчика коллбэков '''
-        if isinstance(notifier, StateActionsNotifier):
+        if not issubclass(type(notifier), StateActionsNotifier):
             raise ValueError('notifier должен быть наследником StateActionsNotifier')
 
         self.__notifier = notifier

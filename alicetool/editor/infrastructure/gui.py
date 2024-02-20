@@ -1,6 +1,17 @@
 import sys
+from math import sqrt
 
-from PySide6.QtCore import Qt, QSize, QPoint, QRectF, QRect
+from PySide6.QtCore import (
+    Qt,
+    QSize,
+    QPoint,
+    QPointF,
+    QRectF,
+    QRect,
+    QStringListModel,
+    Slot, Signal
+)
+
 from PySide6.QtGui import (
     QIcon,
     QPixmap,
@@ -11,8 +22,10 @@ from PySide6.QtGui import (
     QColor,
     QPalette,
     QBrush,
-    QPen
+    QPen,
+    QPainter
 )
+
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -31,14 +44,20 @@ from PySide6.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
     QGraphicsWidget,
-    QGraphicsItem
+    QGraphicsItem,
+    QListView,
+    QSpacerItem,
+    QGraphicsLineItem,
+    QStyleOptionGraphicsItem
 )
+
 from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
 class StateWidget(QWidget):
-    __TITLE_HEIGHT = 15
-    __START_WIDTH = 150
+    TITLE_HEIGHT = 15
+    START_WIDTH = 150
+
     def __init__(self, content: str, name: str, id :int, parent = None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -47,7 +66,7 @@ class StateWidget(QWidget):
         font = self.__title.font()
         font.setWeight(QFont.Weight.ExtraBold)
         self.__title.setFont(font)
-        self.__title.setFixedHeight(StateWidget.__TITLE_HEIGHT)
+        self.__title.setFixedHeight(StateWidget.TITLE_HEIGHT)
         self.__close_btn = QPushButton(str(id), self)
         self.__close_btn.setFlat(True)
         self.__close_btn.setStyleSheet(
@@ -61,8 +80,8 @@ class StateWidget(QWidget):
         font = self.__close_btn.font()
         font.setWeight(QFont.Weight.ExtraBold)
         self.__close_btn.setFont(font)
-        self.__close_btn.setFixedHeight(StateWidget.__TITLE_HEIGHT)
-        self.__close_btn.setFixedWidth(StateWidget.__TITLE_HEIGHT)
+        self.__close_btn.setFixedHeight(StateWidget.TITLE_HEIGHT)
+        self.__close_btn.setFixedWidth(StateWidget.TITLE_HEIGHT)
         
         self.__content = QTextEdit(content, self)
         self.__content.setStyleSheet(
@@ -97,34 +116,213 @@ class StateWidget(QWidget):
         main_lay.addWidget(title)
         main_lay.addWidget(self.__content)
 
-        self.resize(StateWidget.__START_WIDTH, StateWidget.__START_WIDTH)
+        self.resize(StateWidget.START_WIDTH, StateWidget.START_WIDTH)
+
+class Arrow(QGraphicsItem):
+    __start_wgt: QGraphicsWidget = None
+    __end_wgt: QGraphicsWidget = None
+
+    __start_point: QPointF = QPointF(0.0, 0.0)
+    __end_point: QPointF = QPointF(3.0, 3.0)
+
+    __pen_width = 3
+
+    def __init__(self, 
+        start: QPointF,
+        end: QPointF,
+        parent: QGraphicsItem = None
+    ):
+        super().__init__(parent)
+        self.__start_point = start
+        self.__end_point = end
+
+    def __dir_pointer_half(self) -> QPoint:
+        return QPoint(
+            self.__pen_width * 3,
+            self.__pen_width * 5
+        )
+    
+    def __arrow_directions(self):
+        a = self.__end_point
+        b = self.__start_point
+
+        delta_x = a.x() - b.x()
+        delta_y = a.y() - b.y()
+
+        ab_tg = delta_y/delta_x
+        
+        h_ptr = self.__dir_pointer_half()
+        delta_tg = h_ptr.x() / h_ptr.y()
+        
+        return {
+            'back' : ab_tg,
+            'left' : ab_tg + delta_tg,
+            'right': ab_tg - delta_tg
+        }
+
+    def __to_local_pos(self, global_point: QPointF):
+        x = global_point.x() - self.scenePos().x()# - self.__center().x()
+        y = global_point.y() - self.scenePos().y()# - self.__center().y()
+        return QPointF(x, y)
+    
+    def __center(self) -> QPointF:
+        x = (
+            (
+                max(self.__start_point.x(), self.__end_point.x())
+                -
+                min(self.__start_point.x(), self.__end_point.x())
+            )
+            /2.0
+        )
+
+        y = (
+            (
+                max(float(self.__start_point.y()), float(self.__end_point.y()))
+                -
+                min(float(self.__start_point.y()), (self.__end_point.y()))
+            )
+            /2.0
+        )
+        return QPointF(x, y)
+
+    def boundingRect(self) -> QRectF:
+        x = 0.0 - float(self.__center().x()) - float(self.__pen_width) /2.0
+        y = 0.0 - float(self.__center().y()) - float(self.__pen_width) /2.0
+        w = float(self.__center().x()) + float(self.__pen_width)
+        h = float(self.__center().y()) + float(self.__pen_width)
+        return QRectF(x, y, w, h)
+
+    def paint( self,
+        painter: QPainter,
+        option: QStyleOptionGraphicsItem,
+        widget: QWidget = None
+    ):
+        pen = QPen(QColor('black'))
+        pen.setWidth(self.__pen_width)
+        painter.setPen(pen)
+
+        painter.drawLine(
+            self.__to_local_pos(self.__start_point),
+            self.__to_local_pos(self.__end_point)
+        )
+
+        dirs = self.__arrow_directions()
+        arrow_pos = self.__to_local_pos(self.__end_point)
+        
+        h_ptr = self.__dir_pointer_half()
+        h_ptr_len = (h_ptr.x()**2 + h_ptr.y()**2) **0.5
+
+        k_left = dirs['left']
+        k_right = dirs['right']
+        x_sign = 1 if (self.__end_point.x() - self.__start_point.x()) > 0 else -1
+
+        x_left = ( (1 / (k_left**2 + 1)) **0.5 ) * x_sign
+        x_right = ( (1 / (k_right**2 + 1)) **0.5 ) * x_sign
+        
+        pointer_left_end = QPointF(
+            x_left, k_left * (x_left**0.5)
+        ) * h_ptr_len
+        
+        pointer_right_end = QPointF(
+            x_right, k_right * (x_right**0.5)
+        ) * h_ptr_len
+        
+        painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
+        painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
+
+    def set_start_wgt(self, wgt: QGraphicsWidget):
+        self.__start_wgt = wgt
+        
+    def set_end_wgt(self, wgt: QGraphicsWidget):
+        self.__end_wgt = wgt
+
+    def set_start_point(self, point: QPointF):
+        self.__start_point = point
+    
+    def set_end_point(self, point: QPointF):
+        self.__end_point = point
+
+class FlowWidget(QWidget):
+    @Slot()
+    def __on_slider_click(self):
+        self.__slider_btn.setText("^" if self.__slider_btn.isChecked() else "v")
+        self.__synonyms_list.setVisible(self.__slider_btn.isChecked())
+
+    def __init__(self, id :int, 
+                 name: str, description :str,
+                 synonym_values: list, 
+                 start_state :StateWidget,
+                 parent = None
+                ):
+        super().__init__(parent)
+        self.setStyleSheet("border: 1px solid black;")
+
+        self.__title = QLabel(name, self)
+        self.__title.setWordWrap(True)
+        self.__description = QLabel(description, self)
+        self.__description.setWordWrap(True)
+        self.__synonyms_name = QLabel("синонимы", self)
+        self.__synonyms_list = QListView(self)
+        self.__synonyms_list.hide()
+        self.__synonyms_list.setModel(
+            QStringListModel(synonym_values, self.__synonyms_list)
+        )
+        
+        main_lay = QVBoxLayout(self)
+        main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setSpacing(0)
+
+        synonyms_wrapper = QWidget(self)
+        synonyms_lay = QVBoxLayout(synonyms_wrapper)
+
+        synonyms_title_lay = QHBoxLayout()
+        synonyms_title_lay.addWidget(self.__synonyms_name)
+        self.__slider_btn = QPushButton('v', self)
+        self.__slider_btn.setCheckable(True)
+        self.__slider_btn.clicked.connect(
+            lambda: self.__on_slider_click()
+        )
+        synonyms_title_lay.addWidget(self.__slider_btn)
+
+        synonyms_lay.addLayout(synonyms_title_lay)
+        synonyms_lay.addWidget(self.__synonyms_list)
+
+        main_lay.addWidget(self.__title)
+        main_lay.addWidget(self.__description)
+        main_lay.addWidget(synonyms_wrapper)
 
 class Editor(QGraphicsScene):
     def __init__(self):
         super().__init__()
         self.setBackgroundBrush(QColor("#DDDDDD"))
+        
+        line = Arrow(QPointF(30, 200), QPointF(300, 200))
+        self.addItem(line)
+        line.set_end_point(QPointF(300, 400))
 
-    def addState(self, content:str, name:str, id:int, initPos:QPoint) -> QGraphicsItem:
+    def addState(self, content:str, name:str, id:int, initPos:QPoint) -> StateWidget:
         widget = StateWidget(content, name, id)
         
+        close_btn_margins = 2 *2
         proxyControl = self.addRect(
             initPos.x(), initPos.y(),
-            widget.width(), 20,
+            widget.width() - StateWidget.TITLE_HEIGHT - close_btn_margins, 20,
             QPen(Qt.GlobalColor.transparent),
             QBrush(Qt.GlobalColor.transparent)
         )
         proxyControl.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-        proxyControl.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        #proxyControl.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         
         proxy = self.addWidget(widget)
         proxy.setPos(initPos.x(), initPos.y())
         proxy.setParentItem(proxyControl)
         proxy.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
 
-        return
+        return widget
 
 class StateMachineQtController:
     __START_SIZE = QRect(0, 0, 2000, 2000)
+    __START_SPACINS = 30
 
     def __init__(self, id, proj_ctrl, flow_list):
         self.__proj_id = id
@@ -142,19 +340,37 @@ class StateMachineQtController:
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
+        
+        self.__states: dict[int, StateWidget] = {}
         data = EditorAPI.instance().get_all_project_states(self.__proj_id)
+        
         for state_id in data.keys():
-            self.__scene.addState(
+            self.__states[state_id] = self.__scene.addState(
                 data[state_id]['content'],
                 data[state_id]['name'],
                 state_id,
-                QPoint(160 * (state_id - 1) + 10, 10)
+                QPoint(
+                        StateWidget.START_WIDTH * (state_id - 1) +
+                        StateMachineQtController.__START_SPACINS * (state_id),
+                        StateMachineQtController.__START_SPACINS
+                    )
             )
 
-        self.__states: dict[int, QGraphicsWidget] = []
-
     def __build_flows(self):
-        self.__flows: dict[int, QWidget] = []
+        self.__flows: dict[int, FlowWidget] = {}
+        data = EditorAPI.instance().get_all_project_flows(self.__proj_id)
+
+        for id in data.keys():
+            self.__flows[id] = FlowWidget(
+                id,
+                data[id]['name'],
+                data[id]['description'],
+                data[id]['values'],
+                self.__states[data[id]['enter_state_id']],
+                self.__flow_list
+            )
+
+        self.__flow_list.setList(self.__flows)
 
 class ProjectQtController:
     def __init__(self, id, flow_list):
@@ -166,9 +382,30 @@ class ProjectQtController:
     def editor(self) -> QGraphicsView:
         return self.__editor
 
-class FlowList(QScrollArea):
+class FlowList(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
+
+        self.__area = QScrollArea(self)
+        self.__area.setWidgetResizable(True)
+        
+        lay = QVBoxLayout(self)
+        lay.addWidget(self.__area)
+    
+    def setList(self, items :dict[int, FlowWidget]):
+        wrapper = QWidget(self)
+
+        lay = QVBoxLayout(wrapper)
+
+        for wgt in lay.children():
+            lay.removeWidget(wgt)
+
+        for wgt_id in items.keys():
+            lay.addWidget(items[wgt_id])
+
+        self.__area.setWidget(wrapper)
+
+        lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
 
 class Workspaces(QTabWidget):
     def __init__(self, flow_list:FlowList, parent: QWidget = None):
@@ -180,21 +417,23 @@ class Workspaces(QTabWidget):
         if id in self.__opened_projects.keys():
             return self.__opened_projects[id]
         
-        if 'name' in data.keys() and data['name']:
-            tab_name = str(data['name'])
-        elif 'db_name' in data.keys() and data['db_name']:
-            tab_name = str(data['db_name'])
-        elif 'id' in data.keys() and data['id']:
-            tab_name = str(data['id'])
-        elif 'file_path' in data.keys() and data['file_path']:
-            tab_name = str(data['file_path'])
-        else:
+        if (
+            not 'name' in data.keys() or
+            not 'db_name' in data.keys() or
+#            not 'id' in data.keys() or
+            not 'file_path' in data.keys()
+        ):
             raise RuntimeError(data)
+        
+        tab_name = str(data['name']) if data['name'] else ''
         
         p_ctrl = ProjectQtController(id, self.__flow_list)
         c_ctrl = StateMachineQtController(id, p_ctrl, self.__flow_list)
         self.__opened_projects[id] = c_ctrl
-        self.addTab(p_ctrl.editor(), tab_name)
+        tab_idx = self.addTab(p_ctrl.editor(), tab_name)
+
+        if 'file_path' in data.keys() and data['file_path']:
+            self.tabBar().setTabToolTip(tab_idx, str(data['file_path']))
 
         return c_ctrl
 
@@ -393,3 +632,4 @@ class NewProjectDialog(QDialog):
             f'help={self.__help_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}; '
             f'info={self.__info_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}'
         )
+    
