@@ -1,5 +1,5 @@
 import sys
-from math import sqrt
+from math import sqrt, pi
 
 from PySide6.QtCore import (
     Qt,
@@ -48,16 +48,234 @@ from PySide6.QtWidgets import (
     QListView,
     QSpacerItem,
     QGraphicsLineItem,
-    QStyleOptionGraphicsItem
+    QStyleOptionGraphicsItem,
+    QGraphicsProxyWidget,
+    QGraphicsRectItem
 )
 
 from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
+class Arrow(QGraphicsItem):
+    __start_point: QPointF = QPointF(0.0, 0.0)
+    __end_point: QPointF = QPointF(3.0, 3.0)
+    __pen_width = 5
+    __end_wgt: QGraphicsItem
+
+    def __init__(self, 
+        start: QPointF,
+        end: QPointF,
+        parent: QGraphicsItem = None
+    ):
+        self.__end_wgt = None
+        super().__init__(parent)
+        self.__start_point = start
+        self.__end_point = end
+        self.setPos(self.__center())
+        #self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
+
+    def set_end_wgt(self, widget: QGraphicsItem):
+        ''' установка виджета для вычисления смещения указателя '''
+        self.__end_wgt = widget
+
+    def __dir_pointer_half(self) -> QPointF:
+        ''' 
+        вектор половинки указателя стрелки:
+        x - отступ от линии,
+        y - расстояние от указываемой точки вдоль линии
+        '''
+        return QPointF(
+            self.__pen_width * 3,
+            self.__pen_width * 5
+        )
+    
+    def __arrow_directions(self):
+        '''
+        направдения (tg углов от направления оси глобальных координат x):
+        back - вектор направленный от указываемой точки к началу линии;
+        left, right - от указываемой точки в направлении половинок указателя стрелки
+        '''
+        a = self.__end_point
+        b = self.__start_point
+
+        delta_x = a.x() - b.x()
+        delta_y = a.y() - b.y()
+
+        ab_tg = delta_y/delta_x if delta_x != 0 else  float ('inf') # TODO: переделать на sin или cos
+        
+        h_ptr = self.__dir_pointer_half()
+        delta_tg = h_ptr.x() / h_ptr.y()
+        
+        return {
+            'back' : ab_tg,
+            'left' : ab_tg + delta_tg,
+            'right': ab_tg - delta_tg
+        }
+    
+    def __delta(self) -> QPointF:
+        '''
+        длины проекций линии стрелки на оси глобальных координат
+        '''
+        x = ( max(self.__start_point.x(), self.__end_point.x())
+            - min(self.__start_point.x(), self.__end_point.x()) )
+
+        y = ( max(self.__start_point.y(), self.__end_point.y())
+            - min(self.__start_point.y(), self.__end_point.y()) )
+
+        return QPointF(x, y)
+    
+    def __center(self) -> QPointF:
+        '''
+        вычисление центра в глобальных координатах
+        из начальной и конечной точек
+        '''
+        x = max(self.__start_point.x(), self.__end_point.x())
+        y = max(self.__start_point.y(), self.__end_point.y())
+
+        return QPointF(x, y) - self.__delta() / 2.0
+
+
+    def boundingRect(self) -> QRectF:
+        '''
+        область границ объекта в локальных координатах
+        '''
+        pen_padding = QPointF(
+            float(self.__pen_width),
+            float(self.__pen_width)
+        )
+        arrow_pointer_padding = QPointF(
+            self.__dir_pointer_half().x(),
+            self.__dir_pointer_half().x()
+        )
+        size = self.__delta() + pen_padding + arrow_pointer_padding
+
+        x = 0 - size.x() / 2.0
+        y = 0 - size.y() / 2.0
+
+        return QRectF(x, y, size.x(), size.y())
+    
+    def __line_len(self) -> float:
+        delt = self.__delta()
+        return sqrt(delt.x()**2 + delt.y())
+
+    def paint( self,
+        painter: QPainter,
+        option: QStyleOptionGraphicsItem,
+        widget: QWidget = None
+    ):
+        pen = QPen(QColor('black'))
+        pen.setWidth(self.__pen_width)
+        painter.setPen(pen)
+
+        #painter.drawRect(self.boundingRect())   # for debug
+        #painter.drawPoint(QPoint(0,0))          # for debug
+
+        painter.drawLine(
+            self.mapFromScene(self.__start_point),
+            self.mapFromScene(self.__end_point)
+        )
+
+        k = self.__arrow_directions() # в уравнении прямой 'y=kx' k = tg угла наклона
+        
+        h_ptr = self.__dir_pointer_half() # локальный алиас для короткого обращения к значению
+        r = sqrt(h_ptr.x()**2 + h_ptr.y()**2) # длина половинки указателя стрелки (гепотинуза)
+        r = r*5 # костыль. хз почему так получается ближе к правде
+
+        ### решения систем уравнений прямой, проходящей через центр координат и окружности в центре координат для обеих половинок указателя стрелки
+        x_left = sqrt(r / (k['left']**2 + 1))
+        pointer_left_end = QPointF(x_left, k['left'] * x_left)
+        
+        x_right = sqrt(r / (k['right']**2 + 1))
+        pointer_right_end = QPointF(x_right, k['right'] * x_right)
+
+        if self.__end_wgt is None:
+            arrow_pos:QPointF = self.__end_point
+        else:
+            bounding = self.__end_wgt.boundingRect()
+            wgt_half_size = QPointF(bounding.width(), bounding.height()) / 2.0
+            wgt_center = self.__end_wgt.scenePos() + wgt_half_size
+
+            cos: float = self.__delta().x() / self.__line_len()
+            sin: float = self.__delta().y() / self.__line_len()
+
+            x_dir = 1.0 if self.__end_point.x() > self.__start_point.x() else -1.0
+            y_dir = 1.0 if self.__end_point.y() > self.__start_point.y() else -1.0
+
+            shift_x = wgt_half_size.x() * cos
+            if shift_x > wgt_half_size.x():
+                shift_x = wgt_half_size.x()
+
+            shift_y = wgt_half_size.y() * sin
+            if shift_y > wgt_half_size.y():
+                shift_y = wgt_half_size.y()
+
+            arrow_pos = QPointF(
+                wgt_center.x() - (shift_x * x_dir),
+                wgt_center.y() - (shift_y * y_dir)
+            )
+
+        arrow_pos = self.mapFromScene(arrow_pos)
+
+        # выбор одного из двух возможных решений сиснетмы уравнений
+        if self.__start_point.x() > self.__end_point.x():
+            painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
+            painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
+        else:
+            painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
+            painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
+
+    def set_start_point(self, point: QPointF):
+        self.prepareGeometryChange()
+        self.__start_point = point
+        self.setPos(self.__center())
+    
+    def set_end_point(self, point: QPointF):
+        self.prepareGeometryChange()
+        self.__end_point = point
+        self.setPos(self.__center())
+
+class QGraphicsStateItem(QGraphicsProxyWidget):
+    def __init__(self, parent: QGraphicsItem = None):
+        super().__init__(parent)
+        self.__arrows = {"from": list[Arrow](), "to": list[Arrow]()}
+        #self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
+    
+    def arrow_connect_as_start(self, arrow: Arrow):
+        if (not arrow in self.__arrows['from']):
+            self.__arrows['from'].append(arrow)
+            bounding = self.boundingRect()
+            center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
+            arrow.set_start_point(self.scenePos() + center)
+
+    def arrow_connect_as_end(self, arrow: Arrow):
+        if (not arrow in self.__arrows['to']):
+            self.__arrows['to'].append(arrow)
+            bounding = self.boundingRect()
+            center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
+            arrow.set_end_point(self.scenePos() + center)
+            arrow.set_end_wgt(self)
+
+    def arrow_disconnect(self, arrow: QGraphicsItem):
+        if (arrow in self.__arrows['from']):
+            self.__arrows['from'].remove(arrow)
+
+        if (arrow in self.__arrows['to']):
+            self.__arrows['to'].remove(arrow)
+            
+    def update_arrows(self):
+        bounding = self.boundingRect()
+        center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
+
+        for arrow in self.__arrows['to']:
+            arrow.set_end_point(self.scenePos() + center)
+
+        for arrow in self.__arrows['from']:
+            arrow.set_start_point(self.scenePos() + center)
+
 class StateWidget(QWidget):
     TITLE_HEIGHT = 15
     START_WIDTH = 150
-
+        
     def __init__(self, content: str, name: str, id :int, parent = None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -118,130 +336,6 @@ class StateWidget(QWidget):
 
         self.resize(StateWidget.START_WIDTH, StateWidget.START_WIDTH)
 
-class Arrow(QGraphicsItem):
-    __start_wgt: QGraphicsWidget = None
-    __end_wgt: QGraphicsWidget = None
-
-    __start_point: QPointF = QPointF(0.0, 0.0)
-    __end_point: QPointF = QPointF(3.0, 3.0)
-
-    __pen_width = 3
-
-    def __init__(self, 
-        start: QPointF,
-        end: QPointF,
-        parent: QGraphicsItem = None
-    ):
-        super().__init__(parent)
-        self.__start_point = start
-        self.__end_point = end
-
-    def __dir_pointer_half(self) -> QPoint:
-        return QPoint(
-            self.__pen_width * 3,
-            self.__pen_width * 5
-        )
-    
-    def __arrow_directions(self):
-        a = self.__end_point
-        b = self.__start_point
-
-        delta_x = a.x() - b.x()
-        delta_y = a.y() - b.y()
-
-        ab_tg = delta_y/delta_x
-        
-        h_ptr = self.__dir_pointer_half()
-        delta_tg = h_ptr.x() / h_ptr.y()
-        
-        return {
-            'back' : ab_tg,
-            'left' : ab_tg + delta_tg,
-            'right': ab_tg - delta_tg
-        }
-
-    def __to_local_pos(self, global_point: QPointF):
-        x = global_point.x() - self.scenePos().x()# - self.__center().x()
-        y = global_point.y() - self.scenePos().y()# - self.__center().y()
-        return QPointF(x, y)
-    
-    def __center(self) -> QPointF:
-        x = (
-            (
-                max(self.__start_point.x(), self.__end_point.x())
-                -
-                min(self.__start_point.x(), self.__end_point.x())
-            )
-            /2.0
-        )
-
-        y = (
-            (
-                max(float(self.__start_point.y()), float(self.__end_point.y()))
-                -
-                min(float(self.__start_point.y()), (self.__end_point.y()))
-            )
-            /2.0
-        )
-        return QPointF(x, y)
-
-    def boundingRect(self) -> QRectF:
-        x = 0.0 - float(self.__center().x()) - float(self.__pen_width) /2.0
-        y = 0.0 - float(self.__center().y()) - float(self.__pen_width) /2.0
-        w = float(self.__center().x()) + float(self.__pen_width)
-        h = float(self.__center().y()) + float(self.__pen_width)
-        return QRectF(x, y, w, h)
-
-    def paint( self,
-        painter: QPainter,
-        option: QStyleOptionGraphicsItem,
-        widget: QWidget = None
-    ):
-        pen = QPen(QColor('black'))
-        pen.setWidth(self.__pen_width)
-        painter.setPen(pen)
-
-        painter.drawLine(
-            self.__to_local_pos(self.__start_point),
-            self.__to_local_pos(self.__end_point)
-        )
-
-        dirs = self.__arrow_directions()
-        arrow_pos = self.__to_local_pos(self.__end_point)
-        
-        h_ptr = self.__dir_pointer_half()
-        h_ptr_len = (h_ptr.x()**2 + h_ptr.y()**2) **0.5
-
-        k_left = dirs['left']
-        k_right = dirs['right']
-        x_sign = 1 if (self.__end_point.x() - self.__start_point.x()) > 0 else -1
-
-        x_left = ( (1 / (k_left**2 + 1)) **0.5 ) * x_sign
-        x_right = ( (1 / (k_right**2 + 1)) **0.5 ) * x_sign
-        
-        pointer_left_end = QPointF(
-            x_left, k_left * (x_left**0.5)
-        ) * h_ptr_len
-        
-        pointer_right_end = QPointF(
-            x_right, k_right * (x_right**0.5)
-        ) * h_ptr_len
-        
-        painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
-        painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
-
-    def set_start_wgt(self, wgt: QGraphicsWidget):
-        self.__start_wgt = wgt
-        
-    def set_end_wgt(self, wgt: QGraphicsWidget):
-        self.__end_wgt = wgt
-
-    def set_start_point(self, point: QPointF):
-        self.__start_point = point
-    
-    def set_end_point(self, point: QPointF):
-        self.__end_point = point
-
 class FlowWidget(QWidget):
     @Slot()
     def __on_slider_click(self):
@@ -251,7 +345,7 @@ class FlowWidget(QWidget):
     def __init__(self, id :int, 
                  name: str, description :str,
                  synonym_values: list, 
-                 start_state :StateWidget,
+                 start_state :QGraphicsProxyWidget,
                  parent = None
                 ):
         super().__init__(parent)
@@ -291,35 +385,53 @@ class FlowWidget(QWidget):
         main_lay.addWidget(self.__description)
         main_lay.addWidget(synonyms_wrapper)
 
+class ProxyWidgetControll(QGraphicsRectItem):
+    def __init__(self, x: float, y: float, w: float, h: float, parent = None):
+        super().__init__(x, y, w, h, parent)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
+        self.setPen(QPen(Qt.GlobalColor.transparent))
+        self.setBrush(QBrush(Qt.GlobalColor.transparent))
+    
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value):
+        if change in [
+            QGraphicsItem.GraphicsItemChange.ItemPositionChange,
+            QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged
+        ] and len(self.childItems()):
+            child:QGraphicsStateItem = self.childItems()[0]
+            child.update_arrows()
+
+        return super().itemChange(change, value)
+
 class Editor(QGraphicsScene):
     def __init__(self):
         super().__init__()
         self.setBackgroundBrush(QColor("#DDDDDD"))
-        
-        line = Arrow(QPointF(30, 200), QPointF(300, 200))
-        self.addItem(line)
-        line.set_end_point(QPointF(300, 400))
 
-    def addState(self, content:str, name:str, id:int, initPos:QPoint) -> StateWidget:
-        widget = StateWidget(content, name, id)
-        
+    def __addStateProxyWidget(self, widget: QWidget, initPos:QPoint) -> QGraphicsStateItem:
         close_btn_margins = 2 *2
-        proxyControl = self.addRect(
+
+        proxyControl = ProxyWidgetControll(
             initPos.x(), initPos.y(),
-            widget.width() - StateWidget.TITLE_HEIGHT - close_btn_margins, 20,
-            QPen(Qt.GlobalColor.transparent),
-            QBrush(Qt.GlobalColor.transparent)
+            widget.width() - StateWidget.TITLE_HEIGHT - close_btn_margins, 20
         )
-        proxyControl.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-        #proxyControl.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.addItem(proxyControl)
         
-        proxy = self.addWidget(widget)
-        proxy.setPos(initPos.x(), initPos.y())
-        proxy.setParentItem(proxyControl)
-        proxy.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
+        item = QGraphicsStateItem(proxyControl)
+        item.setWidget(widget)
+        item.setPos(initPos.x(), initPos.y())
+        item.setParentItem(proxyControl)
+        item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
+        
+        item.installSceneEventFilter(proxyControl)
 
-        return widget
+        return item
+    
+    def addState(self, content:str, name:str, id:int, initPos:QPoint) -> QGraphicsStateItem:
+        widget = StateWidget(content, name, id)
+        proxy = self.__addStateProxyWidget(widget, initPos)
 
+        return proxy
 class StateMachineQtController:
     __START_SIZE = QRect(0, 0, 2000, 2000)
     __START_SPACINS = 30
@@ -341,7 +453,7 @@ class StateMachineQtController:
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
         
-        self.__states: dict[int, StateWidget] = {}
+        self.__states: dict[int, QGraphicsStateItem] = {}
         data = EditorAPI.instance().get_all_project_states(self.__proj_id)
         
         for state_id in data.keys():
@@ -355,6 +467,12 @@ class StateMachineQtController:
                         StateMachineQtController.__START_SPACINS
                     )
             )
+
+        arrow = Arrow(QPointF(30, 200), QPointF(300, 200))
+        self.__scene.addItem(arrow)
+        #arrow.set_end_point(QPointF(300, 400))
+        self.__states[1].arrow_connect_as_start(arrow)
+        self.__states[2].arrow_connect_as_end(arrow)
 
     def __build_flows(self):
         self.__flows: dict[int, FlowWidget] = {}
