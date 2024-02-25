@@ -72,6 +72,7 @@ class Arrow(QGraphicsItem):
         self.__start_point = start
         self.__end_point = end
         self.setPos(self.__center())
+        self.setZValue(90)
         #self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
 
     def set_end_wgt(self, widget: QGraphicsItem):
@@ -85,8 +86,8 @@ class Arrow(QGraphicsItem):
         y - расстояние от указываемой точки вдоль линии
         '''
         return QPointF(
-            self.__pen_width * 2,
-            self.__pen_width * 5
+            self.__pen_width * 1.5,
+            self.__pen_width * 3.0
         )
     
     def __arrow_directions(self):
@@ -313,6 +314,7 @@ class QGraphicsStateItem(QGraphicsProxyWidget):
     def __init__(self, parent: QGraphicsItem = None):
         super().__init__(parent)
         self.__arrows = {"from": list[Arrow](), "to": list[Arrow]()}
+        self.setZValue(100)
         #self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
     
     def arrow_connect_as_start(self, arrow: Arrow):
@@ -467,6 +469,7 @@ class ProxyWidgetControll(QGraphicsRectItem):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
         self.setPen(QPen(Qt.GlobalColor.transparent))
         self.setBrush(QBrush(Qt.GlobalColor.transparent))
+        self.setZValue(100)
     
     def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value):
         if change in [
