@@ -101,20 +101,19 @@ class Arrow(QGraphicsItem):
         delta_x = a.x() - b.x()
         delta_y = a.y() - b.y()
 
-        ab_cctg =  delta_x/delta_y if delta_y != 0 else 0
+        ab_ctg =    delta_x/delta_y if delta_y != 0 else 0
         ab_tg =     delta_y/delta_x if delta_x != 0 else 0
         
-        cot: bool = abs(ab_cctg) > abs(ab_tg)
+        cot: bool = abs(ab_ctg) < abs(ab_tg)
         
         h_ptr = self.__dir_pointer_half()
-        
-        delta_tg =   h_ptr.y() / h_ptr.x() if cot else h_ptr.x() / h_ptr.y()
+        delta_tg = h_ptr.x() / h_ptr.y()
         
         return {
             'cot'  : cot,
-            'back' : ab_cctg            if cot else ab_tg,
-            'left' : ab_cctg + delta_tg if cot else ab_tg + delta_tg,
-            'right': ab_cctg - delta_tg if cot else ab_tg - delta_tg
+            'back' : ab_ctg                 if cot else ab_tg,
+            'left' : ab_ctg + delta_tg      if cot else ab_tg + delta_tg,
+            'right': ab_ctg - delta_tg      if cot else ab_tg - delta_tg
         }
     
     def __delta(self) -> QPointF:
@@ -277,12 +276,21 @@ class Arrow(QGraphicsItem):
         arrow_pos = self.mapFromScene(arrow_pos)
 
         # выбор одного из двух возможных решений сиснетмы уравнений
-        if self.__start_point.x() > self.__end_point.x():
-            painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
-            painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
+        if k['cot']:
+            if self.__start_point.y() > self.__end_point.y():
+                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
+            else:
+                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
+
         else:
-            painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
-            painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
+            if self.__start_point.x() > self.__end_point.x():
+                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
+            else:
+                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
 
     def set_start_point(self, point: QPointF):
         self.prepareGeometryChange()
