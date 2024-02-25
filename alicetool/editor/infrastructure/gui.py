@@ -85,8 +85,8 @@ class Arrow(QGraphicsItem):
         y - расстояние от указываемой точки вдоль линии
         '''
         return QPointF(
-            self.__pen_width * 3,
-            self.__pen_width * 5
+            self.__pen_width * 1,
+            self.__pen_width * 3
         )
     
     def __arrow_directions(self):
@@ -101,15 +101,20 @@ class Arrow(QGraphicsItem):
         delta_x = a.x() - b.x()
         delta_y = a.y() - b.y()
 
-        ab_tg = delta_y/delta_x if delta_x != 0 else  float ('inf') # TODO: переделать на sin или cos
+        ab_cctg =  delta_x/delta_y if delta_y != 0 else 0
+        ab_tg =     delta_y/delta_x if delta_x != 0 else 0
+        
+        cot: bool = abs(ab_cctg) > abs(ab_tg)
         
         h_ptr = self.__dir_pointer_half()
-        delta_tg = h_ptr.x() / h_ptr.y()
+        
+        delta_tg =   h_ptr.y() / h_ptr.x() if cot else h_ptr.x() / h_ptr.y()
         
         return {
-            'back' : ab_tg,
-            'left' : ab_tg + delta_tg,
-            'right': ab_tg - delta_tg
+            'cot'  : cot,
+            'back' : ab_cctg            if cot else ab_tg,
+            'left' : ab_cctg + delta_tg if cot else ab_tg + delta_tg,
+            'right': ab_cctg - delta_tg if cot else ab_tg - delta_tg
         }
     
     def __delta(self) -> QPointF:
@@ -156,7 +161,7 @@ class Arrow(QGraphicsItem):
     
     def __line_len(self) -> float:
         delt = self.__delta()
-        return sqrt(delt.x()**2 + delt.y())
+        return sqrt(delt.x()**2 + delt.y()**2)
 
     def paint( self,
         painter: QPainter,
@@ -178,15 +183,26 @@ class Arrow(QGraphicsItem):
         k = self.__arrow_directions() # в уравнении прямой 'y=kx' k = tg угла наклона
         
         h_ptr = self.__dir_pointer_half() # локальный алиас для короткого обращения к значению
-        r = sqrt(h_ptr.x()**2 + h_ptr.y()**2) # длина половинки указателя стрелки (гепотинуза)
-        r = r*5 # костыль. хз почему так получается ближе к правде
+        r = sqrt(h_ptr.x()**2.0 + h_ptr.y()**2.0) # длина половинки указателя стрелки (гепотинуза)
 
         ### решения систем уравнений прямой, проходящей через центр координат и окружности в центре координат для обеих половинок указателя стрелки
-        x_left = sqrt(r / (k['left']**2 + 1))
-        pointer_left_end = QPointF(x_left, k['left'] * x_left)
-        
-        x_right = sqrt(r / (k['right']**2 + 1))
-        pointer_right_end = QPointF(x_right, k['right'] * x_right)
+        if k['cot']:
+            #x_left = sqrt(r**2.0 / ((1 / k['left']**2.0) + 1.0))
+            #pointer_left_end = QPointF(x_left, x_left / k['left'])
+            #
+            #x_right = sqrt(r**2.0 / ((1 / k['right']**2.0) + 1.0))
+            #pointer_right_end = QPointF(x_right, x_right / k['right'])
+            y_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
+            pointer_left_end = QPointF(k['left'] * y_left, y_left)
+            
+            y_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
+            pointer_right_end = QPointF(k['right'] * y_right, y_right)
+        else:
+            x_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
+            pointer_left_end = QPointF(x_left, k['left'] * x_left)
+            
+            x_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
+            pointer_right_end = QPointF(x_right, k['right'] * x_right)
 
         if self.__end_wgt is None:
             arrow_pos:QPointF = self.__end_point
@@ -195,23 +211,67 @@ class Arrow(QGraphicsItem):
             wgt_half_size = QPointF(bounding.width(), bounding.height()) / 2.0
             wgt_center = self.__end_wgt.scenePos() + wgt_half_size
 
-            cos: float = self.__delta().x() / self.__line_len()
-            sin: float = self.__delta().y() / self.__line_len()
+            hw_cos: float = bounding.width() / sqrt(bounding.width()**2.0 + bounding.height()**2.0)
+            if self.__line_len() == 0:
+                sin = 1
+                cos = 0
+            else:
+                cos: float = self.__delta().x() / self.__line_len()
+                sin: float = self.__delta().y() / self.__line_len()
 
-            x_dir = 1.0 if self.__end_point.x() > self.__start_point.x() else -1.0
-            y_dir = 1.0 if self.__end_point.y() > self.__start_point.y() else -1.0
+            if hw_cos < cos:
+                ''' решение на вертикальных гранях '''
+                if cos == 0:
+                    y = 0
 
-            shift_x = wgt_half_size.x() * cos
-            if shift_x > wgt_half_size.x():
-                shift_x = wgt_half_size.x()
+                if self.__start_point.x() < self.__end_point.x():
+                    ''' решение на левой грани '''
+                    x = bounding.height() / 2.0
+                    if self.__start_point.y() > self.__end_point.y():
+                        ''' нижняя часть '''
+                        y = (bounding.width() * self.__delta().y()) / (self.__line_len() * 2 * (0 - cos))
+                    else:
+                        ''' верхняя часть '''
+                        y = (bounding.width() * self.__delta().y()) / (self.__line_len() * 2 * cos)
+                else:
+                    ''' решение на правой грани '''
+                    x = -(bounding.height() / 2.0)
+                    if self.__start_point.y() > self.__end_point.y():
+                        ''' нижняя часть '''
+                        y = (bounding.width() * self.__delta().y()) / (self.__line_len() * 2 * (0 - cos))
+                    else:
+                        ''' верхняя часть '''
+                        y = (bounding.width() * self.__delta().y()) / (self.__line_len() * 2 * cos)
 
-            shift_y = wgt_half_size.y() * sin
-            if shift_y > wgt_half_size.y():
-                shift_y = wgt_half_size.y()
+            else:
+                ''' решение на горизонтальных гранях '''
+                if sin == 0:
+                    x = 0
+                #else:
+                #    x = (bounding.height() * self.__delta().x()) / (self.__line_len() * 2 * sin)
+                
+                if self.__start_point.y() > self.__end_point.y():
+                    ''' решение на нижней грани '''
+                    y = -(bounding.height() / 2.0)
+                    if self.__start_point.x() > self.__end_point.x():
+                        ''' правая часть '''
+                        x = (bounding.height() * self.__delta().x()) / (self.__line_len() * 2 * (0-sin))
+                    else:
+                        ''' левая часть '''
+                        x = (bounding.height() * self.__delta().x()) / (self.__line_len() * 2 * sin)
+                else:
+                    ''' решение на верхней грани '''
+                    y = bounding.height() / 2.0
+                    if self.__start_point.x() > self.__end_point.x():
+                        ''' правая часть '''
+                        x = (bounding.height() * self.__delta().x()) / (self.__line_len() * 2 * (0-sin))
+                    else:
+                        ''' левая часть '''
+                        x = (bounding.height() * self.__delta().x()) / (self.__line_len() * 2 * sin)
 
             arrow_pos = QPointF(
-                wgt_center.x() - (shift_x * x_dir),
-                wgt_center.y() - (shift_y * y_dir)
+                wgt_center.x() - x,
+                wgt_center.y() - y
             )
 
         arrow_pos = self.mapFromScene(arrow_pos)
