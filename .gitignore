@@ -2,3 +2,6 @@
 alicetool.egg-info/*
 .vscode/launch.json
 .vscode/settings.json
+venv/
+env/
+.env
