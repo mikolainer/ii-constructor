@@ -540,7 +540,7 @@ class FlowWidget(QWidget):
                  parent = None
                 ):
         super().__init__(parent)
-        self.setStyleSheet("border: 1px solid black;")
+        self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
 
         self.__title = QLabel(name, self)
         self.__title.setWordWrap(True)
@@ -726,11 +726,12 @@ class ProjectQtController:
 class FlowList(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-
         self.__area = QScrollArea(self)
         self.__area.setWidgetResizable(True)
+        self.__area.setStyleSheet("background-color: #74869C;")
         
         lay = QVBoxLayout(self)
+        lay.setContentsMargins(0,0,0,0)
         lay.addWidget(self.__area)
     
     def setList(self, items :dict[int, FlowWidget]):
@@ -764,6 +765,7 @@ class SynonymsList(QWidget):
         self.__area.setWidgetResizable(True)
         
         lay = QVBoxLayout(self)
+        lay.setContentsMargins(0,0,0,0)
         lay.addWidget(self.__area)
     
     def setList(self, items :dict[int, SynonymWidget]):
@@ -795,6 +797,7 @@ class SynonymsGroupsList(QWidget):
         self.__area.setWidgetResizable(True)
         
         lay = QVBoxLayout(self)
+        lay.setContentsMargins(0,0,0,0)
         lay.addWidget(self.__area)
     
     def setList(self, items :dict[int, SynonymsGroupWidget]):
@@ -812,26 +815,59 @@ class SynonymsGroupsList(QWidget):
         lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
 
 class SynonymsEditor (QWidget):
+    __oldPos = None
+    
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent, Qt.WindowType.Window)
-
+        super().__init__(None, Qt.WindowType.FramelessWindowHint)
         self.setWindowTitle('Редактор синонимов')
-        self.setAttribute(Qt.WidgetAttribute.WA_LayoutUsesWidgetRect)
         
         main_lay = QVBoxLayout(self)
-        #main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setSpacing(0)
         
         splitter = QSplitter(
             self,
             Qt.Orientation.Horizontal
         )
 
-        self.__group_list = SynonymsGroupsList()
-        self.__synonyms_list = SynonymsList(self)
-        
+        self.__tool_bar = QWidget(self)
+        self.__tool_bar.setMinimumHeight(24)
+        main_lay.addWidget(self.__tool_bar, 0)
+        self.__tool_bar.setStyleSheet('background-color : #666;')
 
+        tool_bar_layout = QHBoxLayout(self.__tool_bar)
+        tool_bar_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+        tool_bar_layout.setSpacing(10)
+        tool_bar_layout.setContentsMargins(2, 2, 2, 2)
+
+        layout: QHBoxLayout = self.__tool_bar.layout()
+
+        tool_bar_layout.addSpacerItem(
+            QSpacerItem(
+                0,0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum
+            )
+        )
+
+        size = QSize(20,20)
+        self.__exit_btn: QPushButton = QPushButton(self)
+        self.__exit_btn.clicked.connect(lambda: self.close())
+        self.__exit_btn.setToolTip('Закрыть')
+        self.__exit_btn.setStatusTip('Закрыть редактор синонимов')
+        self.__exit_btn.setWhatsThis('Закрыть редактор синонимов')
+        self.__exit_btn.setFixedSize(size)
+        self.__exit_btn.setIcon(QIcon(QPixmap(":/icons/exit_norm.svg").scaled(10, 10)))
+        self.__exit_btn.setIconSize(size)
+        self.__exit_btn.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")
+        layout.addWidget(self.__exit_btn)
+
+        self.__group_list = SynonymsGroupsList(self)
         splitter.addWidget(self.__group_list)
+
+        self.__synonyms_list = SynonymsList(self)
         splitter.addWidget(self.__synonyms_list)
+        
         splitter.setStretchFactor(0,0)
         splitter.setStretchFactor(1,1)
         
@@ -843,6 +879,19 @@ class SynonymsEditor (QWidget):
 
     def set_groups(self, list):
         self.__synonyms_list.setList(list)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.__oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        if self.__oldPos is not None:
+            delta = event.globalPos() - self.__oldPos
+            self.move(self.pos() + delta)
+            self.__oldPos = event.globalPos()
+
+    def mouseReleaseEvent(self, event):
+        self.__oldPos = None
 
     def closeEvent(self, event: QCloseEvent) -> None:
         # это окно создаётся при старте и живёт до закрытия программы
@@ -960,14 +1009,20 @@ class MainWindow(QMainWindow):
 
     def __init__(self, flow_list: FlowList, workspaces: Workspaces, synonyms: SynonymsEditor, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
+        self.setStyleSheet("MainWindow{background-color: #74869C;}")
 
         self.__flow_list = flow_list
         self.__workspaces = workspaces
         self.__synonyms_editor = synonyms
 
-        self.__setup_ui()
+        self.__flow_list.setParent(self)
+        self.__workspaces.setParent(self)
+        self.__synonyms_editor.setParent(self)
+        self.__synonyms_editor.setWindowFlag(Qt.WindowType.Window, True)
 
+        self.__setup_ui()
         self.__setup_toolbar()
+
         self.show()
 
     def __make_project(self):
@@ -992,6 +1047,7 @@ class MainWindow(QMainWindow):
 
         main_lay = QVBoxLayout(self.centralWidget())
         main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setSpacing(0)
 
         self.__tool_bar = QWidget(self)
         self.__tool_bar.setMinimumHeight(64)
@@ -1083,7 +1139,7 @@ class MainWindow(QMainWindow):
                 btn.clicked.connect(lambda: self.close())
 
             btn.setToolTip(tool_tip)
-            btn.setToolTip(status_tip)
+            btn.setStatusTip(status_tip)
             btn.setWhatsThis(whats_this)
             btn.setFixedSize(size)
             btn.setIcon(icon)
