@@ -702,16 +702,24 @@ class StateMachineQtController:
         self.__flow_list.setList(self.__flows)
 
     def __build_synonyms(self):
-        self.__synonyms = dict[int, SynonymWidget]()
-        for i in range(4):
-            self.__synonyms[int(i)] = SynonymWidget()
+        data = EditorAPI.instance().get_all_project_synonyms(self.__proj_id)
 
         self.__synonym_groups = dict[int, SynonymsGroupWidget]()
-        for i in range(3):
-            self.__synonym_groups[int(i)] = SynonymsGroupWidget()
+        self.__synonyms = dict[int, list[SynonymWidget]]()
 
-        self.__synonyms_list.set_synonyms(self.__synonyms)
+        for group_id in data.keys():
+            self.__synonym_groups[int(group_id)] = SynonymsGroupWidget(data[group_id]['name'], data[group_id]['id'])
+            self.__synonyms[int(group_id)] = []
+
+            for val in data[group_id]['values']:
+                self.__synonyms[int(group_id)].append(SynonymWidget(val))
+
         self.__synonyms_list.set_groups(self.__synonym_groups)
+
+        start_select_id = 1
+        self.__synonym_groups[start_select_id].set_selected()
+        self.__synonyms_list.set_synonyms(self.__synonyms[start_select_id])
+        self.__synonyms_list.group_selected.connect(lambda id: self.__synonyms_list.set_synonyms(self.__synonyms[id]))
 
 class ProjectQtController:
     def __init__(self, id, flow_list):
@@ -751,11 +759,14 @@ class PathValidator(QValidator):
         super().__init__()
 
 class SynonymWidget(QWidget):
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, value:str, parent: QWidget = None):
         super().__init__(parent)
-        self.__title = QLabel("lol", self)
+        self.__edit = QLineEdit(value, self)
+        self.__edit.setStyleSheet('QLineEdit{background-color: #FFFFFF; border: 2px solid black; border-radius: 5px;}')
         main_lay = QVBoxLayout(self)
-        main_lay.addWidget(self.__title)
+        main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setSpacing(0)
+        main_lay.addWidget(self.__edit)
 
 class SynonymsList(QWidget):
     def __init__(self, parent: QWidget = None):
@@ -763,38 +774,73 @@ class SynonymsList(QWidget):
 
         self.__area = QScrollArea(self)
         self.__area.setWidgetResizable(True)
+        self.__area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
         
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0,0,0,0)
         lay.addWidget(self.__area)
+
+        self.__wrapper = QWidget(self)
+        self.__lay = QVBoxLayout(self.__wrapper)
+        self.__area.setWidget(self.__wrapper)
     
-    def setList(self, items :dict[int, SynonymWidget]):
-        wrapper = QWidget(self)
-        lay = QVBoxLayout(wrapper)
+    def setList(self, items :list[SynonymWidget]):
+        for wgt in items:
+            self.__lay.addWidget(wgt)
+        
+        to_remove = []
+        for item_idx in range(self.__lay.count()):
+            item = self.__lay.itemAt(item_idx)
+            if isinstance(item.widget(), SynonymWidget):
+                item.widget().setVisible(item.widget() in items)
+            else:
+                to_remove.append(item)
 
-        for wgt_id in items.keys():
-            lay.addWidget(items[wgt_id])
+        for item in to_remove:
+            if not item is None:
+                self.__lay.removeItem(item)
 
-        self.__area.setWidget(wrapper)
-
-        empty = lay.isEmpty()
-        count = lay.count()
-
-        lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
+        self.__lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
+        
 
 class SynonymsGroupWidget(QWidget):
-    def __init__(self, parent: QWidget = None):
+    clicked = Signal()
+
+    def __init__(self, name:str, id:int, parent: QWidget = None):
         super().__init__(parent)
-        self.__title = QLabel("kek", self)
+        self.__id = id
+        self.setStyleSheet('QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}')
+        self.__title = QLabel(name, self)
+        self.__title.setMinimumHeight(30)
+        font = self.__title.font()
+        font.setBold(True)
+        self.__title.setFont(font)
         main_lay = QVBoxLayout(self)
         main_lay.addWidget(self.__title)
+        main_lay.setContentsMargins(5,0,5,0)
+
+    def id(self):
+        return self.__id
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self.clicked.emit()
+        return super().mouseReleaseEvent(event)
+    
+    def set_selected(self, selected: bool = True):
+        self.setStyleSheet(
+            'QWidget{background-color: #FFFFFF; border: 2px solid #59A5FF;}'
+            if selected else
+            'QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}'
+        )
 
 class SynonymsGroupsList(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
         self.__area = QScrollArea(self)
+        self.__area.setContentsMargins(0,0,0,0)
         self.__area.setWidgetResizable(True)
+        self.__area.setStyleSheet('QScrollArea{background-color: #666666; border: none;}')
         
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0,0,0,0)
@@ -802,21 +848,37 @@ class SynonymsGroupsList(QWidget):
     
     def setList(self, items :dict[int, SynonymsGroupWidget]):
         wrapper = QWidget(self)
+        wrapper.setStyleSheet('QWidget{background-color: #666666;}')
         lay = QVBoxLayout(wrapper)
+        lay.setContentsMargins(0,0,0,0)
+        lay.setSpacing(3)
 
         for wgt_id in items.keys():
             lay.addWidget(items[wgt_id])
-
-        self.__area.setWidget(wrapper)
-
-        empty = lay.isEmpty()
-        count = lay.count()
+            items[wgt_id].clicked.connect(self.__group_selected)
 
         lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
+        self.__area.setWidget(wrapper)
+
+    group_selected = Signal(int)
+
+    @Slot()
+    def __group_selected(self):
+        selected:SynonymsGroupWidget = self.sender()
+        self.group_selected.emit(selected.id())
+
+        lay = self.__area.widget().layout()
+        for i in range(lay.count()):
+            item = lay.itemAt(i).widget()
+            if isinstance(item, SynonymsGroupWidget):
+                item.set_selected(item is selected)
+
 
 class SynonymsEditor (QWidget):
     __oldPos = None
     
+    group_selected = Signal(int)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
         self.setWindowTitle('Редактор синонимов')
@@ -863,6 +925,7 @@ class SynonymsEditor (QWidget):
         layout.addWidget(self.__exit_btn)
 
         self.__group_list = SynonymsGroupsList(self)
+        self.__group_list.group_selected.connect(lambda id: self.group_selected.emit(id))
         splitter.addWidget(self.__group_list)
 
         self.__synonyms_list = SynonymsList(self)
@@ -875,10 +938,10 @@ class SynonymsEditor (QWidget):
         self.resize(600, 500)
         
     def set_synonyms(self, list):
-        self.__group_list.setList(list)
+        self.__synonyms_list.setList(list)
 
     def set_groups(self, list):
-        self.__synonyms_list.setList(list)
+        self.__group_list.setList(list)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

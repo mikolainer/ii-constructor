@@ -51,16 +51,16 @@ class StateMachine(StateMachineInterface):
         return self.__synonyms.create_synonyms(data)
     
     def read_synonyms(self, id: int) -> str:
-        return self.__synonyms.create_synonyms(id)
+        return self.__synonyms.read_synonyms(id)
 
     def update_synonyms(self, id: int, new_data):
-        return self.__synonyms.create_synonyms(id, new_data)
+        return self.__synonyms.update_synonyms(id, new_data)
 
     def delete_synonyms(self, id: int):
-        return self.__synonyms.create_synonyms(id)
+        return self.__synonyms.delete_synonyms(id)
 
     def synonyms(self) -> set[int]:
-        return self.__synonyms.create_synonyms()
+        return self.__synonyms.synonyms()
 
     def set_synonyms_notifier(self, notifier: SynonymsActionsNotifier):
         return self.__synonyms.set_synonyms_notifier(notifier)
