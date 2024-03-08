@@ -28,9 +28,40 @@ class Command:
 class State:
     TEXT_MAX_LEN:int = 1024
 
-    __steps: list[Command] = []
+    __id: int
+    __steps: list[Command]
     __content: str = 'text'
     __name: str = None
+
+    def id(self):
+        return self.__id
+    
+    def name(self):
+        return self.__name
+    
+    def content(self):
+        return self.__content
+    
+    def steps(self):
+        return self.__steps
+
+    def __init__(self, id: int, **kwargs):
+        if type(id) is not int:
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
+        
+        self.__id = id
+        self.__steps = []
+        self.update(**kwargs)
+
+        if 'name' not in kwargs.keys():
+            self.__name: str = str(self.__id)
+
+    def update(self, **kwargs):
+        if 'name' in kwargs.keys():
+            self.__name: str = kwargs['name']
+
+        if 'content' in kwargs.keys():
+            self.__content: str = kwargs['content']
 
     def __str__(self):
         next_states = []
@@ -45,8 +76,8 @@ class State:
             f'steps={steps}',
             f'content={self.__content}',
         ])
-
-    def parse(data:str):
+    
+    def parse(data:str) -> dict:
         _data = {}
 
         if data == '':
@@ -84,90 +115,51 @@ class State:
                 quoted :bool = len(value) >= 2 and value[0] == '"' and value[-1] == '"'
                 _data[key] = value[1:-1] if quoted else value
 
-#        if 'id' not in _data.keys():
-#            raise AttributeError('Плохие данные: нет обязательного ключа "id"')
-
         return _data
-
-    def __init__(self, id: int, **kwargs):
-        if type(id) is not int:
-            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
-        
-        self.__id: int = id
-        self.update(**kwargs)
-
-        if 'name' not in kwargs.keys():
-            self.__name: str = str(self.__id)
-
-    def update(self, **kwargs):
-        if 'name' in kwargs.keys():
-            self.__name: str = kwargs['name']
-
-        if 'content' in kwargs.keys():
-            self.__content: str = kwargs['content']
-
-    def id(self):
-        return self.__id
     
-    def name(self):
-        return self.__name
-    
-    def content(self):
-        return self.__content
-    
-    def steps(self):
-        return self.__steps
-    
-    def new_step(self, nextState: State, cmd: Synonyms) -> Command:
+    def new_step(self, next_state_id: int, synonyms_id: int):
         pass
 
-    def remove_step(self, cmd: Command):
+    def remove_step(self, synonyms_id: int):
         pass
 
 class Flow:
-    __name :str = 'Flow name'
-    __description :str = 'Flow description'
-    __required :bool = False
-    __enter :Command = None
+    __id :int
+    __name :str
+    __description :str
+    __required :bool
+    __enter :Command
 
+    def id(self) -> int:
+        return self.__id
+    
+    def name(self) -> str:
+        return str(self.__id) if self.__name is None else f'"{self.__name}"'
+    
+    def description(self) -> str:
+        return '' if self.__description is None else f'"{self.__description}"'
+
+    def enter(self) -> Command:
+        return self.__enter
+
+    def is_required(self) -> bool:
+        return 'true' if self.__required else 'false'
+    
+    def call_names(self) -> list[str]:
+        return self.__enter.cmd().values()
+
+    
     def __init__(self, id: int, **kwargs):
         if type(id) is not int:
             raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
         
-        self.__id :int = id
+        self.__id = id
+        self.__name = 'Flow name'
+        self.__description = 'Flow description'
+        self.__required = False
+        self.__enter = None
 
-        arg_names = kwargs.keys()
-
-        if 'name' in arg_names:
-            if type(kwargs['name']) is not str:
-                raise TypeError('"name" должен быть строкой')
-            
-            if kwargs['name'][0] == '"' and kwargs['name'][-1] == '"':
-                value = kwargs['name'][1:-1]
-            else:
-                value = kwargs['name']
-
-            self.__name = value
-
-        if 'description' in arg_names:
-            if type(kwargs['description']) is not str:
-                raise TypeError('"description" должен быть строкой')
-            
-            if kwargs['description'][0] == '"' and kwargs['description'][-1] == '"':
-                value = kwargs['description'][1:-1]
-            else:
-                value = kwargs['description']
-            self.__description = value
-
-        if 'required' in arg_names:
-            if type(kwargs['required']) is not bool:
-                raise TypeError('"required" должен быть булевым')
-            self.__required: str = kwargs['required']
-
-        if 'enter' in arg_names:
-            if type(kwargs['enter']) is not Command:
-                raise TypeError('"enter" должен быть объектом класса Command')
-            self.__enter: Command = kwargs['enter']
+        self.update(**kwargs)
 
     def __str__(self):
         is_required = 'true' if self.__required else 'false'
@@ -183,7 +175,7 @@ class Flow:
             f'enter_state_id={self.__enter.next_state().id()}'
         ])
 
-    def parse(data:str):
+    def parse(data:str) -> dict:
         _data = {}
 
         if data == '':
@@ -226,28 +218,93 @@ class Flow:
 
         return _data
 
-    def id(self) -> int:
-        return self.__id
-    
-    def name(self) -> str:
-        return str(self.__id) if self.__name is None else f'"{self.__name}"'
-    
-    def description(self) -> str:
-        return '' if self.__description is None else f'"{self.__description}"'
+    def update(self, **kwargs):
+        arg_names = kwargs.keys()
 
-    def enter(self) -> Command:
-        return self.__enter
+        if 'name' in arg_names:
+            if type(kwargs['name']) is not str:
+                raise TypeError('"name" должен быть строкой')
+            
+            if kwargs['name'][0] == '"' and kwargs['name'][-1] == '"':
+                value = kwargs['name'][1:-1]
+            else:
+                value = kwargs['name']
 
-    def is_required(self) -> bool:
-        return 'true' if self.__required else 'false'
-    
-    def call_names(self) -> list[str]:
-        return self.__enter.cmd().values()
+            self.__name = value
+
+        if 'description' in arg_names:
+            if type(kwargs['description']) is not str:
+                raise TypeError('"description" должен быть строкой')
+            
+            if kwargs['description'][0] == '"' and kwargs['description'][-1] == '"':
+                value = kwargs['description'][1:-1]
+            else:
+                value = kwargs['description']
+            self.__description = value
+
+        if 'required' in arg_names:
+            if type(kwargs['required']) is not bool:
+                raise TypeError('"required" должен быть булевым')
+            self.__required: str = kwargs['required']
+
+        if 'enter' in arg_names:
+            if type(kwargs['enter']) is not Command:
+                raise TypeError('"enter" должен быть объектом класса Command')
+            self.__enter: Command = kwargs['enter']
 
 class Synonyms:
-    __name :str = None
-    __values :list[str] = []
-    __commands :list[Command] = []
+    __id :int
+    __name :str
+    __values :list[str]
+    __commands :list[Command]
+
+    def id(self) -> int:
+        return self.__id
+
+    def name(self):
+        return str(self.__id) if self.__name is None else self.__name
+    
+    def values(self) -> list[str]:
+        return self.__values.copy()
+
+    def commands(self) -> list[Command]:
+        return self.__commands.copy()
+
+    def __init__(self, id: int, **kwargs):
+        if type(id) is not int:
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
+        
+        self.__id = id
+        self.__name = None
+        self.__values = []
+        self.__commands = []
+
+        arg_names = kwargs.keys()
+
+        if 'name' in arg_names:
+            if not isinstance(kwargs['name'], str):
+                raise TypeError('"name" должен быть строкой')
+            self.__name = kwargs['name']
+
+        if 'values' in arg_names:
+            if not (
+                isinstance(kwargs['values'], list) and
+                all(isinstance(x, str) for x in kwargs['values'])
+            ):
+                raise TypeError('"values" должен быть списком строк')
+           
+            self.__values = kwargs['values']
+
+        if 'commands' in arg_names:
+            if not (
+                isinstance(kwargs['commands'], list) and
+                all(isinstance(x, Command) for x in kwargs['commands'])
+            ):
+                raise TypeError('"commands" должен быть списком объектов Command')
+            
+            self.__commands = kwargs['commands']
+        else:
+            self.__commands = []
 
     def __str__(self):
         if self.__values == []:
@@ -262,7 +319,7 @@ class Synonyms:
             f'values={values_str}',
         ])
 
-    def parse(data:str):
+    def parse(data:str) -> dict:
         _data = {}
 
         if data == '':
@@ -313,45 +370,6 @@ class Synonyms:
 
         return _data
 
-    def __init__(self, id: int, **kwargs):
-        if type(id) is not int:
-            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
-        
-        self.__id :int = id
-
-        arg_names = kwargs.keys()
-
-        if 'name' in arg_names:
-            if not isinstance(kwargs['name'], str):
-                raise TypeError('"name" должен быть строкой')
-            self.__name = kwargs['name']
-
-        if 'values' in arg_names:
-            if not (
-                isinstance(kwargs['values'], list) and
-                all(isinstance(x, str) for x in kwargs['values'])
-            ):
-                raise TypeError('"values" должен быть списком строк')
-           
-            self.__values = kwargs['values']
-
-        if 'commands' in arg_names:
-            if not (
-                isinstance(kwargs['commands'], list) and
-                all(isinstance(x, Command) for x in kwargs['commands'])
-            ):
-                raise TypeError('"commands" должен быть списком объектов Command')
-            
-            self.__commands = kwargs['commands']
-        else:
-            self.__commands = []
-        
-    def id(self) -> int:
-        return self.__id
-
-    def name(self):
-        return str(self.__id) if self.__name is None else self.__name
-
     def add_value(self, value: str):
         if not isinstance(value, str):
             raise TypeError('"value" должен быть строкой')
@@ -372,11 +390,8 @@ class Synonyms:
             raise ValueError(f'команда {cmd} не связана с этими синонимами')
         self.__commands.remove(cmd)
 
-    def values(self) -> list[str]:
-        return self.__values.copy()
-
-    def commands(self) -> list[Command]:
-        return self.__commands.copy()
+    def set_name(self, new_name:str):
+        self.__name = new_name
 
 ''' интерфейсы обратной связи '''
 
