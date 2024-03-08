@@ -2,9 +2,12 @@ from alicetool.editor.domain.core import *
 from alicetool.editor.domain.interfaces import *
 
 class FlowFactory(FlowInterface):
+    __items: dict[int, Flow]
+    __notifier: FlowActionsNotifier | None
+
     def __init__(self):
-        self.__items: dict[int, Flow] = {}
-        self.__notifier: FlowActionsNotifier = None
+        self.__items = {}
+        self.__notifier = None
 
     def flow_obj(self, id: int) -> Flow:
         if id not in self.__items.keys():
@@ -73,9 +76,12 @@ class FlowFactory(FlowInterface):
         self.__notifier = notifier
 
 class SynonymsFactory(SynonymsInterface):
+    __items: dict[int, Synonyms]
+    __notifier: SynonymsActionsNotifier
+
     def __init__(self):
-        self.__items: dict[int, Synonyms] = {}
-        self.__notifier: SynonymsActionsNotifier = None
+        self.__items = {}
+        self.__notifier = None
 
     def synonyms_obj(self, id: int) -> Synonyms:
         if id not in self.__items.keys():
@@ -144,9 +150,12 @@ class SynonymsFactory(SynonymsInterface):
         self.__notifier = notifier
 
 class StateFactory(StateInterface):
+    __items: dict[int, State]
+    __notifier: StateActionsNotifier
+
     def __init__(self):
-        self.__items: dict[int, State] = {}
-        self.__notifier: StateActionsNotifier = None
+        self.__items = {}
+        self.__notifier = None
 
     def state_obj(self, id: int) -> State:
         if id not in self.__items.keys():
@@ -182,7 +191,6 @@ class StateFactory(StateInterface):
 
         return self.__items[id].__str__()
     
-
     def update_state(self, id: int, new_data):
         ''' обновить состояние '''
 
