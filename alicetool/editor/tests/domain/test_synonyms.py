@@ -1,5 +1,6 @@
 import pytest
-from alicetool.editor.domain.core import Synonyms, SynonymsFactory, State, Command
+from alicetool.editor.domain.core import Synonyms, State, Command
+from alicetool.editor.domain.factories import SynonymsFactory
 
 def test_synonyms_constructor():
     '''

@@ -1,7 +1,6 @@
 from alicetool.editor.domain.core import *
-
-class StateMachineInterface(StateInterface, SynonymsInterface, FlowInterface):
-    pass
+from alicetool.editor.domain.interfaces import *
+from alicetool.editor.domain.factories import *
 
 class StateMachine(StateMachineInterface):
     def __init__(self):
@@ -83,10 +82,6 @@ class StateMachine(StateMachineInterface):
 
     def set_flow_notifier(self, notifier: FlowActionsNotifier):
         return self.__content.set_flow_notifier(notifier)
-
-
-class StateMachineNotifier(StateActionsNotifier, SynonymsActionsNotifier, FlowActionsNotifier):
-    pass
 
 class Project:
     __name: str = 'scenario name'
@@ -198,52 +193,6 @@ class Project:
         self.__content.set_flow_notifier(notifier)
         self.__content.set_state_notifier(notifier)
         self.__content.set_synonyms_notifier(notifier)
-
-class ProjectsActionsNotifier:
-    def created(self, id:int, data):
-        raise NotImplementedError()
-
-    def saved(self, id:int, data):
-        raise NotImplementedError()
-
-    def updated(self, id:int, new_data):
-        raise NotImplementedError()
-
-    def removed(self, id:int):
-        raise NotImplementedError()
-
-class ProjectsInterface:
-    def create(self, data) -> int:
-        raise NotImplementedError()
-    
-    def read(self, id: int):
-        raise NotImplementedError()
-    
-    def read(self, db_name: str):
-        raise NotImplementedError()
-    
-    def update(self, id: int, data):
-        raise NotImplementedError()
-    
-    def delete(self, id: int):
-        raise NotImplementedError()
-    
-    def open_file(self, path: str):
-        raise NotImplementedError()
-    
-    def save_file(self, id: int):
-        raise NotImplementedError()
-    
-    def publish(self, id: int):
-        raise NotImplementedError()
-    
-    def set_notifier(self, notifier: ProjectsActionsNotifier):
-        raise NotImplementedError()
-    
-    def set_content_notifier(self, 
-        project_id: int, notifier: StateMachineNotifier
-    ):
-        raise NotImplementedError()
 
 class ProjectsManager(ProjectsInterface):
     __items: dict[int, Project] = {}

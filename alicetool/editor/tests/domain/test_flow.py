@@ -1,4 +1,5 @@
-from alicetool.editor.domain.core import Flow, FlowFactory, Command, State, Synonyms
+from alicetool.editor.domain.core import *
+from alicetool.editor.domain.factories import FlowFactory
 
 DEFAULT_FLOW_NAME = 'Flow name'
 DEFAULT_FLOW_DESCRIPTION = 'Flow description'

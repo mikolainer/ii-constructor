@@ -1,4 +1,5 @@
-from alicetool.editor.domain.core import State, StateFactory
+from alicetool.editor.domain.core import State
+from alicetool.editor.domain.factories import StateFactory
 
 DEFAULT_STATE_CONTENT: str = State._State__content # hack for tests
 

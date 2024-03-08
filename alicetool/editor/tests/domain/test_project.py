@@ -3,15 +3,18 @@ from alicetool.editor.domain.projects import (
     Project,
     ProjectsManager,
     StateMachine,
+)
+
+from alicetool.editor.domain.interfaces import(
     StateMachineInterface,
     FlowInterface,
-    StateInterface
+    StateInterface,
 )
 
 from alicetool.editor.domain.core import (
     Flow,
     State,
-    Command
+    Command,
 )
 
 def test_project_constructor():
