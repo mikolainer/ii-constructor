@@ -111,19 +111,17 @@ class Project:
         return self.__file_path
     
     def __init__(self, id:int, **kwargs):
-        self.__content = StateMachine()
-
-        if type(id) is not int:
-            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
-        
         self.__id = id
         self.__name = 'scenario name'
         self.__db_name = 'db_name'
         self.__file_path = 'path.proj'
-        self.__content = None
+        self.__content = StateMachine()
         self.__notifier = None
         self.__entry_point = None
 
+        if type(id) is not int:
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
+        
         arg_names = kwargs.keys()
 
         if 'name' in arg_names:
