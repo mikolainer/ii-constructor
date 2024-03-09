@@ -67,6 +67,7 @@ class State:
             f'content={self.__content}',
         ])
     
+    @staticmethod
     def parse(data:str) -> dict:
         _data = {}
 
@@ -165,6 +166,7 @@ class Flow:
             f'enter_state_id={self.__enter.next_state().id()}'
         ])
 
+    @staticmethod
     def parse(data:str) -> dict:
         _data = {}
 
@@ -309,6 +311,7 @@ class Synonyms:
             f'values={values_str}',
         ])
 
+    @staticmethod
     def parse(data:str) -> dict:
         _data = {}
 

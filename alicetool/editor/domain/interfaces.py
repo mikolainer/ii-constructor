@@ -1,5 +1,3 @@
-from alicetool.editor.domain.core import Command
-
 ''' интерфейсы обратной связи '''
 
 class FlowActionsNotifier:
@@ -84,7 +82,12 @@ class SynonymsInterface:
         raise NotImplementedError()
     
 class StateMachineInterface(StateInterface, SynonymsInterface, FlowInterface):
-    ...
+    def states_interface(self) -> StateInterface:
+        raise NotImplementedError()
+    def synonyms_interface(self) -> SynonymsInterface:
+        raise NotImplementedError()
+    def content_interface(self) -> FlowInterface:
+        raise NotImplementedError()
 
 class ProjectsInterface:
     def create(self, data) -> int:

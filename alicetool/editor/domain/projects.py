@@ -3,10 +3,14 @@ from alicetool.editor.domain.interfaces import *
 from alicetool.editor.domain.factories import *
 
 class StateMachine(StateMachineInterface):
+    __states: StateFactory
+    __synonyms: SynonymsFactory
+    __content: FlowFactory
+
     def __init__(self):
-        self.__states: StateFactory = StateFactory()
-        self.__synonyms: SynonymsFactory = SynonymsFactory()
-        self.__content: FlowFactory = FlowFactory()
+        self.__states = StateFactory()
+        self.__synonyms = SynonymsFactory()
+        self.__content = FlowFactory()
 
     def get_state(self, id) -> State:
         return self.__states.state_obj(id)
@@ -17,6 +21,10 @@ class StateMachine(StateMachineInterface):
     def get_flow(self, id) -> Flow:
         return self.__content.flow_obj(id)
     
+    ### interfaces implementation ###
+
+    # state machine
+
     def states_interface(self) -> StateInterface:
         return self.__states
 
@@ -84,12 +92,67 @@ class StateMachine(StateMachineInterface):
         return self.__content.set_flow_notifier(notifier)
 
 class Project:
-    __name: str = 'scenario name'
-    __db_name: str = 'db_name'
-    __file_path: str = 'path.proj'
-    __content: StateMachine = None
-    __entry_point: State = None
-    __notifier: StateMachineNotifier = None
+    __id: int
+    __name: str
+    __db_name: str
+    __file_path: str
+    __content: StateMachine | None
+    __notifier: StateMachineNotifier | None
+    __entry_point: State | None
+
+    def id(self):
+        return self.__id
+    def name(self) -> str:
+        return self.__name
+
+    def db_name(self) -> str:
+        return self.__db_name
+    def file_path(self) -> str:
+        return self.__file_path
+    
+    def __init__(self, id:int, **kwargs):
+        self.__content = StateMachine()
+
+        if type(id) is not int:
+            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
+        
+        self.__id = id
+        self.__name = 'scenario name'
+        self.__db_name = 'db_name'
+        self.__file_path = 'path.proj'
+        self.__content = None
+        self.__notifier = None
+        self.__entry_point = None
+
+        arg_names = kwargs.keys()
+
+        if 'name' in arg_names:
+            quoted = len(kwargs['name']) > 2 and kwargs['name'][0] == '"' and kwargs['name'][-1] == '"'
+            value = kwargs['name'][1:-1] if quoted else kwargs['name']
+            self.__name = value
+        
+        if 'db_name' in arg_names:
+            quoted = len(kwargs['db_name']) > 2 and kwargs['db_name'][0] == '"' and kwargs['db_name'][-1] == '"'
+            value = kwargs['db_name'][1:-1] if quoted else kwargs['db_name']
+            self.__db_name = value
+
+        if 'file_path' in arg_names:
+            quoted = len(kwargs['file_path']) > 2 and kwargs['file_path'][0] == '"' and kwargs['file_path'][-1] == '"'
+            value = kwargs['file_path'][1:-1] if quoted else kwargs['file_path']
+            self.__file_path = value
+
+        hello_msg = ''
+        if 'hello' in arg_names:
+            quoted = len(kwargs['hello']) > 2 and kwargs['hello'][0] == '"' and kwargs['hello'][-1] == '"'
+            hello_msg = kwargs['hello'][1:-1] if quoted else kwargs['hello']
+            if len(hello_msg) > 1024:
+                hello_msg = hello_msg[:1024]
+
+        self.__entry_point = self.__content.get_state(
+            self.__content.states_interface().create_state(
+                f'name=Enter; content="{hello_msg}"'
+            )
+        )
     
     def __str__(self):
         return '; '.join([
@@ -132,56 +195,6 @@ class Project:
 
         return _data
 
-    def __init__(self, id:int, **kwargs):
-        self.__content = StateMachine()
-
-        if type(id) is not int:
-            raise TypeError('первый позиционный аргумент "id" должен быть целым числом')
-        
-        self.__id: int = id
-
-        arg_names = kwargs.keys()
-
-        if 'name' in arg_names:
-            quoted = len(kwargs['name']) > 2 and kwargs['name'][0] == '"' and kwargs['name'][-1] == '"'
-            value = kwargs['name'][1:-1] if quoted else kwargs['name']
-            self.__name = value
-        
-        if 'db_name' in arg_names:
-            quoted = len(kwargs['db_name']) > 2 and kwargs['db_name'][0] == '"' and kwargs['db_name'][-1] == '"'
-            value = kwargs['db_name'][1:-1] if quoted else kwargs['db_name']
-            self.__db_name = value
-
-        if 'file_path' in arg_names:
-            quoted = len(kwargs['file_path']) > 2 and kwargs['file_path'][0] == '"' and kwargs['file_path'][-1] == '"'
-            value = kwargs['file_path'][1:-1] if quoted else kwargs['file_path']
-            self.__file_path = value
-
-        hello_msg = ''
-        if 'hello' in arg_names:
-            quoted = len(kwargs['hello']) > 2 and kwargs['hello'][0] == '"' and kwargs['hello'][-1] == '"'
-            hello_msg = kwargs['hello'][1:-1] if quoted else kwargs['hello']
-            if len(hello_msg) > 1024:
-                hello_msg = hello_msg[:1024]
-
-        self.__entry_point = self.__content.get_state(
-            self.__content.states_interface().create_state(
-                f'name=Enter; content="{hello_msg}"'
-            )
-        )
-
-    def id(self):
-        return self.__id
-
-    def name(self) -> str:
-        return self.__name
-
-    def db_name(self) -> str:
-        return self.__db_name
-
-    def file_path(self) -> str:
-        return self.__file_path
-
     def content_interface(self) -> StateMachineInterface:
         return self.__content
     
@@ -195,10 +208,11 @@ class Project:
         self.__content.set_synonyms_notifier(notifier)
 
 class ProjectsManager(ProjectsInterface):
+    ''' только класс EditorAPI может быть дружественным вне домена '''
     __items: dict[int, Project] = {}
-    __notifier: ProjectsActionsNotifier = None
+    __notifier: ProjectsActionsNotifier | None = None
 
-    def project(self, id: int) -> Project:
+    def __project(self, id: int) -> Project:
         if id not in self.__items.keys():
             raise ValueError(f'Проект с id={id} не существует')
         
@@ -214,6 +228,7 @@ class ProjectsManager(ProjectsInterface):
     def instance() -> ProjectsInterface:
         return ProjectsManager()
     
+    ### interface implementation ###
     def create(self, data) -> int:
         id = 1
         
@@ -296,12 +311,6 @@ class ProjectsManager(ProjectsInterface):
 
         return self.__items[id].__str__()
     
-    # def read(self, db_name: str):
-    #     pass
-    
-    # def update(self, id: int, data):
-    #     pass
-    
     def delete(self, id: int):
         if id not in self.__items.keys():
             raise ValueError(f'Проект с id={id} не существует')
@@ -310,15 +319,6 @@ class ProjectsManager(ProjectsInterface):
 
         if self.__notifier is not None:
             self.__notifier.removed(id)
-    
-    # def open_file(self, path: str):
-    #     pass
-    
-    # def save_file(self, id: int):
-    #     pass
-    
-    # def publish(self, id: int):
-    #     pass
     
     def set_notifier(self, notifier: ProjectsActionsNotifier):
         if not issubclass(type(notifier), ProjectsActionsNotifier):
@@ -329,4 +329,4 @@ class ProjectsManager(ProjectsInterface):
     def set_content_notifier(self, 
         project_id: int, notifier: StateMachineNotifier
     ):  
-        self.project(project_id).set_notifier(notifier)
+        self.__project(project_id).set_notifier(notifier)

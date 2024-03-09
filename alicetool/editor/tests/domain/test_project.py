@@ -2,13 +2,15 @@ import pytest
 from alicetool.editor.domain.projects import (
     Project,
     ProjectsManager,
-    StateMachine,
+    StateMachineInterface,
 )
 
 from alicetool.editor.domain.interfaces import(
     StateMachineInterface,
     FlowInterface,
     StateInterface,
+    StateMachineInterface,
+    ProjectsInterface
 )
 
 from alicetool.editor.domain.core import (
@@ -101,7 +103,7 @@ def test_newProject():
     assert proj.db_name() == 'Test123'
     assert proj.file_path() == 'Test123'
     
-    content_i: StateMachine = proj.content_interface()
+    content_i: StateMachineInterface = proj.content_interface()
     
     flow_id_set = content_i.flows()
     assert len(flow_id_set) == 2, 'help, info'

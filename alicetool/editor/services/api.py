@@ -1,5 +1,6 @@
-from alicetool.editor.domain.projects import ProjectsManager, ProjectsActionsNotifier, StateMachineNotifier, StateMachineInterface
 from alicetool.editor.domain.core import State, Flow, Synonyms
+from alicetool.editor.domain.projects import ProjectsManager
+from alicetool.editor.domain.interfaces import ProjectsActionsNotifier, StateMachineNotifier, StateMachineInterface
 
 class EditorAPI:
     STATE_TEXT_MAX_LEN = State.TEXT_MAX_LEN
@@ -29,7 +30,7 @@ class EditorAPI:
 
     def get_all_project_synonyms(self, project_id: int) -> dict:
         state_machinne: StateMachineInterface = (
-            ProjectsManager().project(project_id).content_interface()
+            ProjectsManager()._ProjectsManager__project(project_id).content_interface()
         )
         result = {}
         for synonym_group_id in state_machinne.synonyms():
@@ -41,7 +42,7 @@ class EditorAPI:
 
     def get_all_project_states(self, project_id: int) -> dict:
         state_machinne: StateMachineInterface = (
-            ProjectsManager().project(project_id).content_interface()
+            ProjectsManager()._ProjectsManager__project(project_id).content_interface()
         )
         result = {}
         for state_id in state_machinne.states():
@@ -53,7 +54,7 @@ class EditorAPI:
     
     def get_all_project_flows(self, project_id: int) -> dict:
         state_machinne: StateMachineInterface = (
-            ProjectsManager().project(project_id).content_interface()
+            ProjectsManager()._ProjectsManager__project(project_id).content_interface()
         )
         result = {}
         for flow_id in state_machinne.flows():
