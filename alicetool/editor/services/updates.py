@@ -29,7 +29,6 @@ class StateMachineGuiRefresher(StateMachineNotifier):
     def flow_removed(self, project_id :int, id :int):
         ...
         
-
 class EditorGuiRefresher(ProjectsActionsNotifier):
     def __init__(self, workspaces: Workspaces, set_content_refresher_callback):
         self.__workspaces = workspaces
