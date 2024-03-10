@@ -2,7 +2,6 @@ import sys
 from math import sqrt, pi
 
 from PySide6.QtCore import (
-    QEvent,
     Qt,
     QSize,
     QPoint,
@@ -25,17 +24,14 @@ from PySide6.QtGui import (
     QShowEvent,
     QValidator,
     QFont,
-    QCursor,
     QTransform,
     QColor,
-    QPalette,
     QBrush,
     QPen,
     QPainter
 )
 
 from PySide6.QtWidgets import (
-    QGraphicsSceneDragDropEvent,
     QGraphicsSceneMouseEvent,
     QMessageBox,
     QMainWindow,
@@ -54,11 +50,9 @@ from PySide6.QtWidgets import (
     QLabel,
     QGraphicsView,
     QGraphicsScene,
-    QGraphicsWidget,
     QGraphicsItem,
     QListView,
     QSpacerItem,
-    QGraphicsLineItem,
     QStyleOptionGraphicsItem,
     QGraphicsProxyWidget,
     QGraphicsRectItem,
