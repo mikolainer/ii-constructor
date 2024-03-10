@@ -522,6 +522,12 @@ class StateWidget(QWidget):
         return pos
 
 class FlowWidget(QWidget):
+    __title: QLabel
+    __description: QLabel
+    __synonyms_name: QLabel
+    __synonyms_list: QListView
+    __slider_btn: QPushButton
+
     @Slot()
     def __on_slider_click(self):
         self.__slider_btn.setText("^" if self.__slider_btn.isChecked() else "v")
@@ -739,6 +745,8 @@ class ProjectQtController:
         return self.__editor
 
 class FlowList(QWidget):
+    __area: QScrollArea
+
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.__area = QScrollArea(self)
@@ -762,6 +770,8 @@ class FlowList(QWidget):
         lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
 
 class SynonymWidget(QWidget):
+    __edit: QLineEdit
+
     def __init__(self, value:str, parent: QWidget = None):
         super().__init__(parent)
         self.__edit = QLineEdit(value, self)
@@ -772,6 +782,9 @@ class SynonymWidget(QWidget):
         main_lay.addWidget(self.__edit)
 
 class SynonymsList(QWidget):
+    __area: QScrollArea
+    __lay: QVBoxLayout
+
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
@@ -783,9 +796,9 @@ class SynonymsList(QWidget):
         lay.setContentsMargins(0,0,0,0)
         lay.addWidget(self.__area)
 
-        self.__wrapper = QWidget(self)
-        self.__lay = QVBoxLayout(self.__wrapper)
-        self.__area.setWidget(self.__wrapper)
+        wrapper = QWidget(self)
+        self.__lay = QVBoxLayout(wrapper)
+        self.__area.setWidget(wrapper)
     
     def setList(self, items :list[SynonymWidget]):
         for wgt in items:
@@ -806,6 +819,12 @@ class SynonymsList(QWidget):
         self.__lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
         
 class SynonymsGroupWidget(QWidget):
+    __id: int
+    __title: QLabel
+
+    def id(self):
+        return self.__id
+
     clicked = Signal()
 
     def __init__(self, name:str, id:int, parent: QWidget = None):
@@ -820,13 +839,6 @@ class SynonymsGroupWidget(QWidget):
         main_lay = QVBoxLayout(self)
         main_lay.addWidget(self.__title)
         main_lay.setContentsMargins(5,0,5,0)
-
-    def id(self):
-        return self.__id
-
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        self.clicked.emit()
-        return super().mouseReleaseEvent(event)
     
     def set_selected(self, selected: bool = True):
         self.setStyleSheet(
@@ -835,7 +847,13 @@ class SynonymsGroupWidget(QWidget):
             'QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}'
         )
 
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self.clicked.emit()
+        return super().mouseReleaseEvent(event)
+
 class SynonymsGroupsList(QWidget):
+    __area: QScrollArea
+
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
@@ -875,9 +893,14 @@ class SynonymsGroupsList(QWidget):
             if isinstance(item, SynonymsGroupWidget):
                 item.set_selected(item is selected)
 
-class SynonymsEditor (QWidget):
-    __oldPos = None
-    
+class SynonymsEditor(QWidget):
+    __oldPos: QPoint | None
+    __tool_bar: QWidget
+    __exit_btn: QPushButton
+
+    __group_list: SynonymsGroupsList
+    __synonyms_list: SynonymsList
+
     group_selected = Signal(int)
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -893,6 +916,7 @@ class SynonymsEditor (QWidget):
             Qt.Orientation.Horizontal
         )
 
+        self.__oldPos = None
         self.__tool_bar = QWidget(self)
         self.__tool_bar.setMinimumHeight(24)
         main_lay.addWidget(self.__tool_bar, 0)
@@ -938,11 +962,11 @@ class SynonymsEditor (QWidget):
         main_lay.addWidget(splitter, 1)
         self.resize(600, 500)
         
-    def set_synonyms(self, list):
-        self.__synonyms_list.setList(list)
+    def set_synonyms(self, _list):
+        self.__synonyms_list.setList(_list)
 
-    def set_groups(self, list):
-        self.__group_list.setList(list)
+    def set_groups(self, _dict):
+        self.__group_list.setList(_dict)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -1036,11 +1060,15 @@ class NewProjectDialog(QDialog):
         )
 
 class Workspaces(QTabWidget):
+    __opened_projects: dict[int, StateMachineQtController]
+    __flow_list: FlowList
+    __synonyms: SynonymsEditor
+
     def __init__(self, flow_list:FlowList, synonyms:SynonymsEditor, parent: QWidget = None):
         super().__init__(parent)
-        self.__opened_projects: dict[int, StateMachineQtController] = {}
-        self.__flow_list: FlowList = flow_list
-        self.__synonyms:SynonymsEditor = synonyms
+        self.__opened_projects = {}
+        self.__flow_list = flow_list
+        self.__synonyms = synonyms
 
     def add_project(self, id :int, data: dict) -> StateMachineQtController:
         if id in self.__opened_projects.keys():
@@ -1075,7 +1103,7 @@ class Workspaces(QTabWidget):
     def close_project(self, id: int):
         ...
 
-    def project(self, id: int):
+    def project(self, id: int) -> ProjectQtController:
         ...
 
 class MainWindow(QMainWindow):

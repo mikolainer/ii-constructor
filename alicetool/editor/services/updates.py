@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from alicetool.editor.domain.projects import Project, ProjectsActionsNotifier, StateMachineNotifier
 from alicetool.editor.infrastructure.gui import Workspaces, ProjectQtController, StateMachineQtController
 
@@ -30,7 +32,10 @@ class StateMachineGuiRefresher(StateMachineNotifier):
         ...
         
 class EditorGuiRefresher(ProjectsActionsNotifier):
-    def __init__(self, workspaces: Workspaces, set_content_refresher_callback):
+    __workspaces: Workspaces
+    __set_content_refresher: Callable[[int, StateMachineNotifier], None]
+
+    def __init__(self, workspaces: Workspaces, set_content_refresher_callback: Callable[[int, StateMachineNotifier], None]):
         self.__workspaces = workspaces
         self.__set_content_refresher = set_content_refresher_callback
 
