@@ -629,24 +629,38 @@ class StateMachineQtController:
     __START_SIZE = QRect(0, 0, 2000, 2000)
     __START_SPACINS = 30
 
-    def __init__(self, id, proj_ctrl, flow_list, synonyms_list):
-        self.__proj_id = id
-        self.__proj_ctrl: ProjectQtController = proj_ctrl
-        self.__flow_list: FlowList = flow_list
-        self.__synonyms_list: SynonymsEditor = synonyms_list
+    __scene: Editor
 
-        self.__scene = Editor(self)
-        self.__proj_ctrl.editor().setScene(self.__scene)
-        
-        self.__build_editor()
-        self.__build_flows()
-        self.__build_synonyms()
+    __proj_id: int
+    __proj_ctrl: 'ProjectQtController'
+    __flow_list: 'FlowList'
+    __synonyms_list: 'SynonymsEditor'
+
+    __states: dict[int, QGraphicsStateItem]
+    __steps: dict[int, list[Arrow]]
+    __flows: dict[int, FlowWidget]
 
     def project_controller(self):
         return self.__proj_ctrl
     
     def get_state(self, id:int):
         return self.__states[id]
+
+    def __init__(self, id:int, proj_ctrl: 'ProjectQtController', flow_list: 'FlowList', synonyms_list: 'SynonymsEditor'):
+        self.__scene = Editor(self)
+
+        self.__proj_id = id
+        self.__proj_ctrl = proj_ctrl
+        self.__flow_list = flow_list
+        self.__synonyms_list = synonyms_list
+        self.__states = {}
+        self.__steps = {}
+        self.__flows = {}
+        
+        self.__proj_ctrl.editor().setScene(self.__scene)
+        self.__build_editor()
+        self.__build_flows()
+        self.__build_synonyms()
     
     def add_step(self, from_state_id:int, to_state_id:int):
         arrow = Arrow()
@@ -661,10 +675,6 @@ class StateMachineQtController:
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
-        
-        self.__states: dict[int, QGraphicsStateItem] = {}
-        self.__steps: dict[int, list[Arrow]] = {}
-
         data = EditorAPI.instance().get_all_project_states(self.__proj_id)
         
         for state_id in data.keys():
@@ -680,7 +690,6 @@ class StateMachineQtController:
             )
 
     def __build_flows(self):
-        self.__flows = dict[int, FlowWidget]()
         data = EditorAPI.instance().get_all_project_flows(self.__proj_id)
 
         for id in data.keys():
@@ -716,9 +725,13 @@ class StateMachineQtController:
         self.__synonyms_list.group_selected.connect(lambda id: self.__synonyms_list.set_synonyms(self.__synonyms[id]))
 
 class ProjectQtController:
-    def __init__(self, id, flow_list):
+    __proj_id : int
+    __flow_list : 'FlowList'
+    __editor: QGraphicsView
+
+    def __init__(self, id: int, flow_list: 'FlowList'):
         self.__proj_id = id
-        self.__flow_list: FlowList = flow_list
+        self.__flow_list = flow_list
         self.__editor = QGraphicsView()
         self.__editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
@@ -747,10 +760,6 @@ class FlowList(QWidget):
         self.__area.setWidget(wrapper)
 
         lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
-
-class PathValidator(QValidator):
-    def init(self):
-        super().__init__()
 
 class SynonymWidget(QWidget):
     def __init__(self, value:str, parent: QWidget = None):
@@ -796,7 +805,6 @@ class SynonymsList(QWidget):
 
         self.__lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
         
-
 class SynonymsGroupWidget(QWidget):
     clicked = Signal()
 
@@ -866,7 +874,6 @@ class SynonymsGroupsList(QWidget):
             item = lay.itemAt(i).widget()
             if isinstance(item, SynonymsGroupWidget):
                 item.set_selected(item is selected)
-
 
 class SynonymsEditor (QWidget):
     __oldPos = None
@@ -973,11 +980,14 @@ class SynonymsEditor (QWidget):
         return super().resizeEvent(event)
 
 class NewProjectDialog(QDialog):
-    def new_project(self):
-        self.proj_id = EditorAPI.instance().create_project(
-            self.get_result()
-        )
-        self.close()
+    proj_id: int
+    __file_path_editor : QLineEdit
+    __name_editor : QLineEdit
+    __db_name_editor : QLineEdit
+    __hello_editor : QTextEdit
+    __help_editor : QTextEdit
+    __info_editor : QTextEdit
+    __ok_button : QPushButton
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -1007,8 +1017,14 @@ class NewProjectDialog(QDialog):
         lay.addWidget(self.__info_editor)
         lay.addWidget(self.__ok_button)
 
-        self.__ok_button.clicked.connect(self.new_project)
+        self.__ok_button.clicked.connect(self.__new_project)
     
+    def __new_project(self):
+        self.proj_id = EditorAPI.instance().create_project(
+            self.get_result()
+        )
+        self.close()
+
     def get_result(self):
         return (
             f'name={self.__name_editor.text()}; '
@@ -1061,13 +1077,20 @@ class Workspaces(QTabWidget):
 
     def project(self, id: int):
         ...
+
 class MainWindow(QMainWindow):
-    __oldPos = None
+    __oldPos: QPoint | None
+    __flow_list: FlowList
+    __workspaces: Workspaces
+    __synonyms_editor: SynonymsEditor
+    __tool_bar: QWidget
+    __buttons: dict[str, QPushButton]
 
     def __init__(self, flow_list: FlowList, workspaces: Workspaces, synonyms: SynonymsEditor, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
         self.setStyleSheet("MainWindow{background-color: #74869C;}")
 
+        self.__oldPos = None
         self.__flow_list = flow_list
         self.__workspaces = workspaces
         self.__synonyms_editor = synonyms
@@ -1081,23 +1104,6 @@ class MainWindow(QMainWindow):
         self.__setup_toolbar()
 
         self.show()
-
-    def __make_project(self):
-        dialog = NewProjectDialog(self)
-        dialog.exec()     
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.__oldPos = event.globalPos()
-
-    def mouseMoveEvent(self, event):
-        if self.__oldPos is not None:
-            delta = event.globalPos() - self.__oldPos
-            self.move(self.pos() + delta)
-            self.__oldPos = event.globalPos()
-
-    def mouseReleaseEvent(self, event):
-        self.__oldPos = None
 
     def __setup_ui(self):
         self.setCentralWidget(QWidget(self))
@@ -1203,3 +1209,20 @@ class MainWindow(QMainWindow):
             btn.setIconSize(size)
             btn.setStyleSheet(style)
             layout.addWidget(btn)
+
+    def __make_project(self):
+        dialog = NewProjectDialog(self)
+        dialog.exec()     
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.__oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        if self.__oldPos is not None:
+            delta = event.globalPos() - self.__oldPos
+            self.move(self.pos() + delta)
+            self.__oldPos = event.globalPos()
+
+    def mouseReleaseEvent(self, event):
+        self.__oldPos = None
