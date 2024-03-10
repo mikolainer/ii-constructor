@@ -22,7 +22,6 @@ from PySide6.QtGui import (
     QPixmap,
     QResizeEvent,
     QShowEvent,
-    QValidator,
     QFont,
     QTransform,
     QColor,
@@ -63,10 +62,25 @@ from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
 class Arrow(QGraphicsItem):
-    __start_point: QPointF = QPointF(0.0, 0.0)
-    __end_point: QPointF = QPointF(3.0, 3.0)
-    __pen_width = 5
-    __end_wgt: QGraphicsItem = None
+    __start_point: QPointF
+    __end_point: QPointF
+    __pen_width: int
+    __end_wgt: QGraphicsItem
+
+    def set_end_wgt(self, widget: QGraphicsItem):
+        ''' установка виджета для вычисления смещения указателя '''
+        self.set_end_point(self.__arrow_ptr_pos())
+        self.__end_wgt = widget
+
+    def set_start_point(self, point: QPointF):
+        self.prepareGeometryChange()
+        self.__start_point = point
+        self.setPos(self.__center())
+    
+    def set_end_point(self, point: QPointF):
+        self.prepareGeometryChange()
+        self.__end_point = point
+        self.setPos(self.__center())
 
     def __init__(self, 
         start: QPointF = None,
@@ -74,6 +88,11 @@ class Arrow(QGraphicsItem):
         parent: QGraphicsItem = None
     ):
         super().__init__(parent)
+
+        self.__start_point = QPointF(0.0, 0.0)
+        self.__end_point = QPointF(3.0, 3.0)
+        self.__pen_width = 5
+        self.__end_wgt = None
         
         if not start is None:
             self.__start_point = start
@@ -83,11 +102,6 @@ class Arrow(QGraphicsItem):
         self.setPos(self.__center())
         self.setZValue(90)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
-
-    def set_end_wgt(self, widget: QGraphicsItem):
-        ''' установка виджета для вычисления смещения указателя '''
-        self.set_end_point(self.__arrow_ptr_pos())
-        self.__end_wgt = widget
 
     def __dir_pointer_half(self) -> QPointF:
         ''' 
@@ -100,7 +114,7 @@ class Arrow(QGraphicsItem):
             self.__pen_width * 3.0
         )
     
-    def __arrow_directions(self):
+    def __arrow_directions(self) -> dict:
         '''
         направдения (tg углов от направления оси глобальных координат x):
         back - вектор направленный от указываемой точки к началу линии;
@@ -153,7 +167,6 @@ class Arrow(QGraphicsItem):
         y = max(self.__start_point.y(), self.__end_point.y())
 
         return QPointF(x, y) - self.__delta() / 2.0
-
 
     def boundingRect(self) -> QRectF:
         '''
@@ -318,17 +331,10 @@ class Arrow(QGraphicsItem):
             self.mapFromScene(end_point)
         )
 
-    def set_start_point(self, point: QPointF):
-        self.prepareGeometryChange()
-        self.__start_point = point
-        self.setPos(self.__center())
-    
-    def set_end_point(self, point: QPointF):
-        self.prepareGeometryChange()
-        self.__end_point = point
-        self.setPos(self.__center())
-
 class QGraphicsStateItem(QGraphicsProxyWidget):
+    __arrows: dict[str, list[Arrow]]
+    __add_btn: 'StateWidget.AddConnectionBtn'
+
     def __init__(self, parent: QGraphicsItem = None):
         super().__init__(parent)
         self.__arrows = {"from": list[Arrow](), "to": list[Arrow]()}
@@ -366,7 +372,7 @@ class QGraphicsStateItem(QGraphicsProxyWidget):
             arrow.set_end_point(self.scenePos() + center)
             arrow.set_end_wgt(self)
 
-    def arrow_disconnect(self, arrow: QGraphicsItem):
+    def arrow_disconnect(self, arrow: Arrow):
         if (arrow in self.__arrows['from']):
             self.__arrows['from'].remove(arrow)
 
@@ -384,10 +390,10 @@ class QGraphicsStateItem(QGraphicsProxyWidget):
             arrow.set_start_point(self.scenePos() + center)
 
 class StateWidget(QWidget):
-    TITLE_HEIGHT = 15
-    START_WIDTH = 150
-
     class AddConnectionBtn(QGraphicsPixmapItem):
+        __arrow: Arrow | None
+        __state_id: int
+
         def __init__(self, state_id: int):
             self.__state_id = state_id
 
@@ -396,22 +402,8 @@ class StateWidget(QWidget):
             
             self.setZValue(110)
             self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-
-        def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-            scene: Editor = self.scene()
-            self.__arrow = Arrow()
-            scene.controller().get_state(self.__state_id).arrow_connect_as_start(self.__arrow)
-            self.__arrow.set_end_wgt(self)
-            scene.addItem(self.__arrow)
-
-            return super().mousePressEvent(event)
         
-        def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-            scene_pos = event.scenePos()
-            QTimer.singleShot(0, lambda: self.__remove(scene_pos)) # нельзя обновлять сцену до возвращения в цикл событий Qt
-            return super().mouseReleaseEvent(event)
-        
-        def __remove(self, mouse_pos):
+        def __remove(self, mouse_pos:QPointF):
             self.__arrow.set_end_wgt(None)
             scene: Editor = self.scene()
             sm_ctrl: StateMachineQtController = scene.controller()
@@ -432,6 +424,20 @@ class StateWidget(QWidget):
             center = QPointF( 10, 10 )
             self.__arrow.set_end_point(self.scenePos() + center)
             return super().mouseMoveEvent(event)
+        
+        def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            scene: Editor = self.scene()
+            self.__arrow = Arrow()
+            scene.controller().get_state(self.__state_id).arrow_connect_as_start(self.__arrow)
+            self.__arrow.set_end_wgt(self)
+            scene.addItem(self.__arrow)
+
+            return super().mousePressEvent(event)
+        
+        def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            scene_pos = event.scenePos()
+            QTimer.singleShot(0, lambda: self.__remove(scene_pos)) # нельзя обновлять сцену до возвращения в цикл событий Qt
+            return super().mouseReleaseEvent(event)
 
     class CloseBtn(QPushButton):
         mouse_enter = Signal()
@@ -445,10 +451,19 @@ class StateWidget(QWidget):
                 self.mouse_enter.emit()
             return super().enterEvent(event)
         
+    TITLE_HEIGHT = 15
+    START_WIDTH = 150
+
+    __title: QLabel
+    __close_btn: CloseBtn
+    __content: QTextEdit
+    __item_on_scene: QGraphicsStateItem | None
+    
     def __init__(self, content: str, name: str, id :int, parent = None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
+        self.__item_on_scene = None
         self.__title = QLabel(name, self)
         font = self.__title.font()
         font.setWeight(QFont.Weight.ExtraBold)
@@ -505,21 +520,22 @@ class StateWidget(QWidget):
 
         self.resize(StateWidget.START_WIDTH, StateWidget.START_WIDTH)
 
-    @Slot()
-    def on_close_btn_mouse_enter(self):
-        self.__item_on_scene.show_add_btn()
-
-    def set_graphics_item_ptr(self, item):
-        self.__item_on_scene: QGraphicsStateItem = item
-        self.__close_btn.mouse_enter.connect(self.on_close_btn_mouse_enter)
-
-    def state_id(self):
-        return int(self.__close_btn.text())
-    
-    def add_btn_pos(self):
+    def add_btn_pos(self) -> QPoint:
         pos = self.__close_btn.pos()
         pos.setX(pos.x() + self.__close_btn.width() + 4)
         return pos
+    
+    def set_graphics_item_ptr(self, item: QGraphicsStateItem):
+        self.__item_on_scene = item
+        self.__close_btn.mouse_enter.connect(self.on_close_btn_mouse_enter)
+
+    def state_id(self) -> int:
+        return int(self.__close_btn.text())
+
+    @Slot()
+    def on_close_btn_mouse_enter(self):
+        if not self.__item_on_scene is None:
+            self.__item_on_scene.show_add_btn()
 
 class FlowWidget(QWidget):
     __title: QLabel
@@ -596,16 +612,25 @@ class ProxyWidgetControll(QGraphicsRectItem):
         return super().itemChange(change, value)
 
 class Editor(QGraphicsScene):
-    def __init__(self, controller):
-        super().__init__()
-        self.setBackgroundBrush(QColor("#DDDDDD"))
-
-        self.__state_machine_ctrl: StateMachineQtController = controller
+    __state_machine_ctrl: 'StateMachineQtController'
 
     def controller(self):
         return self.__state_machine_ctrl
+    
+    def __init__(self, controller: 'StateMachineQtController'):
+        super().__init__()
+        self.setBackgroundBrush(QColor("#DDDDDD"))
 
-    def __addStateProxyWidget(self, widget: QWidget, initPos:QPoint) -> QGraphicsStateItem:
+        self.__state_machine_ctrl = controller
+
+    def addState(self, content:str, name:str, id:int, initPos:QPoint) -> QGraphicsStateItem:
+        widget = StateWidget(content, name, id)
+        proxy = self.__addStateProxyWidget(widget, initPos)
+        widget.set_graphics_item_ptr(proxy)
+
+        return proxy
+
+    def __addStateProxyWidget(self, widget: StateWidget, initPos:QPoint) -> QGraphicsStateItem:
         close_btn_margins = 2 *2
 
         proxyControl = ProxyWidgetControll(
@@ -623,13 +648,6 @@ class Editor(QGraphicsScene):
         item.installSceneEventFilter(proxyControl)
 
         return item
-    
-    def addState(self, content:str, name:str, id:int, initPos:QPoint) -> QGraphicsStateItem:
-        widget = StateWidget(content, name, id)
-        proxy = self.__addStateProxyWidget(widget, initPos)
-        widget.set_graphics_item_ptr(proxy)
-
-        return proxy
     
 class StateMachineQtController:
     __START_SIZE = QRect(0, 0, 2000, 2000)
