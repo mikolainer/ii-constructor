@@ -1,9 +1,14 @@
 from collections.abc import Callable
 
-from alicetool.editor.domain.projects import Project, ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.editor.infrastructure.gui import Workspaces, ProjectQtController, StateMachineQtController
+from alicetool.editor.domain.projects import ProjectsActionsNotifier, StateMachineNotifier
+from alicetool.editor.infrastructure.gui import ProjectQtController, StateMachineQtController, FlowList, SynonymsEditor, Workspaces
 
 class StateMachineGuiRefresher(StateMachineNotifier):
+    __sm_ctrl: StateMachineQtController
+
+    def __init__( self, sm_ctrl:StateMachineQtController ):
+        self.__sm_ctrl = sm_ctrl
+
     def state_created(self, project_id :int, id :int, data):
         ...
     
@@ -32,25 +37,61 @@ class StateMachineGuiRefresher(StateMachineNotifier):
         ...
         
 class EditorGuiRefresher(ProjectsActionsNotifier):
-    __workspaces: Workspaces
+    '''
+    обработчик изменений верхнего уровня
+    создаёт и удаляет инфраструктурные контроллеры
+    '''
+    __opened_projects: dict[int, ProjectQtController]
     __set_content_refresher: Callable[[int, StateMachineNotifier], None]
+    __flow_list: FlowList
+    __synonyms: SynonymsEditor
+    __workspaces: Workspaces
 
-    def __init__(self, workspaces: Workspaces, set_content_refresher_callback: Callable[[int, StateMachineNotifier], None]):
-        self.__workspaces = workspaces
+    def __init__( self,
+        set_content_refresher_callback: Callable[
+            [int, StateMachineNotifier], None
+        ],
+        flow_list: FlowList,
+        synonyms: SynonymsEditor,
+        workspaces: Workspaces
+    ):
+        self.__opened_projects = {}
         self.__set_content_refresher = set_content_refresher_callback
+        self.__flow_list = flow_list
+        self.__synonyms = synonyms
+        self.__workspaces = workspaces
 
     def created(self, id:int, data):
-        self.__workspaces.add_project(id, Project.parse(data))
-        self.__set_content_refresher(id, StateMachineGuiRefresher())
-        self.__workspaces.set_active_project(id)
+        # парсинг
+        name:str
+        for item in data.split('; '):
+            _item = item.split('=')
+            key = _item[0]
+            if key != 'name': continue
+            
+            value = _item[1]
+            quoted = len(value) > 2 and value[0] == '"' and value[-1] == '"'
+            name = value[1:-1] if quoted else value
+            break
+
+        p_ctrl = ProjectQtController(id, name if len(name) > 0 else str(id) )
+        self.__opened_projects[id] = p_ctrl
+        
+        c_ctrl = StateMachineQtController(p_ctrl, self.__flow_list, self.__synonyms)
+        p_ctrl.set_sm_ctrl(c_ctrl)
+
+        self.__set_content_refresher(id, StateMachineGuiRefresher(c_ctrl))
+
+        self.__workspaces.add_editor(p_ctrl.editor())
+        self.__workspaces.set_active(id)
 
     def saved(self, id:int, data):
-        project: ProjectQtController = self.__workspaces.project(id)
-        project.clear_changes()
+        self.__opened_projects[id].saved()
 
     def updated(self, id:int, new_data):
-        project: ProjectQtController = self.__workspaces.project(id)
         # TODO: отлов изменений для истории
+        self.__opened_projects[id].update(new_data)
 
     def removed(self, id:int):
-        self.__workspaces.close_project(id)
+        self.__opened_projects[id].close()
+        del self.__opened_projects[id]

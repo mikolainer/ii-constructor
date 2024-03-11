@@ -614,7 +614,7 @@ class ProxyWidgetControll(QGraphicsRectItem):
 class Editor(QGraphicsScene):
     __state_machine_ctrl: 'StateMachineQtController'
 
-    def controller(self):
+    def controller(self) -> 'StateMachineQtController':
         return self.__state_machine_ctrl
     
     def __init__(self, controller: 'StateMachineQtController'):
@@ -655,7 +655,6 @@ class StateMachineQtController:
 
     __scene: Editor
 
-    __proj_id: int
     __proj_ctrl: 'ProjectQtController'
     __flow_list: 'FlowList'
     __synonyms_list: 'SynonymsEditor'
@@ -664,24 +663,28 @@ class StateMachineQtController:
     __steps: dict[int, list[Arrow]]
     __flows: dict[int, FlowWidget]
 
-    def project_controller(self):
+    def project_controller(self) -> 'ProjectQtController':
         return self.__proj_ctrl
     
     def get_state(self, id:int):
         return self.__states[id]
-
-    def __init__(self, id:int, proj_ctrl: 'ProjectQtController', flow_list: 'FlowList', synonyms_list: 'SynonymsEditor'):
+    
+    def __init__(self,
+        proj_ctrl: 'ProjectQtController',
+        flow_list: 'FlowList',
+        synonyms_list: 'SynonymsEditor',
+    ):
         self.__scene = Editor(self)
 
-        self.__proj_id = id
         self.__proj_ctrl = proj_ctrl
+        self.__proj_ctrl.editor().setScene(self.__scene)
+
         self.__flow_list = flow_list
         self.__synonyms_list = synonyms_list
         self.__states = {}
         self.__steps = {}
         self.__flows = {}
         
-        self.__proj_ctrl.editor().setScene(self.__scene)
         self.__build_editor()
         self.__build_flows()
         self.__build_synonyms()
@@ -699,7 +702,7 @@ class StateMachineQtController:
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
-        data = EditorAPI.instance().get_all_project_states(self.__proj_id)
+        data = EditorAPI.instance().get_all_project_states(self.__proj_ctrl.project_id())
         
         for state_id in data.keys():
             self.__states[state_id] = self.__scene.addState(
@@ -714,7 +717,7 @@ class StateMachineQtController:
             )
 
     def __build_flows(self):
-        data = EditorAPI.instance().get_all_project_flows(self.__proj_id)
+        data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
 
         for id in data.keys():
             self.__flows[id] = FlowWidget(
@@ -729,7 +732,7 @@ class StateMachineQtController:
         self.__flow_list.setList(self.__flows)
 
     def __build_synonyms(self):
-        data = EditorAPI.instance().get_all_project_synonyms(self.__proj_id)
+        data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
 
         self.__synonym_groups = dict[int, SynonymsGroupWidget]()
         self.__synonyms = dict[int, list[SynonymWidget]]()
@@ -750,17 +753,40 @@ class StateMachineQtController:
 
 class ProjectQtController:
     __proj_id : int
-    __flow_list : 'FlowList'
+    __proj_name: str
     __editor: QGraphicsView
+    __sm_ctrl: StateMachineQtController | None
 
-    def __init__(self, id: int, flow_list: 'FlowList'):
-        self.__proj_id = id
-        self.__flow_list = flow_list
-        self.__editor = QGraphicsView()
-        self.__editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-
+    def project_id(self):
+        return self.__proj_id
+    
+    def project_name(self):
+        return self.__proj_name
+    
     def editor(self) -> QGraphicsView:
         return self.__editor
+    
+    def get_sm_controller(self) -> StateMachineQtController | None:
+        return self.__sm_ctrl
+
+    def __init__(self, id: int, name:str):
+        self.__proj_id = id
+        self.__proj_name = name
+        self.__editor = QGraphicsView()
+        self.__editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.__sm_ctrl = None
+
+    def set_sm_ctrl(self, ctrl: StateMachineQtController):
+        self.__sm_ctrl = ctrl
+    
+    def update(self, new_data):
+        ''' обработчик изменений '''
+
+    def close(self):
+        ''' закрыть проект '''
+
+    def saved(self):
+        ''' закрыть проект '''
 
 class FlowList(QWidget):
     __area: QScrollArea
@@ -1078,51 +1104,25 @@ class NewProjectDialog(QDialog):
         )
 
 class Workspaces(QTabWidget):
-    __opened_projects: dict[int, StateMachineQtController]
-    __flow_list: FlowList
-    __synonyms: SynonymsEditor
+    __map = dict[int, QGraphicsView] # key = id
 
-    def __init__(self, flow_list:FlowList, synonyms:SynonymsEditor, parent: QWidget = None):
+    def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.__opened_projects = {}
-        self.__flow_list = flow_list
-        self.__synonyms = synonyms
+        self.__map = {}
 
-    def add_project(self, id :int, data: dict) -> StateMachineQtController:
-        if id in self.__opened_projects.keys():
-            return self.__opened_projects[id]
-        
-        if (
-            not 'name' in data.keys() or
-            not 'db_name' in data.keys() or
-#            not 'id' in data.keys() or
-            not 'file_path' in data.keys()
-        ):
-            raise RuntimeError(data)
-        
-        tab_name = str(data['name']) if data['name'] else ''
-        
-        p_ctrl = ProjectQtController(id, self.__flow_list)
-        c_ctrl = StateMachineQtController(id, p_ctrl, self.__flow_list, self.__synonyms)
-        self.__opened_projects[id] = c_ctrl
-        tab_idx = self.addTab(p_ctrl.editor(), tab_name)
+    def set_active(self, project_id: int):
+        self.setCurrentWidget(self.__map[project_id])
 
-        if 'file_path' in data.keys() and data['file_path']:
-            self.tabBar().setTabToolTip(tab_idx, str(data['file_path']))
+    def add_editor(self, view:QGraphicsView):
+        editor:Editor = view.scene()
+        p_ctrl = editor.controller().project_controller()
+        self.__map[p_ctrl.project_id()] = view
+        self.addTab(view, p_ctrl.project_name())
 
-        return c_ctrl
-
-    def set_active_project(self, id: int):
-        self.setCurrentWidget(
-            self.__opened_projects[id].project_controller().editor()
-        )
-        
-
-    def close_project(self, id: int):
-        ...
-
-    def project(self, id: int) -> ProjectQtController:
-        ...
+    def remove_editor(self, view:QGraphicsView):
+        editor:Editor = view.scene()
+        del self.__map[editor.controller().project_controller().project_id()]
+        self.removeTab(self.indexOf())
 
 class MainWindow(QMainWindow):
     __oldPos: QPoint | None
