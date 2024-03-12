@@ -31,10 +31,12 @@ from PySide6.QtGui import (
 )
 
 from PySide6.QtWidgets import (
+    QLayoutItem,
     QGraphicsSceneMouseEvent,
     QMessageBox,
     QMainWindow,
     QWidget,
+    QStackedWidget,
     QVBoxLayout,
     QHBoxLayout,
     QScrollArea,
@@ -657,11 +659,15 @@ class StateMachineQtController:
 
     __proj_ctrl: 'ProjectQtController'
     __flow_list: 'FlowList'
-    __synonyms_list: 'SynonymsEditor'
+    __synonyms_editor: 'SynonymsEditor'
 
     __states: dict[int, QGraphicsStateItem]
     __steps: dict[int, list[Arrow]]
     __flows: dict[int, FlowWidget]
+    __synonym_groups: dict[int, 'SynonymsGroupWidget']
+    __synonyms: dict[int, list['SynonymWidget']]
+
+    __current_synonyms_group: int | None
 
     def project_controller(self) -> 'ProjectQtController':
         return self.__proj_ctrl
@@ -680,14 +686,19 @@ class StateMachineQtController:
         self.__proj_ctrl.editor().setScene(self.__scene)
 
         self.__flow_list = flow_list
-        self.__synonyms_list = synonyms_list
+        self.__synonyms_editor = synonyms_list
         self.__states = {}
         self.__steps = {}
         self.__flows = {}
+        self.__synonyms = {}
+        self.__synonym_groups = {}
+        self.__current_synonyms_group = None
         
         self.__build_editor()
         self.__build_flows()
         self.__build_synonyms()
+
+        self.set_active()
     
     def add_step(self, from_state_id:int, to_state_id:int):
         arrow = Arrow()
@@ -699,6 +710,10 @@ class StateMachineQtController:
             self.__steps[from_state_id].append(arrow)
         else:
             self.__steps[from_state_id] = [arrow]
+
+    def set_active(self):
+        self.__group_changed(self.__current_synonyms_group)
+        self.__synonyms_editor.set_groups(list(self.__synonym_groups.values()))
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
@@ -734,9 +749,6 @@ class StateMachineQtController:
     def __build_synonyms(self):
         data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
 
-        self.__synonym_groups = dict[int, SynonymsGroupWidget]()
-        self.__synonyms = dict[int, list[SynonymWidget]]()
-
         for group_id in data.keys():
             self.__synonym_groups[int(group_id)] = SynonymsGroupWidget(data[group_id]['name'], data[group_id]['id'])
             self.__synonyms[int(group_id)] = []
@@ -744,12 +756,17 @@ class StateMachineQtController:
             for val in data[group_id]['values']:
                 self.__synonyms[int(group_id)].append(SynonymWidget(val))
 
-        self.__synonyms_list.set_groups(self.__synonym_groups)
+        self.__current_synonyms_group = 1
+        self.__synonym_groups[self.__current_synonyms_group].set_selected()
+        self.__synonyms_editor.group_selected.connect(lambda id, _from: self.__group_changed(id, _from))
 
-        start_select_id = 1
-        self.__synonym_groups[start_select_id].set_selected()
-        self.__synonyms_list.set_synonyms(self.__synonyms[start_select_id])
-        self.__synonyms_list.group_selected.connect(lambda id: self.__synonyms_list.set_synonyms(self.__synonyms[id]))
+    @Slot(int)
+    def __group_changed(self, id:int, _from:'SynonymsGroupWidget' = None):
+        if (not _from is None) and (not _from in self.__synonym_groups):
+            return
+        
+        self.__current_synonyms_group = id
+        self.__synonyms_editor.set_synonyms(self.__synonyms[id], True)
 
 class ProjectQtController:
     __proj_id : int
@@ -825,42 +842,55 @@ class SynonymWidget(QWidget):
         main_lay.setSpacing(0)
         main_lay.addWidget(self.__edit)
 
-class SynonymsList(QWidget):
-    __area: QScrollArea
-    __lay: QVBoxLayout
+class SynonymsList(QStackedWidget):
+    __indexed: dict[int, list[SynonymWidget]]
 
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-
-        self.__area = QScrollArea(self)
-        self.__area.setWidgetResizable(True)
-        self.__area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
-        
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(0,0,0,0)
-        lay.addWidget(self.__area)
+    def addWidget(self, w: QWidget = None) -> int:
+        area = QScrollArea(self)
+        area.setWidgetResizable(True)
+        area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
 
         wrapper = QWidget(self)
-        self.__lay = QVBoxLayout(wrapper)
-        self.__area.setWidget(wrapper)
+        QVBoxLayout(wrapper)
+
+        area.setWidget(wrapper)
+        return super().addWidget(area)
     
-    def setList(self, items :list[SynonymWidget]):
-        for wgt in items:
-            self.__lay.addWidget(wgt)
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.__indexed = {}
+    
+    def setList(self, items :list[SynonymWidget], set_current: bool = False):
+        ''' обновление списка виджетов '''
+        # для нового списка создаём отдельный виджет и сохраняем его индекс
+        if not items in self.__indexed.items():
+            self.__indexed[self.addWidget()] = items
+
+        # получаем индекс виджета с полученным списком синонимов
+        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(items)]
         
+        # добавляем новые виджеты (уже существующие не вставятся снова)
+        lay = self.widget(idx).widget().layout()
+        for wgt in items:
+            lay.addWidget(wgt)
+        
+        # удаляем виджеты не элементов
         to_remove = []
-        for item_idx in range(self.__lay.count()):
-            item = self.__lay.itemAt(item_idx)
-            if isinstance(item.widget(), SynonymWidget):
-                item.widget().setVisible(item.widget() in items)
-            else:
+        for item_idx in range(lay.count()):
+            item:QLayoutItem = lay.itemAt(item_idx)
+            if not isinstance(item.widget(), SynonymWidget):
                 to_remove.append(item)
 
         for item in to_remove:
             if not item is None:
-                self.__lay.removeItem(item)
+                lay.removeItem(item)
 
-        self.__lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
+        # добавляем заполнитель пустоты в конце
+        lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
+
+        # если указано - устанавливаем текущим виджетом
+        if set_current:
+            self.setCurrentIndex(idx)
         
 class SynonymsGroupWidget(QWidget):
     __id: int
@@ -893,45 +923,75 @@ class SynonymsGroupWidget(QWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self.clicked.emit()
-        return super().mouseReleaseEvent(event)
+        event.accept()
+        #return super().mouseReleaseEvent(event)
 
-class SynonymsGroupsList(QWidget):
-    __area: QScrollArea
+class SynonymsGroupsList(QStackedWidget):
+    __indexed: dict[int, list[SynonymsGroupWidget]]
 
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-
-        self.__area = QScrollArea(self)
-        self.__area.setContentsMargins(0,0,0,0)
-        self.__area.setWidgetResizable(True)
-        self.__area.setStyleSheet('QScrollArea{background-color: #666666; border: none;}')
-        
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(0,0,0,0)
-        lay.addWidget(self.__area)
-    
-    def setList(self, items :dict[int, SynonymsGroupWidget]):
+    def addWidget(self, w: QWidget = None) -> int:
         wrapper = QWidget(self)
         wrapper.setStyleSheet('QWidget{background-color: #666666;}')
         lay = QVBoxLayout(wrapper)
         lay.setContentsMargins(0,0,0,0)
         lay.setSpacing(3)
 
-        for wgt_id in items.keys():
-            lay.addWidget(items[wgt_id])
-            items[wgt_id].clicked.connect(self.__group_selected)
 
+        area = QScrollArea(self)
+        area.setContentsMargins(0,0,0,0)
+        area.setWidgetResizable(True)
+        area.setStyleSheet('QScrollArea{background-color: #666666; border: none;}')
+        area.setWidget(wrapper)
+
+        return super().addWidget(area)
+
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.__indexed = {}
+        self.resize(250, self.height())
+    
+    def setList(self, items :list[SynonymsGroupWidget]):
+         # для нового списка создаём отдельный виджет и сохраняем его индекс
+        if not items in self.__indexed.items():
+            self.__indexed[self.addWidget()] = items
+
+        # получаем индекс виджета с полученным списком синонимов
+        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(items)]
+        
+        # добавляем новые виджеты (уже существующие не вставятся снова)
+        lay:QVBoxLayout = self.widget(idx).widget().layout()
+        for wgt in items:
+            prev_c = lay.count()
+            lay.addWidget(wgt)
+            # соединим новый виджет с сигналом выбора
+            if lay.count() != prev_c:
+                wgt.clicked.connect(self.__group_selected)
+                
+        
+        # удаляем виджеты не элементов
+        to_remove = []
+        for item_idx in range(lay.count()):
+            item:QLayoutItem = lay.itemAt(item_idx)
+            if not isinstance(item.widget(), SynonymsGroupWidget):
+                to_remove.append(item)
+
+        for item in to_remove:
+            if not item is None:
+                lay.removeItem(item)
+
+        # добавляем заполнитель пустоты в конце
         lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
-        self.__area.setWidget(wrapper)
 
-    group_selected = Signal(int)
+        self.setCurrentIndex(idx)
+
+    group_selected = Signal(int, SynonymsGroupWidget)
 
     @Slot()
     def __group_selected(self):
         selected:SynonymsGroupWidget = self.sender()
-        self.group_selected.emit(selected.id())
+        self.group_selected.emit(selected.id(), selected)
 
-        lay = self.__area.widget().layout()
+        lay = self.currentWidget().widget().layout()
         for i in range(lay.count()):
             item = lay.itemAt(i).widget()
             if isinstance(item, SynonymsGroupWidget):
@@ -945,7 +1005,7 @@ class SynonymsEditor(QWidget):
     __group_list: SynonymsGroupsList
     __synonyms_list: SynonymsList
 
-    group_selected = Signal(int)
+    group_selected = Signal(int, SynonymsGroupWidget)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
@@ -994,7 +1054,7 @@ class SynonymsEditor(QWidget):
         layout.addWidget(self.__exit_btn)
 
         self.__group_list = SynonymsGroupsList(self)
-        self.__group_list.group_selected.connect(lambda id: self.group_selected.emit(id))
+        self.__group_list.group_selected.connect(lambda id, _from: self.group_selected.emit(id, _from))
         splitter.addWidget(self.__group_list)
 
         self.__synonyms_list = SynonymsList(self)
@@ -1006,11 +1066,11 @@ class SynonymsEditor(QWidget):
         main_lay.addWidget(splitter, 1)
         self.resize(600, 500)
         
-    def set_synonyms(self, _list):
-        self.__synonyms_list.setList(_list)
+    def set_synonyms(self, _list, set_current:bool = False):
+        self.__synonyms_list.setList(_list, set_current)
 
-    def set_groups(self, _dict):
-        self.__group_list.setList(_dict)
+    def set_groups(self, _list):
+        self.__group_list.setList(_list)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -1109,6 +1169,7 @@ class Workspaces(QTabWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.__map = {}
+        self.currentChanged.connect(lambda index: self.__activated(self.widget(index)))
 
     def set_active(self, project_id: int):
         self.setCurrentWidget(self.__map[project_id])
@@ -1123,6 +1184,10 @@ class Workspaces(QTabWidget):
         editor:Editor = view.scene()
         del self.__map[editor.controller().project_controller().project_id()]
         self.removeTab(self.indexOf())
+
+    def __activated(self, view:QGraphicsView):
+        editor:Editor = view.scene()
+        editor.controller().set_active()
 
 class MainWindow(QMainWindow):
     __oldPos: QPoint | None
