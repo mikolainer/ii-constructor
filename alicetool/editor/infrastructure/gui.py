@@ -63,7 +63,7 @@ from PySide6.QtWidgets import (
 from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
-from .data import SynonymsSetModel
+from .data import CustomDataRole, SynonymsSetModel, FlowsModel
 
 class Arrow(QGraphicsItem):
     __start_point: QPointF
@@ -569,8 +569,16 @@ class FlowWidget(QWidget):
         self.__synonyms_name = QLabel("синонимы", self)
         self.__synonyms_list = QListView(self)
         self.__synonyms_list.hide()
+
+        test_data: dict[int, FlowsModel.Item] = {}
+        for i in range(len(synonym_values)):
+            item = FlowsModel.Item()
+            item.on[CustomDataRole.Text] = synonym_values[i]
+            test_data[i*2] = item
+
         self.__synonyms_list.setModel(
-            SynonymsSetModel(synonym_values, self.__synonyms_list)
+            #SynonymsSetModel(synonym_values, self.__synonyms_list)
+            FlowsModel(test_data, self.__synonyms_list)
         )
         
         main_lay = QVBoxLayout(self)

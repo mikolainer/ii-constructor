@@ -38,14 +38,13 @@ class CustomDataRole(IntEnum):
 
 
 class SynonymsSetModel(QAbstractItemModel):
-    Data = list[str]
-    __data: Data
+    __data: list[str]
 
     __group_id: int | None # связанная группа синонимов
     __flow_id:  int | None # связанный поток (Flow)
     
     def __init__( self,
-        values:Data = [],
+        values: list[str] = [],
         group_id:int = None,
         flow_id:int = None,
         parent: QObject | None = None
@@ -63,7 +62,7 @@ class SynonymsSetModel(QAbstractItemModel):
         if not row in range(len(self.__data)):
             return QModelIndex()
 
-        return self.createIndex(row, column, self.__data)
+        return self.createIndex(row, column, self.__data[row])
     
     def rowCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
         return len(self.__data)
@@ -85,4 +84,48 @@ class SynonymsSetModel(QAbstractItemModel):
     
 
 class SynonymsGroupsModel(QAbstractItemModel): pass
-class FlowsModel(QAbstractItemModel): pass
+
+class FlowsModel(QAbstractItemModel):
+    class Item:
+        on: dict[CustomDataRole: Any]
+        def __init__(self) -> None:
+            self.on = {}
+
+    __data : dict[int, Item]
+
+    def __init__(self, data: dict[int, Item] = {}, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self.__data = data
+
+    def parent(self, child: Union[QModelIndex, QPersistentModelIndex]) -> QModelIndex:
+        return QModelIndex()
+
+    def index(self, row: int, column: int = 0, parent: QModelIndex | QPersistentModelIndex = None) -> QModelIndex:
+        if not row in range(len(self.__data)):
+            return QModelIndex()
+        
+        for idx, item in enumerate(self.__data.values()):
+            if idx == row:
+                return self.createIndex(row, column, item)
+    
+        return QModelIndex()
+    
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
+        return len(self.__data)
+    
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
+        return 1
+    
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = CustomDataRole.Text) -> Any:
+        if not index.isValid():
+            return None
+
+        if role in [Qt.ItemDataRole.DisplayRole, CustomDataRole.Text, Qt.ItemDataRole.EditRole]:
+            for idx, item in enumerate(self.__data.values()):
+                if idx == index.row():
+                    return item.on[CustomDataRole.Text]
+
+        return None
+    
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEnabled
