@@ -570,15 +570,19 @@ class FlowWidget(QWidget):
         self.__synonyms_list = QListView(self)
         self.__synonyms_list.hide()
 
-        test_data: dict[int, FlowsModel.Item] = {}
-        for i in range(len(synonym_values)):
-            item = FlowsModel.Item()
-            item.on[CustomDataRole.Text] = synonym_values[i]
-            test_data[i*2] = item
+# debug FlowsModel
+#        test_data: dict[int, FlowsModel.Item] = {}
+#        for i in range(len(synonym_values)):
+#            item = FlowsModel.Item()
+#            item.on[CustomDataRole.Text] = synonym_values[i]
+#            test_data[i*2] = item
+#
+#        self.__synonyms_list.setModel(
+#            FlowsModel(test_data, self.__synonyms_list)
+#        )
 
         self.__synonyms_list.setModel(
-            #SynonymsSetModel(synonym_values, self.__synonyms_list)
-            FlowsModel(test_data, self.__synonyms_list)
+            SynonymsSetModel(synonym_values, self.__synonyms_list)
         )
         
         main_lay = QVBoxLayout(self)
