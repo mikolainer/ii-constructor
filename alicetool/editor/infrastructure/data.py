@@ -1,12 +1,13 @@
 from enum import IntEnum, verify, UNIQUE
-from typing import Any, Union
+from typing import Any, List, Sequence, Union
 
 from PySide6.QtCore import (
-    Qt, Slot, Signal,
+    QMimeData, Qt, Slot, Signal,
     QModelIndex,
     QObject,
     QPersistentModelIndex, 
     QAbstractItemModel,
+    QSize,
 )
 
 from PySide6.QtGui import (
@@ -83,10 +84,74 @@ class SynonymsSetModel(QAbstractItemModel):
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEnabled
     
 
-class SynonymsGroupsModel(QAbstractItemModel): pass
+class SynonymsGroupsModel(QAbstractItemModel):
+    __custom_roles = list[CustomDataRole]
+
+    class Item:
+        ''' Id, Name, Description, SynonymsSet '''
+        on: dict[CustomDataRole, Any]
+        def __init__(self) -> None:
+            self.on = {}
+
+    __data : dict[int, Item]
+
+    def __init__(self, data: dict[int, Item] = {}, parent: QObject | None = None) -> None:
+        self.__custom_roles = [
+            CustomDataRole.Id,
+            CustomDataRole.Name,
+            CustomDataRole.Description,
+            CustomDataRole.SynonymsSet
+        ]
+
+        super().__init__(parent)
+        self.__data = data
+
+    def parent(self, child: Union[QModelIndex, QPersistentModelIndex]) -> QModelIndex:
+        return QModelIndex()
+
+    def index(self, row: int, column: int = 0, parent: QModelIndex | QPersistentModelIndex = None) -> QModelIndex:
+        if not row in range(len(self.__data)):
+            return QModelIndex()
+        
+        for idx, data in enumerate(self.__data.values()):
+            if idx == row:
+                return self.createIndex(row, column, data)
+    
+        return QModelIndex()
+    
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
+        return len(self.__data)
+    
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
+        return 1
+    
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = CustomDataRole.Text) -> Any:
+        if not index.isValid():
+            return None
+
+        if role == Qt.ItemDataRole.SizeHintRole:
+            return QSize(40, 40)
+        
+        for idx, data in enumerate(self.__data.values()):
+            if idx == index.row():
+                return data.on[role] if role in data.on.keys() else None
+
+        return None
+    
+    def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = ...) -> bool:
+        for idx, data in enumerate(self.__data.values()):
+            if idx == index.row():
+                data.on[role] = value
+                return True
+        
+        return False
+    
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
 class FlowsModel(QAbstractItemModel):
     class Item:
+        ''' Id, Name, Description, SynonymsSet '''
         on: dict[CustomDataRole: Any]
         def __init__(self) -> None:
             self.on = {}

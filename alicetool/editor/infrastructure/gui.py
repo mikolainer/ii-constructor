@@ -2,6 +2,7 @@ import sys
 from math import sqrt, pi
 
 from PySide6.QtCore import (
+    QItemSelection,
     Qt,
     QSize,
     QPoint,
@@ -9,6 +10,7 @@ from PySide6.QtCore import (
     QRectF,
     QRect,
     QStringListModel,
+    QModelIndex,
     Slot, Signal,
     QTimer
 )
@@ -27,7 +29,8 @@ from PySide6.QtGui import (
     QColor,
     QBrush,
     QPen,
-    QPainter
+    QPainter,
+    QImage
 )
 
 from PySide6.QtWidgets import (
@@ -63,7 +66,9 @@ from PySide6.QtWidgets import (
 from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
-from .data import CustomDataRole, SynonymsSetModel, FlowsModel
+from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
+from .widgets import SynonymWidget, SynonymsList, SynonymsGroupWidget, SynonymsGroupsList
+from .views import SynonymsGroupsView
 
 class Arrow(QGraphicsItem):
     __start_point: QPointF
@@ -570,17 +575,6 @@ class FlowWidget(QWidget):
         self.__synonyms_list = QListView(self)
         self.__synonyms_list.hide()
 
-# debug FlowsModel
-#        test_data: dict[int, FlowsModel.Item] = {}
-#        for i in range(len(synonym_values)):
-#            item = FlowsModel.Item()
-#            item.on[CustomDataRole.Text] = synonym_values[i]
-#            test_data[i*2] = item
-#
-#        self.__synonyms_list.setModel(
-#            FlowsModel(test_data, self.__synonyms_list)
-#        )
-
         self.__synonyms_list.setModel(
             SynonymsSetModel(synonym_values, self.__synonyms_list)
         )
@@ -727,7 +721,7 @@ class StateMachineQtController:
 
     def set_active(self):
         self.__group_changed(self.__current_synonyms_group)
-        self.__synonyms_editor.set_groups(list(self.__synonym_groups.values()))
+        #self.__synonyms_editor.set_groups(list(self.__synonym_groups.values()))
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
@@ -772,7 +766,22 @@ class StateMachineQtController:
 
         self.__current_synonyms_group = 1
         self.__synonym_groups[self.__current_synonyms_group].set_selected()
-        self.__synonyms_editor.group_selected.connect(lambda id, _from: self.__group_changed(id, _from))
+        self.__synonyms_editor.group_selected.connect(
+            lambda selected_index_list: self.__synonyms_editor.set_synonyms(self.__synonyms[self.g_model.data(selected_index_list[0], CustomDataRole.Id)], True)
+        )
+
+        g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
+        
+        for syn_g in self.__synonym_groups.values():
+            item = SynonymsGroupsModel.Item()
+            item.on[CustomDataRole.Id] = syn_g.id()
+            item.on[CustomDataRole.Name] = syn_g.name()
+            item.on[CustomDataRole.Description] = syn_g.description()
+            
+            g_model_data[syn_g.id()] = item
+
+        self.g_model = SynonymsGroupsModel(g_model_data)
+        self.__synonyms_editor.set_groups(self.g_model)
 
     @Slot(int)
     def __group_changed(self, id:int, _from:'SynonymsGroupWidget' = None):
@@ -844,182 +853,16 @@ class FlowList(QWidget):
 
         lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
 
-class SynonymWidget(QWidget):
-    __edit: QLineEdit
-
-    def __init__(self, value:str, parent: QWidget = None):
-        super().__init__(parent)
-        self.__edit = QLineEdit(value, self)
-        self.__edit.setStyleSheet('QLineEdit{background-color: #FFFFFF; border: 2px solid black; border-radius: 5px;}')
-        main_lay = QVBoxLayout(self)
-        main_lay.setContentsMargins(0,0,0,0)
-        main_lay.setSpacing(0)
-        main_lay.addWidget(self.__edit)
-
-class SynonymsList(QStackedWidget):
-    __indexed: dict[int, list[SynonymWidget]]
-
-    def addWidget(self, w: QWidget = None) -> int:
-        area = QScrollArea(self)
-        area.setWidgetResizable(True)
-        area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
-
-        wrapper = QWidget(self)
-        QVBoxLayout(wrapper)
-
-        area.setWidget(wrapper)
-        return super().addWidget(area)
-    
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        self.__indexed = {}
-    
-    def setList(self, items :list[SynonymWidget], set_current: bool = False):
-        ''' обновление списка виджетов '''
-        # для нового списка создаём отдельный виджет и сохраняем его индекс
-        if not items in self.__indexed.items():
-            self.__indexed[self.addWidget()] = items
-
-        # получаем индекс виджета с полученным списком синонимов
-        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(items)]
-        
-        # добавляем новые виджеты (уже существующие не вставятся снова)
-        lay = self.widget(idx).widget().layout()
-        for wgt in items:
-            lay.addWidget(wgt)
-        
-        # удаляем виджеты не элементов
-        to_remove = []
-        for item_idx in range(lay.count()):
-            item:QLayoutItem = lay.itemAt(item_idx)
-            if not isinstance(item.widget(), SynonymWidget):
-                to_remove.append(item)
-
-        for item in to_remove:
-            if not item is None:
-                lay.removeItem(item)
-
-        # добавляем заполнитель пустоты в конце
-        lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
-
-        # если указано - устанавливаем текущим виджетом
-        if set_current:
-            self.setCurrentIndex(idx)
-        
-class SynonymsGroupWidget(QWidget):
-    __id: int
-    __title: QLabel
-
-    def id(self):
-        return self.__id
-
-    clicked = Signal()
-
-    def __init__(self, name:str, id:int, parent: QWidget = None):
-        super().__init__(parent)
-        self.__id = id
-        self.setStyleSheet('QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}')
-        self.__title = QLabel(name, self)
-        self.__title.setMinimumHeight(30)
-        font = self.__title.font()
-        font.setBold(True)
-        self.__title.setFont(font)
-        main_lay = QVBoxLayout(self)
-        main_lay.addWidget(self.__title)
-        main_lay.setContentsMargins(5,0,5,0)
-    
-    def set_selected(self, selected: bool = True):
-        self.setStyleSheet(
-            'QWidget{background-color: #FFFFFF; border: 2px solid #59A5FF;}'
-            if selected else
-            'QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}'
-        )
-
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        self.clicked.emit()
-        event.accept()
-        #return super().mouseReleaseEvent(event)
-
-class SynonymsGroupsList(QStackedWidget):
-    __indexed: dict[int, list[SynonymsGroupWidget]]
-
-    def addWidget(self, w: QWidget = None) -> int:
-        wrapper = QWidget(self)
-        wrapper.setStyleSheet('QWidget{background-color: #666666;}')
-        lay = QVBoxLayout(wrapper)
-        lay.setContentsMargins(0,0,0,0)
-        lay.setSpacing(3)
-
-
-        area = QScrollArea(self)
-        area.setContentsMargins(0,0,0,0)
-        area.setWidgetResizable(True)
-        area.setStyleSheet('QScrollArea{background-color: #666666; border: none;}')
-        area.setWidget(wrapper)
-
-        return super().addWidget(area)
-
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        self.__indexed = {}
-        self.resize(250, self.height())
-    
-    def setList(self, items :list[SynonymsGroupWidget]):
-         # для нового списка создаём отдельный виджет и сохраняем его индекс
-        if not items in self.__indexed.items():
-            self.__indexed[self.addWidget()] = items
-
-        # получаем индекс виджета с полученным списком синонимов
-        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(items)]
-        
-        # добавляем новые виджеты (уже существующие не вставятся снова)
-        lay:QVBoxLayout = self.widget(idx).widget().layout()
-        for wgt in items:
-            prev_c = lay.count()
-            lay.addWidget(wgt)
-            # соединим новый виджет с сигналом выбора
-            if lay.count() != prev_c:
-                wgt.clicked.connect(self.__group_selected)
-                
-        
-        # удаляем виджеты не элементов
-        to_remove = []
-        for item_idx in range(lay.count()):
-            item:QLayoutItem = lay.itemAt(item_idx)
-            if not isinstance(item.widget(), SynonymsGroupWidget):
-                to_remove.append(item)
-
-        for item in to_remove:
-            if not item is None:
-                lay.removeItem(item)
-
-        # добавляем заполнитель пустоты в конце
-        lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
-
-        self.setCurrentIndex(idx)
-
-    group_selected = Signal(int, SynonymsGroupWidget)
-
-    @Slot()
-    def __group_selected(self):
-        selected:SynonymsGroupWidget = self.sender()
-        self.group_selected.emit(selected.id(), selected)
-
-        lay = self.currentWidget().widget().layout()
-        for i in range(lay.count()):
-            item = lay.itemAt(i).widget()
-            if isinstance(item, SynonymsGroupWidget):
-                item.set_selected(item is selected)
-
 class SynonymsEditor(QWidget):
     __oldPos: QPoint | None
     __tool_bar: QWidget
     __exit_btn: QPushButton
 
-    __group_list: SynonymsGroupsList
     __synonyms_list: SynonymsList
+    #__group_list: SynonymsGroupsList
+    __group_list: SynonymsGroupsView
 
-    group_selected = Signal(int, SynonymsGroupWidget)
+    group_selected = Signal(list)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
@@ -1061,14 +904,17 @@ class SynonymsEditor(QWidget):
         self.__exit_btn.setToolTip('Закрыть')
         self.__exit_btn.setStatusTip('Закрыть редактор синонимов')
         self.__exit_btn.setWhatsThis('Закрыть редактор синонимов')
-        self.__exit_btn.setFixedSize(size)
-        self.__exit_btn.setIcon(QIcon(QPixmap(":/icons/exit_norm.svg").scaled(10, 10)))
+        self.__exit_btn.setIcon(QIcon(QPixmap(":/icons/exit_norm.svg").scaled(12,12)))
         self.__exit_btn.setIconSize(size)
+        self.__exit_btn.setFixedSize(size)
         self.__exit_btn.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")
         layout.addWidget(self.__exit_btn)
+        selection = QItemSelection()
 
-        self.__group_list = SynonymsGroupsList(self)
-        self.__group_list.group_selected.connect(lambda id, _from: self.group_selected.emit(id, _from))
+        self.__group_list = SynonymsGroupsView(self)
+        self.__group_list.on_selectionChanged.connect(
+            lambda selected, deselected: self.group_selected.emit(selected.indexes()) if len(selected.indexes()) else 0
+        )
         splitter.addWidget(self.__group_list)
 
         self.__synonyms_list = SynonymsList(self)
@@ -1083,8 +929,11 @@ class SynonymsEditor(QWidget):
     def set_synonyms(self, _list, set_current:bool = False):
         self.__synonyms_list.setList(_list, set_current)
 
-    def set_groups(self, _list):
-        self.__group_list.setList(_list)
+    #def set_groups(self, _list):
+    #    self.__group_list.setList(_list)
+        
+    def set_groups(self, model: SynonymsGroupsModel):
+        self.__group_list.setModel(model)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -1277,37 +1126,38 @@ class MainWindow(QMainWindow):
             
             style = "background-color: #59A5FF; border-radius:32px;"
             size = QSize(64,64)
+            icon_size = size
 
             if key == 'new':
                 tool_tip = 'Новый проект'
                 status_tip = 'Создать новый проект'
                 whats_this = 'Кнопка создания нового проекта'
-                icon = QIcon(QPixmap(":/icons/new_proj_norm.svg"))
+                icon = QIcon(":/icons/new_proj_norm.svg")
                 btn.clicked.connect(lambda: self.__make_project())
 
             if key == 'open':
                 tool_tip = 'Открыть проект'
                 status_tip = 'Открыть файл проекта'
                 whats_this = 'Кнопка открытия проекта из файла'
-                icon = QIcon(QPixmap(":/icons/open_proj_norm.svg"))
+                icon = QIcon(":/icons/open_proj_norm.svg")
 
             if key == 'save':
                 tool_tip = 'Сохранить проект'
                 status_tip = 'Сохранить в файл'
                 whats_this = 'Кнопка сохранения проекта в файл'
-                icon = QIcon(QPixmap(":/icons/save_proj_norm.svg"))
+                icon = QIcon(":/icons/save_proj_norm.svg")
 
             if key == 'publish':
                 tool_tip = 'Опубликовать проект'
                 status_tip = 'Разместить проект в БД '
                 whats_this = 'Кнопка экспорта проекта в базу данных'
-                icon = QIcon(QPixmap(":/icons/export_proj_norm.svg"))
+                icon = QIcon(":/icons/export_proj_norm.svg")
 
             if key == 'synonyms':
                 tool_tip = 'Список синонимов'
                 status_tip = 'Открыть редактор синонимов'
                 whats_this = 'Кнопка открытия редактора синонимов'
-                icon = QIcon(QPixmap(":/icons/synonyms_list_norm.svg"))
+                icon = QIcon(":/icons/synonyms_list_norm.svg")
                 btn.clicked.connect(lambda: self.__synonyms_editor.show())
 
             if key == 'exit':
@@ -1322,7 +1172,8 @@ class MainWindow(QMainWindow):
                 status_tip = 'Закрыть программу'
                 whats_this = 'Кнопка завершения программы'
                 style = "background-color: #FF3131; border: none;"
-                icon = QIcon(QPixmap(":/icons/exit_norm.svg"))
+                icon_size = size * 0.6
+                icon = QIcon(":/icons/exit_norm.svg")
 
                 btn.clicked.connect(lambda: self.close())
 
@@ -1331,7 +1182,7 @@ class MainWindow(QMainWindow):
             btn.setWhatsThis(whats_this)
             btn.setFixedSize(size)
             btn.setIcon(icon)
-            btn.setIconSize(size)
+            btn.setIconSize(icon_size)
             btn.setStyleSheet(style)
             layout.addWidget(btn)
 
