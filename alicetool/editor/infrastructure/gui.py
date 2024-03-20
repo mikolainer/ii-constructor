@@ -67,8 +67,8 @@ from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
-from .widgets import SynonymWidget, SynonymsList, SynonymsGroupWidget, SynonymsGroupsList
-from .views import SynonymsGroupsView
+from .widgets import SynonymsGroupWidget
+from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList
 
 class Arrow(QGraphicsItem):
     __start_point: QPointF
@@ -673,7 +673,7 @@ class StateMachineQtController:
     __steps: dict[int, list[Arrow]]
     __flows: dict[int, FlowWidget]
     __synonym_groups: dict[int, 'SynonymsGroupWidget']
-    __synonyms: dict[int, list['SynonymWidget']]
+    __synonyms: dict[int, SynonymsSetView]
 
     __current_synonyms_group: int | None
 
@@ -758,11 +758,12 @@ class StateMachineQtController:
         data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
 
         for group_id in data.keys():
-            self.__synonym_groups[int(group_id)] = SynonymsGroupWidget(data[group_id]['name'], data[group_id]['id'])
-            self.__synonyms[int(group_id)] = []
+            self.__synonym_groups[int(group_id)] = SynonymsGroupWidget(data[int(group_id)]['name'], data[int(group_id)]['id'], data[int(group_id)]['description'])
+            
+            view = SynonymsSetView()
+            view.setModel(SynonymsSetModel(data[group_id]['values'], int(group_id)))
 
-            for val in data[group_id]['values']:
-                self.__synonyms[int(group_id)].append(SynonymWidget(val))
+            self.__synonyms[int(group_id)] = view
 
         self.__current_synonyms_group = 1
         self.__synonym_groups[self.__current_synonyms_group].set_selected()
@@ -859,7 +860,6 @@ class SynonymsEditor(QWidget):
     __exit_btn: QPushButton
 
     __synonyms_list: SynonymsList
-    #__group_list: SynonymsGroupsList
     __group_list: SynonymsGroupsView
 
     group_selected = Signal(list)
@@ -926,8 +926,8 @@ class SynonymsEditor(QWidget):
         main_lay.addWidget(splitter, 1)
         self.resize(600, 500)
         
-    def set_synonyms(self, _list, set_current:bool = False):
-        self.__synonyms_list.setList(_list, set_current)
+    def set_synonyms(self, view: SynonymsSetView, set_current:bool = False):
+        self.__synonyms_list.setList(view, set_current)
 
     #def set_groups(self, _list):
     #    self.__group_list.setList(_list)

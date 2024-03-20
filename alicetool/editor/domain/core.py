@@ -247,6 +247,7 @@ class Flow:
 class Synonyms:
     __id :int
     __name :str
+    __description : str
     __values :list[str]
     __commands :list[Command]
 
@@ -268,6 +269,7 @@ class Synonyms:
         
         self.__id = id
         self.__name = None
+        self.__description = "Описание"
         self.__values = []
         self.__commands = []
 
@@ -277,6 +279,11 @@ class Synonyms:
             if not isinstance(kwargs['name'], str):
                 raise TypeError('"name" должен быть строкой')
             self.__name = kwargs['name']
+
+        if 'description' in arg_names:
+            if not isinstance(kwargs['description'], str):
+                raise TypeError('"description" должен быть строкой')
+            self.__description = kwargs['description']
 
         if 'values' in arg_names:
             if not (
@@ -309,6 +316,7 @@ class Synonyms:
             f'id={self.__id}',
             f'name={name}',
             f'values={values_str}',
+            f'description={self.__description}'
         ])
 
     @staticmethod
@@ -329,7 +337,7 @@ class Synonyms:
             key = _item[0]
             value = _item[1]
 
-            if key not in ['id', 'name', 'values']:
+            if key not in ['id', 'name', 'values', 'description']:
                 raise AttributeError(
                     f'Плохие данные: неизвестный ключ "{key}"'
                 )

@@ -24,6 +24,9 @@ from PySide6.QtGui import (
 )
 
 from PySide6.QtWidgets import (
+    QScrollArea,
+    QVBoxLayout,
+    QStackedWidget,
     QStyleOptionViewItem,
     QStyleOption,
     QWidget,
@@ -36,7 +39,7 @@ from PySide6.QtWidgets import (
 
 from .data import CustomDataRole
 
-from .widgets import SynonymsGroupWidget
+from .widgets import SynonymsGroupWidget, SynonymEditorWidget
 
     
 class SynonymsGroupsDelegate(QStyledItemDelegate):
@@ -45,21 +48,22 @@ class SynonymsGroupsDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
         data = index.internalPointer()
-        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Id])
+        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Id], data.on[CustomDataRole.Description])
         wgt.resize(option.rect.size())
 
         painter.setClipRect(option.rect)
 
         painter.save()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         painter.drawPixmap(option.rect, wgt.grab())
         painter.restore()
 
         super().paint(painter, option, index)
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
-        return QSize(100, 50)
+        data = index.internalPointer()
+        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Id], data.on[CustomDataRole.Description])
+        wgt.adjustSize()
+        return wgt.size()
 
 class SynonymsGroupsView(QListView):
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -75,44 +79,72 @@ class SynonymsGroupsView(QListView):
     def selectionChanged(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         self.on_selectionChanged.emit(selected, deselected)
         return super().selectionChanged(selected, deselected)
-    
-    ### абстрактные методы
 
-#    def moveCursor(self, cursorAction: QAbstractItemView.CursorAction, modifiers: Qt.KeyboardModifier) -> QModelIndex:
-#        return QModelIndex()
-#
-#    def isIndexHidden(self, index: QModelIndex | QPersistentModelIndex) -> bool:
-#        return False
-#
-#    def horizontalOffset(self) -> int:
-#        return 0
-#    
-#    def verticalOffset(self) -> int:
-#        return 0
-#    
-#    def setSelection(self, rect: QRect, command: QItemSelectionModel.SelectionFlag) -> None:
-#        return
-#    
-#    def indexAt(self, point: QPoint) -> QModelIndex:
-#        return QModelIndex()
-#    
-#    def visualRect(self, index: QModelIndex | QPersistentModelIndex) -> QRect:
-#        #return QRect(0,0,100,50)
-#        item_h = 50
-#
-#        x = self.horizontalOffset()
-#        y = self.verticalOffset() + item_h*index.row()
-#
-#        return QRect(
-#            x, y,
-#            self.width() - 2 * self.horizontalOffset(),
-#            item_h
-#        )
-#    
-#    def visualRegionForSelection(self, selection: QItemSelection) -> QRegion:
-#        return QRegion()
-#    
-#    def scrollTo(self, index: QModelIndex | QPersistentModelIndex, hint: QAbstractItemView.ScrollHint = ...) -> None:
-#        return
+    def setModel(self, model: QAbstractItemModel | None) -> None:
+        super().setModel(model)
+        if model.rowCount() > 0:
+            self.setCurrentIndex(model.index(0))
+
+
+class SynonymsSetDelegate(QStyledItemDelegate):
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+        data = index.internalPointer()
+        wgt = SynonymEditorWidget(data)
+        wgt.resize(option.rect.size())
+
+        painter.setClipRect(option.rect)
+
+        painter.save()
+        painter.drawPixmap(option.rect, wgt.grab())
+        painter.restore()
+
+        super().paint(painter, option, index)
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
+        data = index.internalPointer()
+        wgt = SynonymEditorWidget(data)
+        wgt.adjustSize()
+        return wgt.size()
+
+class SynonymsSetView(QListView):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
+        self.setSelectionMode(QListView.SelectionMode.SingleSelection)
+        self.__delegate = SynonymsSetDelegate(self)
+        self.setItemDelegate(self.__delegate)
+        self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
+
+class SynonymsList(QStackedWidget):
+    __indexed: dict[int, SynonymsSetView]
+    def addWidget(self, w: QWidget = None) -> int:
+        area = QScrollArea(self)
+        area.setWidgetResizable(True)
+        area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
+
+        #wrapper = QWidget(self)
+        #QVBoxLayout(wrapper)
+        #w.setParent(wrapper)
+
+        area.setWidget(w)
+        return super().addWidget(area)
     
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.__indexed = {}
     
+    def setList(self, view: SynonymsSetView, set_current: bool = False):
+        ''' обновление списка виджетов '''
+        # для нового списка создаём отдельный виджет и сохраняем его индекс
+        if not view in self.__indexed.values():
+            self.__indexed[self.addWidget(view)] = view
+
+        # получаем индекс виджета с полученным списком синонимов
+        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(view)]
+
+        # если указано - устанавливаем текущим виджетом
+        if set_current:
+            self.setCurrentIndex(idx)

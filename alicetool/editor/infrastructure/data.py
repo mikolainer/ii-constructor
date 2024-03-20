@@ -75,18 +75,21 @@ class SynonymsSetModel(QAbstractItemModel):
         if not index.isValid():
             return None
         
-        if role in [Qt.ItemDataRole.DisplayRole, CustomDataRole.Text, Qt.ItemDataRole.EditRole]:
+        if index.row() in range(len(self.__data)) and role in [CustomDataRole.Text, Qt.ItemDataRole.DisplayRole]:
             return self.__data[index.row()]
-
-        return None
+    
+    def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = ...) -> bool:
+        if role in [CustomDataRole.Text, Qt.ItemDataRole.EditRole] and index.row() in range(len(self.__data)):
+            self.__data = value
+            return True
+        
+        return False
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEnabled
     
 
 class SynonymsGroupsModel(QAbstractItemModel):
-    __custom_roles = list[CustomDataRole]
-
     class Item:
         ''' Id, Name, Description, SynonymsSet '''
         on: dict[CustomDataRole, Any]
@@ -96,13 +99,6 @@ class SynonymsGroupsModel(QAbstractItemModel):
     __data : dict[int, Item]
 
     def __init__(self, data: dict[int, Item] = {}, parent: QObject | None = None) -> None:
-        self.__custom_roles = [
-            CustomDataRole.Id,
-            CustomDataRole.Name,
-            CustomDataRole.Description,
-            CustomDataRole.SynonymsSet
-        ]
-
         super().__init__(parent)
         self.__data = data
 
@@ -125,12 +121,9 @@ class SynonymsGroupsModel(QAbstractItemModel):
     def columnCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
         return 1
     
-    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = CustomDataRole.Text) -> Any:
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = CustomDataRole.Name) -> Any:
         if not index.isValid():
             return None
-
-        if role == Qt.ItemDataRole.SizeHintRole:
-            return QSize(40, 40)
         
         for idx, data in enumerate(self.__data.values()):
             if idx == index.row():
@@ -184,13 +177,20 @@ class FlowsModel(QAbstractItemModel):
     def data(self, index: QModelIndex | QPersistentModelIndex, role: int = CustomDataRole.Text) -> Any:
         if not index.isValid():
             return None
-
-        if role in [Qt.ItemDataRole.DisplayRole, CustomDataRole.Text, Qt.ItemDataRole.EditRole]:
-            for idx, item in enumerate(self.__data.values()):
-                if idx == index.row():
-                    return item.on[CustomDataRole.Text]
+        
+        for idx, data in enumerate(self.__data.values()):
+            if idx == index.row():
+                return data.on[role] if role in data.on.keys() else None
 
         return None
+    
+    def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = ...) -> bool:
+        for idx, data in enumerate(self.__data.values()):
+            if idx == index.row():
+                data.on[role] = value
+                return True
+        
+        return False
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEnabled
