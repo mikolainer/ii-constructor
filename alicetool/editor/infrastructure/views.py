@@ -82,8 +82,8 @@ class SynonymsGroupsView(QListView):
 
     def setModel(self, model: QAbstractItemModel | None) -> None:
         super().setModel(model)
-        if model.rowCount() > 0:
-            self.setCurrentIndex(model.index(0))
+        #if model.rowCount() > 0:
+        #    self.setCurrentIndex(model.index(0))
 
 
 class SynonymsSetDelegate(QStyledItemDelegate):
@@ -120,6 +120,8 @@ class SynonymsSetView(QListView):
 
 class SynonymsList(QStackedWidget):
     __indexed: dict[int, SynonymsSetView]
+    __empty_index:int
+
     def addWidget(self, w: QWidget = None) -> int:
         area = QScrollArea(self)
         area.setWidgetResizable(True)
@@ -135,6 +137,10 @@ class SynonymsList(QStackedWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.__indexed = {}
+        self.__empty_index = super().addWidget(QWidget(self))
+
+    def set_empty(self):
+        self.setCurrentIndex(self.__empty_index)
     
     def setList(self, view: SynonymsSetView, set_current: bool = False):
         ''' обновление списка виджетов '''

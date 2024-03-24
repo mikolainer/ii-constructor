@@ -67,13 +67,6 @@ class SynonymsGroupWidget(QWidget):
         main_lay.addWidget(self.__description)
 
         main_lay.setContentsMargins(5,0,5,0)
-    
-    def set_selected(self, selected: bool = True):
-        self.setStyleSheet(
-            'QWidget{background-color: #FFFFFF; border: 2px solid #59A5FF;}'
-            if selected else
-            'QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}'
-        )
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self.clicked.emit()
