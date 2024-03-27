@@ -547,11 +547,15 @@ class StateWidget(QWidget):
             self.__item_on_scene.show_add_btn()
 
 class FlowWidget(QWidget):
+    __id: int
     __title: QLabel
     __description: QLabel
     __synonyms_name: QLabel
     __synonyms_list: QListView
     __slider_btn: QPushButton
+
+    def id(self): return self.__id
+    def name(self): return self.__title.text()
 
     @Slot()
     def __on_slider_click(self):
@@ -567,6 +571,7 @@ class FlowWidget(QWidget):
         super().__init__(parent)
         self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
 
+        self.__id = id
         self.__title = QLabel(name, self)
         self.__title.setWordWrap(True)
         self.__description = QLabel(description, self)
@@ -660,20 +665,28 @@ class Editor(QGraphicsScene):
         return item
     
 class StateMachineQtController:
+    # constants
     __START_SIZE = QRect(0, 0, 2000, 2000)
     __START_SPACINS = 30
 
-    __scene: Editor
-
+    # controlls
     __proj_ctrl: 'ProjectQtController'
     __flow_list: 'FlowList'
     __synonyms_editor: 'SynonymsEditor'
 
+    # scene
+    __scene: Editor
     __states: dict[int, QGraphicsStateItem]
     __steps: dict[int, list[Arrow]]
     __flows: dict[int, FlowWidget]
+
+    # views
     __synonym_groups: dict[int, 'SynonymsGroupWidget']
     __synonyms: dict[int, SynonymsSetView]
+
+    # models
+    __g_model: SynonymsGroupsModel
+    __s_models: dict[int, SynonymsSetModel]
 
     def project_controller(self) -> 'ProjectQtController':
         return self.__proj_ctrl
@@ -698,9 +711,11 @@ class StateMachineQtController:
         self.__flows = {}
         self.__synonyms = {}
         self.__synonym_groups = {}
+        self.__s_models = {}
         
         self.__build_editor()
         self.__init_models()
+        self.set_active()
     
     def add_step(self, from_state_id:int, to_state_id:int):
         arrow = Arrow()
@@ -714,7 +729,7 @@ class StateMachineQtController:
             self.__steps[from_state_id] = [arrow]
 
     def set_active(self):
-        self.__synonyms_editor.set_groups(self.g_model)
+        self.__synonyms_editor.set_groups(self.__g_model)
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
@@ -733,6 +748,10 @@ class StateMachineQtController:
             )
 
     def __init_models(self):
+
+        # потоки (используют наборы синонимов)
+        # TODO: сделать модель потоков
+        # TODO: выести модели наборов синонимов
         data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
 
         for id in data.keys():
@@ -747,18 +766,34 @@ class StateMachineQtController:
 
         self.__flow_list.setList(self.__flows)
 
+        # модели наборов синонимов
+        # TODO: нужно формировать заранее (переделать EditorAPI)
         data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
-
+        
         for group_id in data.keys():
-            self.__synonym_groups[int(group_id)] = SynonymsGroupWidget(data[int(group_id)]['name'], data[int(group_id)]['id'], data[int(group_id)]['description'])
+            gr_id = int(group_id)
+            self.__synonym_groups[gr_id] = SynonymsGroupWidget(
+                data[gr_id]['name'],
+                data[gr_id]['id'],
+                data[gr_id]['description']
+            )
             
-            view = SynonymsSetView()
-            view.setModel(SynonymsSetModel(data[group_id]['values'], int(group_id)))
+            f_id = None
+            for flow_wgt in self.__flows.values():
+                if flow_wgt.name() == data[gr_id]['name']:
+                    f_id = flow_wgt.id()
+                    break
 
-            self.__synonyms[int(group_id)] = view
+            view = SynonymsSetView()
+            self.__s_models[gr_id] = SynonymsSetModel(data[gr_id]['values'], gr_id, f_id)
+            
+            view.setModel(self.__s_models[gr_id])
+            self.__synonyms[gr_id] = view
 
         self.__synonyms_editor.group_selected.connect(self.__on_syn_group_changed)
 
+        # группы синонимов (используют синонимы)
+        # TODO: выести модели наборов синонимов
         g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
         
         for syn_g in self.__synonym_groups.values():
@@ -769,14 +804,14 @@ class StateMachineQtController:
             
             g_model_data[syn_g.id()] = item
 
-        self.g_model = SynonymsGroupsModel(g_model_data)
-        self.set_active()
+        self.__g_model = SynonymsGroupsModel(g_model_data)
+
 
     Slot(list)
     def __on_syn_group_changed(self, selected_index_list):
         if len(selected_index_list):
             selected_index = selected_index_list[0]
-            selected_id = self.g_model.data(selected_index, CustomDataRole.Id)
+            selected_id = self.__g_model.data(selected_index, CustomDataRole.Id)
             self.__synonyms_editor.set_synonyms(self.__synonyms[selected_id], True)
 
 class ProjectQtController:
