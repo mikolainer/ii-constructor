@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QStyleOptionViewItem,
     QStyleOption,
     QWidget,
+    QLineEdit,
     QLabel,
     QAbstractItemView,
     QAbstractItemDelegate,
@@ -89,6 +90,18 @@ class SynonymsGroupsView(QListView):
 class SynonymsSetDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
+
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
+        return super().createEditor(parent, option, index)
+    
+    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().updateEditorGeometry(editor, option, index)
+    
+    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().setEditorData(editor, index)
+    
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
+        model.setData(index, editor.text())
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
         data = index.internalPointer()

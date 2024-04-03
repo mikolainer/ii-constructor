@@ -78,15 +78,15 @@ class SynonymsSetModel(QAbstractItemModel):
         if index.row() in range(len(self.__data)) and role in [CustomDataRole.Text, Qt.ItemDataRole.DisplayRole]:
             return self.__data[index.row()]
     
-    def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = ...) -> bool:
+    def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = CustomDataRole.Text) -> bool:
         if role in [CustomDataRole.Text, Qt.ItemDataRole.EditRole] and index.row() in range(len(self.__data)):
-            self.__data = value
+            self.__data[index.row()] = value
             return True
         
         return False
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEnabled
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
 
 class SynonymsGroupsModel(QAbstractItemModel):
