@@ -546,7 +546,7 @@ class StateWidget(QWidget):
         if not self.__item_on_scene is None:
             self.__item_on_scene.show_add_btn()
 
-class FlowWidget(QWidget):
+class FlowWidget_old(QWidget):
     __id: int
     __title: QLabel
     __description: QLabel
@@ -678,7 +678,7 @@ class StateMachineQtController:
     __scene: Editor
     __states: dict[int, QGraphicsStateItem]
     __steps: dict[int, list[Arrow]]
-    __flows: dict[int, FlowWidget]
+    __flows: dict[int, FlowWidget_old]
 
     # views
     __synonym_groups: dict[int, 'SynonymsGroupWidget']
@@ -755,7 +755,7 @@ class StateMachineQtController:
         data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
 
         for id in data.keys():
-            self.__flows[id] = FlowWidget(
+            self.__flows[id] = FlowWidget_old(
                 id,
                 data[id]['name'],
                 data[id]['description'],
@@ -864,7 +864,7 @@ class FlowList(QWidget):
         lay.setContentsMargins(0,0,0,0)
         lay.addWidget(self.__area)
     
-    def setList(self, items :dict[int, FlowWidget]):
+    def setList(self, items :dict[int, FlowWidget_old]):
         wrapper = QWidget(self)
 
         lay = QVBoxLayout(wrapper)
