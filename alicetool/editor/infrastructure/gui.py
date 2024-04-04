@@ -67,7 +67,7 @@ from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
-from .widgets import SynonymsGroupWidget
+from .widgets import SynonymsGroupWidget, FlowWidget
 from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList
 
 class Arrow(QGraphicsItem):
@@ -546,67 +546,6 @@ class StateWidget(QWidget):
         if not self.__item_on_scene is None:
             self.__item_on_scene.show_add_btn()
 
-class FlowWidget_old(QWidget):
-    __id: int
-    __title: QLabel
-    __description: QLabel
-    __synonyms_name: QLabel
-    __synonyms_list: QListView
-    __slider_btn: QPushButton
-
-    def id(self): return self.__id
-    def name(self): return self.__title.text()
-
-    @Slot()
-    def __on_slider_click(self):
-        self.__slider_btn.setText("^" if self.__slider_btn.isChecked() else "v")
-        self.__synonyms_list.setVisible(self.__slider_btn.isChecked())
-
-    def __init__(self, id :int, 
-                 name: str, description :str,
-                 synonym_values: list, 
-                 start_state :QGraphicsProxyWidget,
-                 parent = None
-                ):
-        super().__init__(parent)
-        self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
-
-        self.__id = id
-        self.__title = QLabel(name, self)
-        self.__title.setWordWrap(True)
-        self.__description = QLabel(description, self)
-        self.__description.setWordWrap(True)
-        self.__synonyms_name = QLabel("синонимы", self)
-        self.__synonyms_list = QListView(self)
-        self.__synonyms_list.hide()
-
-        self.__synonyms_list.setModel(
-            SynonymsSetModel(synonym_values, self.__synonyms_list)
-        )
-        
-        main_lay = QVBoxLayout(self)
-        main_lay.setContentsMargins(0,0,0,0)
-        main_lay.setSpacing(0)
-
-        synonyms_wrapper = QWidget(self)
-        synonyms_lay = QVBoxLayout(synonyms_wrapper)
-
-        synonyms_title_lay = QHBoxLayout()
-        synonyms_title_lay.addWidget(self.__synonyms_name)
-        self.__slider_btn = QPushButton('v', self)
-        self.__slider_btn.setCheckable(True)
-        self.__slider_btn.clicked.connect(
-            lambda: self.__on_slider_click()
-        )
-        synonyms_title_lay.addWidget(self.__slider_btn)
-
-        synonyms_lay.addLayout(synonyms_title_lay)
-        synonyms_lay.addWidget(self.__synonyms_list)
-
-        main_lay.addWidget(self.__title)
-        main_lay.addWidget(self.__description)
-        main_lay.addWidget(synonyms_wrapper)
-
 class ProxyWidgetControll(QGraphicsRectItem):
     def __init__(self, x: float, y: float, w: float, h: float, parent = None):
         super().__init__(x, y, w, h, parent)
@@ -678,7 +617,7 @@ class StateMachineQtController:
     __scene: Editor
     __states: dict[int, QGraphicsStateItem]
     __steps: dict[int, list[Arrow]]
-    __flows: dict[int, FlowWidget_old]
+    __flows: dict[int, FlowWidget]
 
     # views
     __synonym_groups: dict[int, 'SynonymsGroupWidget']
@@ -730,6 +669,7 @@ class StateMachineQtController:
 
     def set_active(self):
         self.__synonyms_editor.set_groups(self.__g_model)
+        self.__flow_list.setList(self.__flows)
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
@@ -748,52 +688,40 @@ class StateMachineQtController:
             )
 
     def __init_models(self):
+        flows_data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
+        synonyms_data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
 
-        # потоки (используют наборы синонимов)
-        # TODO: сделать модель потоков
-        # TODO: выести модели наборов синонимов
-        data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
+        for id in flows_data.keys():
+            gr_id = flows_data[id]['synonym_group_id']
+            self.__s_models[gr_id] = (
+                SynonymsSetModel(synonyms_data[gr_id]['values'], gr_id, id)
+            )
 
-        for id in data.keys():
-            self.__flows[id] = FlowWidget_old(
+            self.__flows[id] = FlowWidget(
                 id,
-                data[id]['name'],
-                data[id]['description'],
-                data[id]['values'],
-                self.__states[data[id]['enter_state_id']],
+                flows_data[id]['name'],
+                flows_data[id]['description'],
+                self.__s_models[gr_id],
+                self.__states[flows_data[id]['enter_state_id']],
                 self.__flow_list
             )
 
-        self.__flow_list.setList(self.__flows)
-
         # модели наборов синонимов
-        # TODO: нужно формировать заранее (переделать EditorAPI)
-        data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
-        
-        for group_id in data.keys():
+        for group_id in synonyms_data.keys():
             gr_id = int(group_id)
             self.__synonym_groups[gr_id] = SynonymsGroupWidget(
-                data[gr_id]['name'],
-                data[gr_id]['id'],
-                data[gr_id]['description']
+                synonyms_data[gr_id]['name'],
+                synonyms_data[gr_id]['id'],
+                synonyms_data[gr_id]['description']
             )
-            
-            f_id = None
-            for flow_wgt in self.__flows.values():
-                if flow_wgt.name() == data[gr_id]['name']:
-                    f_id = flow_wgt.id()
-                    break
 
             view = SynonymsSetView()
-            self.__s_models[gr_id] = SynonymsSetModel(data[gr_id]['values'], gr_id, f_id)
-            
             view.setModel(self.__s_models[gr_id])
             self.__synonyms[gr_id] = view
 
         self.__synonyms_editor.group_selected.connect(self.__on_syn_group_changed)
 
-        # группы синонимов (используют синонимы)
-        # TODO: выести модели наборов синонимов
+        # группы синонимов
         g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
         
         for syn_g in self.__synonym_groups.values():
@@ -864,7 +792,7 @@ class FlowList(QWidget):
         lay.setContentsMargins(0,0,0,0)
         lay.addWidget(self.__area)
     
-    def setList(self, items :dict[int, FlowWidget_old]):
+    def setList(self, items :dict[int, FlowWidget]):
         wrapper = QWidget(self)
 
         lay = QVBoxLayout(wrapper)

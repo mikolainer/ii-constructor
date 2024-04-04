@@ -136,6 +136,9 @@ class Flow:
     def is_required(self) -> bool:
         return 'true' if self.__required else 'false'
     
+    def synonym_group_id(self) -> int:
+        return self.__enter.cmd().id()
+
     def call_names(self) -> list[str]:
         return self.__enter.cmd().values()
 
@@ -163,7 +166,8 @@ class Flow:
             f'name={self.name()}',
             f'description={self.description()}',
             f'values={",".join(self.call_names())}',
-            f'enter_state_id={self.__enter.next_state().id()}'
+            f'enter_state_id={self.__enter.next_state().id()}',
+            f'synonym_group_id={self.synonym_group_id()}',
         ])
 
     @staticmethod
@@ -184,7 +188,7 @@ class Flow:
             key = _item[0]
             value = _item[1]
             
-            if key in ['id', 'enter_state_id']:
+            if key in ['id', 'enter_state_id', 'synonym_group_id']:
                 _data[key] = int(value)
 
             elif key == 'required':
