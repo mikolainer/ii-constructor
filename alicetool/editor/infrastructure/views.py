@@ -2,38 +2,22 @@ from typing import List
 from PySide6.QtCore import (
     QAbstractItemModel,
     QItemSelection,
-    QItemSelectionModel,
     QModelIndex,
     QObject,
     QPersistentModelIndex,
-    QPoint, 
-    QRect,
     QSize,
-    Qt, Slot, Signal,
+    Signal,
 )
 
 from PySide6.QtGui import (
-    QMouseEvent,
-    QPaintEvent,
     QPainter,
-    QRegion,
-    QColor,
-    QPen,
-    QPixmap,
-    QImage,
 )
 
 from PySide6.QtWidgets import (
     QScrollArea,
-    QVBoxLayout,
     QStackedWidget,
     QStyleOptionViewItem,
-    QStyleOption,
     QWidget,
-    QLineEdit,
-    QLabel,
-    QAbstractItemView,
-    QAbstractItemDelegate,
     QStyledItemDelegate,
     QListView,
 )

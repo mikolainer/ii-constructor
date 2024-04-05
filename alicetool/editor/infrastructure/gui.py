@@ -2,15 +2,12 @@ import sys
 from math import sqrt, pi
 
 from PySide6.QtCore import (
-    QItemSelection,
     Qt,
     QSize,
     QPoint,
     QPointF,
     QRectF,
     QRect,
-    QStringListModel,
-    QModelIndex,
     Slot, Signal,
     QTimer
 )
@@ -30,11 +27,9 @@ from PySide6.QtGui import (
     QBrush,
     QPen,
     QPainter,
-    QImage
 )
 
 from PySide6.QtWidgets import (
-    QLayoutItem,
     QGraphicsSceneMouseEvent,
     QMessageBox,
     QMainWindow,
@@ -55,7 +50,6 @@ from PySide6.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
     QGraphicsItem,
-    QListView,
     QSpacerItem,
     QStyleOptionGraphicsItem,
     QGraphicsProxyWidget,
@@ -63,11 +57,11 @@ from PySide6.QtWidgets import (
     QGraphicsPixmapItem 
 )
 
-from alicetool.editor.services.api import EditorAPI
 import alicetool.editor.resources.rc_icons
+from alicetool.editor.services.api import EditorAPI
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
-from .widgets import SynonymsGroupWidget, FlowWidget
+from .widgets import SynonymsGroupWidget
 from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, FlowsView
 
 class Arrow(QGraphicsItem):

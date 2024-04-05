@@ -1,23 +1,16 @@
 from PySide6.QtCore import (
-    Qt, Slot, Signal, QAbstractItemModel,
+    Slot, Signal
 )
 
 from PySide6.QtGui import (
     QMouseEvent,
-    QPaintEngine,
 )
 
 from PySide6.QtWidgets import (
-    QLayoutItem,
     QWidget,
-    QStackedWidget,
     QVBoxLayout,
-    QScrollArea,
-    QSizePolicy,
-    QSpacerItem,
     QLineEdit,
     QLabel,
-    QSpacerItem,
     QPushButton,
     QListView,
     QHBoxLayout,
