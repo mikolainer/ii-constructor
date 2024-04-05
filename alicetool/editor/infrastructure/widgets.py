@@ -1,5 +1,5 @@
 from PySide6.QtCore import (
-    Qt, Slot, Signal,
+    Qt, Slot, Signal, QAbstractItemModel,
 )
 
 from PySide6.QtGui import (
@@ -104,7 +104,6 @@ class FlowWidget(QWidget):
                 ):
         super().__init__(parent)
         self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
-
         self.__id = id
         self.__title = QLabel(name, self)
         self.__title.setWordWrap(True)

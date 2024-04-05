@@ -68,7 +68,7 @@ import alicetool.editor.resources.rc_icons
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
 from .widgets import SynonymsGroupWidget, FlowWidget
-from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList
+from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, FlowsView
 
 class Arrow(QGraphicsItem):
     __start_point: QPointF
@@ -617,13 +617,14 @@ class StateMachineQtController:
     __scene: Editor
     __states: dict[int, QGraphicsStateItem]
     __steps: dict[int, list[Arrow]]
-    __flows: dict[int, FlowWidget]
 
     # views
+    __flows: FlowsView
     __synonym_groups: dict[int, 'SynonymsGroupWidget']
     __synonyms: dict[int, SynonymsSetView]
 
     # models
+    __f_model: FlowsModel
     __g_model: SynonymsGroupsModel
     __s_models: dict[int, SynonymsSetModel]
 
@@ -647,7 +648,6 @@ class StateMachineQtController:
         self.__synonyms_editor = synonyms_list
         self.__states = {}
         self.__steps = {}
-        self.__flows = {}
         self.__synonyms = {}
         self.__synonym_groups = {}
         self.__s_models = {}
@@ -669,7 +669,7 @@ class StateMachineQtController:
 
     def set_active(self):
         self.__synonyms_editor.set_groups(self.__g_model)
-        self.__flow_list.setList(self.__flows)
+        self.__flow_list.setList(self.__flows, True)
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
@@ -691,20 +691,25 @@ class StateMachineQtController:
         flows_data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
         synonyms_data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
 
+        f_model_data: dict[int, FlowsModel.Item] = {}
+
         for id in flows_data.keys():
             gr_id = flows_data[id]['synonym_group_id']
             self.__s_models[gr_id] = (
                 SynonymsSetModel(synonyms_data[gr_id]['values'], gr_id, id)
             )
 
-            self.__flows[id] = FlowWidget(
-                id,
-                flows_data[id]['name'],
-                flows_data[id]['description'],
-                self.__s_models[gr_id],
-                self.__states[flows_data[id]['enter_state_id']],
-                self.__flow_list
-            )
+            item = SynonymsGroupsModel.Item()
+            item.on[CustomDataRole.Id] = id
+            item.on[CustomDataRole.Name] = flows_data[id]['name']
+            item.on[CustomDataRole.Description] = flows_data[id]['description']
+            item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id],
+            item.on[CustomDataRole.EnterStateId] = flows_data[id]['enter_state_id']
+            
+            f_model_data[id] = item
+
+        self.__flows = FlowsView()
+        self.__flows.setModel(FlowsModel(f_model_data, self.__flows))
 
         # модели наборов синонимов
         for group_id in synonyms_data.keys():
@@ -732,7 +737,7 @@ class StateMachineQtController:
             
             g_model_data[syn_g.id()] = item
 
-        self.__g_model = SynonymsGroupsModel(g_model_data)
+        self.__g_model = SynonymsGroupsModel(g_model_data, self.__synonyms_editor)
 
 
     Slot(list)
@@ -779,30 +784,39 @@ class ProjectQtController:
     def saved(self):
         ''' закрыть проект '''
 
-class FlowList(QWidget):
-    __area: QScrollArea
+class FlowList(QStackedWidget):
+    __indexed: dict[int, FlowsView]
+    __empty_index:int
 
+    def addWidget(self, w: QWidget = None) -> int:
+        area = QScrollArea(self)
+        area.setWidgetResizable(True)
+        area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
+
+        area.setWidget(w)
+        return super().addWidget(area)
+    
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.__area = QScrollArea(self)
-        self.__area.setWidgetResizable(True)
-        self.__area.setStyleSheet("background-color: #74869C;")
-        
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(0,0,0,0)
-        lay.addWidget(self.__area)
+        self.__indexed = {}
+        self.__empty_index = super().addWidget(QWidget(self))
+        self.setMinimumWidth(200)
+
+    def set_empty(self):
+        self.setCurrentIndex(self.__empty_index)
     
-    def setList(self, items :dict[int, FlowWidget]):
-        wrapper = QWidget(self)
+    def setList(self, view: FlowsView, set_current: bool = False):
+        ''' обновление списка виджетов '''
+        # для нового списка создаём отдельный виджет и сохраняем его индекс
+        if not view in self.__indexed.values():
+            self.__indexed[self.addWidget(view)] = view
 
-        lay = QVBoxLayout(wrapper)
+        # получаем индекс виджета с полученным списком синонимов
+        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(view)]
 
-        for wgt_id in items.keys():
-            lay.addWidget(items[wgt_id])
-
-        self.__area.setWidget(wrapper)
-
-        lay.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
+        # если указано - устанавливаем текущим виджетом
+        if set_current:
+            self.setCurrentIndex(idx)
 
 class SynonymsEditor(QWidget):
     __oldPos: QPoint | None

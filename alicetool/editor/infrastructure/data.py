@@ -36,6 +36,7 @@ class CustomDataRole(IntEnum):
     Description : 'CustomDataRole' = Qt.ItemDataRole.UserRole +2,   # str
     Text        : 'CustomDataRole' = Qt.ItemDataRole.UserRole +3,   # str
     SynonymsSet : 'CustomDataRole' = Qt.ItemDataRole.UserRole +4,   # SynonymsSetModel
+    EnterStateId: 'CustomDataRole' = Qt.ItemDataRole.UserRole +5,   # int
 
 
 class SynonymsSetModel(QAbstractItemModel):
@@ -46,8 +47,8 @@ class SynonymsSetModel(QAbstractItemModel):
     
     def __init__( self,
         values: list[str] = [],
-        group_id:int = None,
-        flow_id:int = None,
+        group_id: int = None,
+        flow_id: int = None,
         parent: QObject | None = None
     ) -> None:
         
@@ -87,7 +88,8 @@ class SynonymsSetModel(QAbstractItemModel):
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-    
+
+
 
 class SynonymsGroupsModel(QAbstractItemModel):
     class Item:
@@ -145,7 +147,7 @@ class SynonymsGroupsModel(QAbstractItemModel):
 class FlowsModel(QAbstractItemModel):
     class Item:
         ''' Id, Name, Description, SynonymsSet '''
-        on: dict[CustomDataRole: Any]
+        on: dict[CustomDataRole, Any]
         def __init__(self) -> None:
             self.on = {}
 
@@ -193,4 +195,4 @@ class FlowsModel(QAbstractItemModel):
         return False
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEnabled
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable

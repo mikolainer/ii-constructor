@@ -38,9 +38,8 @@ from PySide6.QtWidgets import (
     QListView,
 )
 
-from .data import CustomDataRole
-
-from .widgets import SynonymsGroupWidget, SynonymEditorWidget
+from .data import CustomDataRole, SynonymsSetModel
+from .widgets import SynonymsGroupWidget, SynonymEditorWidget, FlowWidget
 
     
 class SynonymsGroupsDelegate(QStyledItemDelegate):
@@ -80,11 +79,6 @@ class SynonymsGroupsView(QListView):
     def selectionChanged(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         self.on_selectionChanged.emit(selected, deselected)
         return super().selectionChanged(selected, deselected)
-
-    def setModel(self, model: QAbstractItemModel | None) -> None:
-        super().setModel(model)
-        #if model.rowCount() > 0:
-        #    self.setCurrentIndex(model.index(0))
 
 
 class SynonymsSetDelegate(QStyledItemDelegate):
@@ -167,3 +161,69 @@ class SynonymsList(QStackedWidget):
         # если указано - устанавливаем текущим виджетом
         if set_current:
             self.setCurrentIndex(idx)
+
+class FlowsDelegate(QStyledItemDelegate):
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
+        synonyms:SynonymsSetModel = index.data(CustomDataRole.SynonymsSet)
+        return FlowWidget(
+            index.data(CustomDataRole.Id),
+            index.data(CustomDataRole.Name),
+            index.data(CustomDataRole.Description),
+            synonyms[0],
+            None,
+            parent
+        )
+    
+    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().updateEditorGeometry(editor, option, index)
+    
+    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().setEditorData(editor, index)
+    
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
+        '''ReadOnly'''
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+        synonyms:SynonymsSetModel = index.data(CustomDataRole.SynonymsSet)
+        wgt = FlowWidget(
+            index.data(CustomDataRole.Id),
+            index.data(CustomDataRole.Name),
+            index.data(CustomDataRole.Description),
+            synonyms[0],
+            None,
+            self.parent()
+        )
+        wgt.resize(option.rect.size())
+
+        painter.setClipRect(option.rect)
+
+        painter.save()
+        painter.drawPixmap(option.rect, wgt.grab())
+        painter.restore()
+
+        super().paint(painter, option, index)
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
+        synonyms = index.internalPointer().on[CustomDataRole.SynonymsSet]
+        #synonyms = index.data(CustomDataRole.SynonymsSet)
+        wgt = FlowWidget(
+            index.data(CustomDataRole.Id),
+            index.data(CustomDataRole.Name),
+            index.data(CustomDataRole.Description),
+            synonyms[0],
+            None
+        )
+        wgt.adjustSize()
+        return wgt.size()
+
+class FlowsView(QListView):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
+        self.setSelectionMode(QListView.SelectionMode.SingleSelection)
+        self.__delegate = FlowsDelegate(self)
+        self.setItemDelegate(self.__delegate)
+        self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
