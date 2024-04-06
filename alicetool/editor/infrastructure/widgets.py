@@ -84,10 +84,19 @@ class FlowWidget(QWidget):
     def id(self): return self.__id
     def name(self): return self.__title.text()
 
+    slider_visible_changed = Signal(bool)
+
+    def set_slider_visible(self, visible:bool):
+        self.__on_slider_click(visible)
+
     @Slot()
-    def __on_slider_click(self):
-        self.__slider_btn.setText("^" if self.__slider_btn.isChecked() else "v")
-        self.__synonyms_list.setVisible(self.__slider_btn.isChecked())
+    def __on_slider_click(self, checked: bool):
+        self.__slider_btn.setText("^" if checked else "v")
+        self.__synonyms_list.setVisible(checked)
+
+        if not self.sender() is self:
+            self.slider_visible_changed.emit(checked)
+
 
     def __init__(self, id :int, 
                  name: str, description :str,
@@ -118,9 +127,7 @@ class FlowWidget(QWidget):
         synonyms_title_lay.addWidget(self.__synonyms_name)
         self.__slider_btn = QPushButton('v', self)
         self.__slider_btn.setCheckable(True)
-        self.__slider_btn.clicked.connect(
-            lambda: self.__on_slider_click()
-        )
+        self.__slider_btn.clicked.connect(self.__on_slider_click)
         synonyms_title_lay.addWidget(self.__slider_btn)
 
         synonyms_lay.addLayout(synonyms_title_lay)

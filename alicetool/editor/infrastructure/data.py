@@ -11,12 +11,13 @@ from PySide6.QtCore import (
 
 @verify(UNIQUE)
 class CustomDataRole(IntEnum):
-    Id          : 'CustomDataRole' = Qt.ItemDataRole.UserRole,      # int
-    Name        : 'CustomDataRole' = Qt.ItemDataRole.UserRole +1,   # str
-    Description : 'CustomDataRole' = Qt.ItemDataRole.UserRole +2,   # str
-    Text        : 'CustomDataRole' = Qt.ItemDataRole.UserRole +3,   # str
-    SynonymsSet : 'CustomDataRole' = Qt.ItemDataRole.UserRole +4,   # SynonymsSetModel
-    EnterStateId: 'CustomDataRole' = Qt.ItemDataRole.UserRole +5,   # int
+    Id              : 'CustomDataRole' = Qt.ItemDataRole.UserRole,      # int
+    Name            : 'CustomDataRole' = Qt.ItemDataRole.UserRole +1,   # str
+    Description     : 'CustomDataRole' = Qt.ItemDataRole.UserRole +2,   # str
+    Text            : 'CustomDataRole' = Qt.ItemDataRole.UserRole +3,   # str
+    SynonymsSet     : 'CustomDataRole' = Qt.ItemDataRole.UserRole +4,   # SynonymsSetModel
+    EnterStateId    : 'CustomDataRole' = Qt.ItemDataRole.UserRole +5,   # int
+    SliderVisability: 'CustomDataRole' = Qt.ItemDataRole.UserRole +6,   # bool
 
 
 class SynonymsSetModel(QAbstractItemModel):
@@ -162,7 +163,15 @@ class FlowsModel(QAbstractItemModel):
         
         for idx, data in enumerate(self.__data.values()):
             if idx == index.row():
-                return data.on[role] if role in data.on.keys() else None
+                # setted data
+                if role in data.on.keys():
+                    return data.on[role]
+                # default values
+                elif role == CustomDataRole.SliderVisability:
+                    return False
+                # not setted and no default describtion
+                else:
+                    return None
 
         return None
     

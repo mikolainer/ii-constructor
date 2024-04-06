@@ -1,15 +1,18 @@
 from typing import List
 from PySide6.QtCore import (
     QAbstractItemModel,
+    QEvent,
     QItemSelection,
     QModelIndex,
     QObject,
     QPersistentModelIndex,
     QSize,
     Signal,
+    Slot
 )
 
 from PySide6.QtGui import (
+    QMouseEvent,
     QPainter,
 )
 
@@ -20,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
     QStyledItemDelegate,
     QListView,
+    QTableView,
+    QHeaderView,
 )
 
 from .data import CustomDataRole, SynonymsSetModel
@@ -149,17 +154,36 @@ class SynonymsList(QStackedWidget):
 class FlowsDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
+        if isinstance(parent, FlowsView):
+            parent.installEventFilter(self)
+
+    def __on_slider_visible_changed(self, visible:bool, index:QModelIndex, editor:FlowWidget):
+        index.model().setData(
+            index, visible, CustomDataRole.SliderVisability
+        )
+        editor.adjustSize()
+        self.parent().setRowHeight(index.row(), editor.height())
+
+    def destroyEditor(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+        self.__editor = None
+        return super().destroyEditor(editor, index)
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
-        synonyms:SynonymsSetModel = index.data(CustomDataRole.SynonymsSet)
-        return FlowWidget(
+        editor = FlowWidget(
             index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
-            synonyms[0],
-            None,
+            index.data(CustomDataRole.SynonymsSet)[0],
+            self.parent(),
             parent
         )
+        editor.set_slider_visible(index.data(CustomDataRole.SliderVisability))
+
+        editor.slider_visible_changed.connect(
+            lambda visible: self.__on_slider_visible_changed(visible, index, editor)
+        )
+
+        return editor
     
     def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
         super().updateEditorGeometry(editor, option, index)
@@ -171,15 +195,15 @@ class FlowsDelegate(QStyledItemDelegate):
         '''ReadOnly'''
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
-        synonyms:SynonymsSetModel = index.data(CustomDataRole.SynonymsSet)
         wgt = FlowWidget(
             index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
-            synonyms[0],
+            index.data(CustomDataRole.SynonymsSet)[0],
             None,
             self.parent()
         )
+        wgt.set_slider_visible(index.data(CustomDataRole.SliderVisability))
         wgt.resize(option.rect.size())
 
         painter.setClipRect(option.rect)
@@ -191,23 +215,41 @@ class FlowsDelegate(QStyledItemDelegate):
         super().paint(painter, option, index)
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
-        synonyms = index.internalPointer().on[CustomDataRole.SynonymsSet]
-        #synonyms = index.data(CustomDataRole.SynonymsSet)
         wgt = FlowWidget(
             index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
-            synonyms[0],
+            index.data(CustomDataRole.SynonymsSet)[0],
             None
         )
+        wgt.set_slider_visible(index.data(CustomDataRole.SliderVisability))
         wgt.adjustSize()
         return wgt.size()
 
-class FlowsView(QListView):
+class FlowsView(QTableView):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.__last_row = -1
         self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
         self.setSelectionMode(QListView.SelectionMode.SingleSelection)
         self.__delegate = FlowsDelegate(self)
         self.setItemDelegate(self.__delegate)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().hide()
+        self.verticalHeader().hide()
+
+        self.setEditTriggers(QTableView.EditTrigger.AllEditTriggers)
+        self.setMouseTracking(True)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        item = self.indexAt(event.pos())
+        if self.isPersistentEditorOpen(item):
+            self.closePersistentEditor(item)
+
+        if item.isValid():
+            self.setCurrentIndex(item)
+            self.openPersistentEditor(item)
+
+        return super().mouseMoveEvent(event)
