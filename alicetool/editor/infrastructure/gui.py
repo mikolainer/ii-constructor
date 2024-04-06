@@ -614,7 +614,7 @@ class StateMachineQtController:
 
     # views
     __flows: FlowsView
-    __synonym_groups: dict[int, 'SynonymsGroupWidget']
+    __synonym_groups: SynonymsGroupsView
     __synonyms: dict[int, SynonymsSetView]
 
     # models
@@ -643,7 +643,7 @@ class StateMachineQtController:
         self.__states = {}
         self.__steps = {}
         self.__synonyms = {}
-        self.__synonym_groups = {}
+        self.__synonym_groups = SynonymsGroupsView(self.__synonyms_editor)
         self.__s_models = {}
         
         self.__build_editor()
@@ -662,7 +662,7 @@ class StateMachineQtController:
             self.__steps[from_state_id] = [arrow]
 
     def set_active(self):
-        self.__synonyms_editor.set_groups(self.__g_model)
+        self.__synonyms_editor.set_groups(self.__synonym_groups)
         self.__flow_list.setList(self.__flows, True)
 
     def __build_editor(self):
@@ -705,34 +705,26 @@ class StateMachineQtController:
         self.__flows = FlowsView()
         self.__flows.setModel(FlowsModel(f_model_data, self.__flows))
 
-        # модели наборов синонимов
+        # группы синонимов
+        g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
         for group_id in synonyms_data.keys():
             gr_id = int(group_id)
-            self.__synonym_groups[gr_id] = SynonymsGroupWidget(
-                synonyms_data[gr_id]['name'],
-                synonyms_data[gr_id]['id'],
-                synonyms_data[gr_id]['description']
-            )
 
             view = SynonymsSetView()
             view.setModel(self.__s_models[gr_id])
             self.__synonyms[gr_id] = view
-
-        self.__synonyms_editor.group_selected.connect(self.__on_syn_group_changed)
-
-        # группы синонимов
-        g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
-        
-        for syn_g in self.__synonym_groups.values():
-            item = SynonymsGroupsModel.Item()
-            item.on[CustomDataRole.Id] = syn_g.id()
-            item.on[CustomDataRole.Name] = syn_g.name()
-            item.on[CustomDataRole.Description] = syn_g.description()
             
-            g_model_data[syn_g.id()] = item
+            item = SynonymsGroupsModel.Item()
+            item.on[CustomDataRole.Id] = synonyms_data[gr_id]['id']
+            item.on[CustomDataRole.Name] = synonyms_data[gr_id]['name']
+            item.on[CustomDataRole.Description] = synonyms_data[gr_id]['description']
+            g_model_data[gr_id] = item
 
         self.__g_model = SynonymsGroupsModel(g_model_data, self.__synonyms_editor)
-
+        self.__synonym_groups.setModel(self.__g_model)
+        self.__synonym_groups.selectionModel().selectionChanged.connect(
+            lambda now, prev: self.__on_syn_group_changed(now.indexes())
+        )
 
     Slot(list)
     def __on_syn_group_changed(self, selected_index_list):
@@ -818,9 +810,8 @@ class SynonymsEditor(QWidget):
     __exit_btn: QPushButton
 
     __synonyms_list: SynonymsList
-    __group_list: SynonymsGroupsView
-
-    group_selected = Signal(list)
+    __group_list: QStackedWidget
+    __empty_index: int
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
@@ -868,10 +859,9 @@ class SynonymsEditor(QWidget):
         self.__exit_btn.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")
         layout.addWidget(self.__exit_btn)
 
-        self.__group_list = SynonymsGroupsView(self)
-        self.__group_list.on_selectionChanged.connect(
-            lambda selected, deselected: self.group_selected.emit(selected.indexes())
-        )
+        self.__group_list = QStackedWidget(self)
+        self.__group_list.resize(200, self.__group_list.height())
+        self.__empty_index = self.__group_list.addWidget(QWidget(self.__group_list))
         splitter.addWidget(self.__group_list)
 
         self.__synonyms_list = SynonymsList(self)
@@ -886,8 +876,12 @@ class SynonymsEditor(QWidget):
     def set_synonyms(self, view: SynonymsSetView, set_current:bool = False):
         self.__synonyms_list.setList(view, set_current)
         
-    def set_groups(self, model: SynonymsGroupsModel):
-        self.__group_list.setModel(model)
+    def set_groups(self, view: SynonymsGroupsModel):
+        index = self.__group_list.indexOf(view)
+        if index == -1:
+            index = self.__group_list.addWidget(view)
+
+        self.__group_list.setCurrentIndex(index)
         self.__synonyms_list.set_empty()
 
     def mousePressEvent(self, event):

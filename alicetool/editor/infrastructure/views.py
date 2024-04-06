@@ -7,7 +7,8 @@ from PySide6.QtCore import (
     QPersistentModelIndex,
     QSize,
     Signal,
-    Slot
+    Slot,
+    Qt,
 )
 
 from PySide6.QtGui import (
@@ -30,7 +31,6 @@ from PySide6.QtWidgets import (
     QGraphicsProxyWidget,
     QLabel,
     QVBoxLayout,
-    QLineEdit,
 )
 
 from .data import CustomDataRole, SynonymsSetModel
@@ -150,7 +150,6 @@ class SynonymsGroupsView(QListView):
         self.on_selectionChanged.emit(selected, deselected)
         return super().selectionChanged(selected, deselected)
 
-
 class SynonymsSetDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -162,9 +161,11 @@ class SynonymsSetDelegate(QStyledItemDelegate):
         super().updateEditorGeometry(editor, option, index)
     
     def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().setEditorData(editor, index)
         editor.setText(index.data())
     
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().setModelData(editor, model, index)
         model.setData(index, editor.text())
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
