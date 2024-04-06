@@ -1,7 +1,6 @@
 from typing import List
 from PySide6.QtCore import (
     QAbstractItemModel,
-    QEvent,
     QItemSelection,
     QModelIndex,
     QObject,
@@ -25,11 +24,93 @@ from PySide6.QtWidgets import (
     QListView,
     QTableView,
     QHeaderView,
+    QPushButton,
+    QListView,
+    QHBoxLayout,
+    QGraphicsProxyWidget,
+    QLabel,
+    QVBoxLayout,
+    QLineEdit,
 )
 
 from .data import CustomDataRole, SynonymsSetModel
-from .widgets import SynonymsGroupWidget, SynonymEditorWidget, FlowWidget
+from .widgets import SynonymsGroupWidget, SynonymEditorWidget
 
+class FlowSynonymsSetDelegate(QStyledItemDelegate):
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
+        return super().createEditor(parent, option, index)
+
+    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+        editor.setText(index.data())
+
+class FlowSynonymsSetView(QListView):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setItemDelegate(FlowSynonymsSetDelegate(self))
+
+class FlowWidget(QWidget):
+    __id: int
+    __title: QLabel
+    __description: QLabel
+    __synonyms_name: QLabel
+    __synonyms_list: FlowSynonymsSetView
+    __slider_btn: QPushButton
+
+    def id(self): return self.__id
+    def name(self): return self.__title.text()
+
+    slider_visible_changed = Signal(bool)
+
+    def set_slider_visible(self, visible:bool):
+        self.__on_slider_click(visible)
+
+    @Slot()
+    def __on_slider_click(self, checked: bool):
+        self.__slider_btn.setText("^" if checked else "v")
+        self.__synonyms_list.setVisible(checked)
+
+        if not self.sender() is self:
+            self.slider_visible_changed.emit(checked)
+
+
+    def __init__(self, id :int, 
+                 name: str, description :str,
+                 synonyms: SynonymsSetModel, 
+                 start_state :QGraphicsProxyWidget,
+                 parent = None
+                ):
+        super().__init__(parent)
+        self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
+        self.__id = id
+        self.__title = QLabel(name, self)
+        self.__title.setWordWrap(True)
+        self.__description = QLabel(description, self)
+        self.__description.setWordWrap(True)
+        self.__synonyms_name = QLabel("синонимы", self)
+        self.__synonyms_list = FlowSynonymsSetView(self)
+        self.__synonyms_list.hide()
+        self.__synonyms_list.setModel(synonyms)
+        
+        main_lay = QVBoxLayout(self)
+        main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setSpacing(0)
+
+        synonyms_wrapper = QWidget(self)
+        synonyms_lay = QVBoxLayout(synonyms_wrapper)
+
+        synonyms_title_lay = QHBoxLayout()
+        synonyms_title_lay.addWidget(self.__synonyms_name)
+        self.__slider_btn = QPushButton('v', self)
+        self.__slider_btn.setCheckable(True)
+        self.__slider_btn.clicked.connect(self.__on_slider_click)
+        synonyms_title_lay.addWidget(self.__slider_btn)
+
+        synonyms_lay.addLayout(synonyms_title_lay)
+        synonyms_lay.addWidget(self.__synonyms_list)
+
+        main_lay.addWidget(self.__title)
+        main_lay.addWidget(self.__description)
+        main_lay.addWidget(synonyms_wrapper)
     
 class SynonymsGroupsDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
@@ -81,7 +162,7 @@ class SynonymsSetDelegate(QStyledItemDelegate):
         super().updateEditorGeometry(editor, option, index)
     
     def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
-        super().setEditorData(editor, index)
+        editor.setText(index.data())
     
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
         model.setData(index, editor.text())

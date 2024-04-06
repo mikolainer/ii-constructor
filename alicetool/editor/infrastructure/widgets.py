@@ -1,5 +1,5 @@
 from PySide6.QtCore import (
-    Slot, Signal
+    Signal
 )
 
 from PySide6.QtGui import (
@@ -11,10 +11,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QLineEdit,
     QLabel,
-    QPushButton,
-    QListView,
-    QHBoxLayout,
-    QGraphicsProxyWidget,
 )
 
 from .data import SynonymsSetModel
@@ -71,68 +67,3 @@ class SynonymsGroupWidget(QWidget):
         self.clicked.emit()
         event.accept()
         #return super().mouseReleaseEvent(event)
-
-
-class FlowWidget(QWidget):
-    __id: int
-    __title: QLabel
-    __description: QLabel
-    __synonyms_name: QLabel
-    __synonyms_list: QListView
-    __slider_btn: QPushButton
-
-    def id(self): return self.__id
-    def name(self): return self.__title.text()
-
-    slider_visible_changed = Signal(bool)
-
-    def set_slider_visible(self, visible:bool):
-        self.__on_slider_click(visible)
-
-    @Slot()
-    def __on_slider_click(self, checked: bool):
-        self.__slider_btn.setText("^" if checked else "v")
-        self.__synonyms_list.setVisible(checked)
-
-        if not self.sender() is self:
-            self.slider_visible_changed.emit(checked)
-
-
-    def __init__(self, id :int, 
-                 name: str, description :str,
-                 synonyms: SynonymsSetModel, 
-                 start_state :QGraphicsProxyWidget,
-                 parent = None
-                ):
-        super().__init__(parent)
-        self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
-        self.__id = id
-        self.__title = QLabel(name, self)
-        self.__title.setWordWrap(True)
-        self.__description = QLabel(description, self)
-        self.__description.setWordWrap(True)
-        self.__synonyms_name = QLabel("синонимы", self)
-        self.__synonyms_list = QListView(self)
-        self.__synonyms_list.hide()
-        self.__synonyms_list.setModel(synonyms)
-        
-        main_lay = QVBoxLayout(self)
-        main_lay.setContentsMargins(0,0,0,0)
-        main_lay.setSpacing(0)
-
-        synonyms_wrapper = QWidget(self)
-        synonyms_lay = QVBoxLayout(synonyms_wrapper)
-
-        synonyms_title_lay = QHBoxLayout()
-        synonyms_title_lay.addWidget(self.__synonyms_name)
-        self.__slider_btn = QPushButton('v', self)
-        self.__slider_btn.setCheckable(True)
-        self.__slider_btn.clicked.connect(self.__on_slider_click)
-        synonyms_title_lay.addWidget(self.__slider_btn)
-
-        synonyms_lay.addLayout(synonyms_title_lay)
-        synonyms_lay.addWidget(self.__synonyms_list)
-
-        main_lay.addWidget(self.__title)
-        main_lay.addWidget(self.__description)
-        main_lay.addWidget(synonyms_wrapper)
