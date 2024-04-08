@@ -61,8 +61,7 @@ import alicetool.editor.resources.rc_icons
 from alicetool.editor.services.api import EditorAPI
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
-from .widgets import SynonymsGroupWidget
-from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, FlowsView
+from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, FlowsView, SynonymsSelectorView
 
 class Arrow(QGraphicsItem):
     __start_point: QPointF
@@ -606,6 +605,9 @@ class StateMachineQtController:
     __proj_ctrl: 'ProjectQtController'
     __flow_list: 'FlowList'
     __synonyms_editor: 'SynonymsEditor'
+    __main_window: 'MainWindow'
+
+    __selector: None | SynonymsSelectorView
 
     # scene
     __scene: Editor
@@ -632,11 +634,14 @@ class StateMachineQtController:
         proj_ctrl: 'ProjectQtController',
         flow_list: 'FlowList',
         synonyms_list: 'SynonymsEditor',
+        main_window: 'MainWindow'
     ):
         self.__scene = Editor(self)
+        self.__selector = None
 
         self.__proj_ctrl = proj_ctrl
         self.__proj_ctrl.editor().setScene(self.__scene)
+        self.__main_window = main_window
 
         self.__flow_list = flow_list
         self.__synonyms_editor = synonyms_list
@@ -651,6 +656,21 @@ class StateMachineQtController:
         self.set_active()
     
     def add_step(self, from_state_id:int, to_state_id:int):
+        if not self.__selector is None:
+            self.__selector.show()
+            return
+
+        self.__selector = SynonymsSelectorView(self.__main_window)
+        self.__selector.setModel(self.__g_model)
+        self.__selector.show()
+        self.__selector.item_selected.connect(
+            lambda g_id: EditorAPI.instance().add_step(
+                self.project_controller().project_id(),
+                from_state_id, to_state_id, g_id
+            )
+        )
+
+    def step_added(self, from_state_id:int, to_state_id:int, synonyms_g:int):
         arrow = Arrow()
         self.__scene.addItem(arrow)
         self.__states[from_state_id].arrow_connect_as_start(arrow)
@@ -660,6 +680,9 @@ class StateMachineQtController:
             self.__steps[from_state_id].append(arrow)
         else:
             self.__steps[from_state_id] = [arrow]
+
+        self.__selector.accept()
+        self.__selector = None
 
     def set_active(self):
         self.__synonyms_editor.set_groups(self.__synonym_groups)
@@ -697,7 +720,7 @@ class StateMachineQtController:
             item.on[CustomDataRole.Id] = id
             item.on[CustomDataRole.Name] = flows_data[id]['name']
             item.on[CustomDataRole.Description] = flows_data[id]['description']
-            item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id],
+            item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id]
             item.on[CustomDataRole.EnterStateId] = flows_data[id]['enter_state_id']
             
             f_model_data[id] = item
@@ -718,6 +741,7 @@ class StateMachineQtController:
             item.on[CustomDataRole.Id] = synonyms_data[gr_id]['id']
             item.on[CustomDataRole.Name] = synonyms_data[gr_id]['name']
             item.on[CustomDataRole.Description] = synonyms_data[gr_id]['description']
+            item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id]
             g_model_data[gr_id] = item
 
         self.__g_model = SynonymsGroupsModel(g_model_data, self.__synonyms_editor)

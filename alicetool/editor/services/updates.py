@@ -1,13 +1,16 @@
 from collections.abc import Callable
 
 from alicetool.editor.domain.projects import ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.editor.infrastructure.gui import ProjectQtController, StateMachineQtController, FlowList, SynonymsEditor, Workspaces
+from alicetool.editor.infrastructure.gui import ProjectQtController, StateMachineQtController, FlowList, SynonymsEditor, Workspaces, MainWindow
 
 class StateMachineGuiRefresher(StateMachineNotifier):
     __sm_ctrl: StateMachineQtController
 
-    def __init__( self, sm_ctrl:StateMachineQtController ):
+    def __init__(self, sm_ctrl:StateMachineQtController ):
         self.__sm_ctrl = sm_ctrl
+
+    def step_added(self, from_state:int, to_state:int, synonyms_id:int):
+        self.__sm_ctrl.step_added(from_state, to_state, synonyms_id)
 
     def state_created(self, project_id :int, id :int, data):
         ...
@@ -46,6 +49,7 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
     __flow_list: FlowList
     __synonyms: SynonymsEditor
     __workspaces: Workspaces
+    __main_window: MainWindow
 
     def __init__( self,
         set_content_refresher_callback: Callable[
@@ -53,13 +57,15 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
         ],
         flow_list: FlowList,
         synonyms: SynonymsEditor,
-        workspaces: Workspaces
+        workspaces: Workspaces,
+        main_window: MainWindow
     ):
         self.__opened_projects = {}
         self.__set_content_refresher = set_content_refresher_callback
         self.__flow_list = flow_list
         self.__synonyms = synonyms
         self.__workspaces = workspaces
+        self.__main_window = main_window
 
     def created(self, id:int, data):
         # парсинг
@@ -77,7 +83,7 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
         p_ctrl = ProjectQtController(id, name if len(name) > 0 else str(id) )
         self.__opened_projects[id] = p_ctrl
         
-        c_ctrl = StateMachineQtController(p_ctrl, self.__flow_list, self.__synonyms)
+        c_ctrl = StateMachineQtController(p_ctrl, self.__flow_list, self.__synonyms, self.__main_window)
         p_ctrl.set_sm_ctrl(c_ctrl)
 
         self.__set_content_refresher(id, StateMachineGuiRefresher(c_ctrl))

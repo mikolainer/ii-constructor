@@ -64,3 +64,8 @@ class EditorAPI:
 
         return result
     
+    def add_step(self, project_id: int, from_id: int, to_id:int, synonyms_g_id:int):
+        state_machinne: StateMachineInterface = (
+            ProjectsManager()._ProjectsManager__project(project_id).content_interface()
+        )
+        state_machinne.add_step(from_id, to_id, synonyms_g_id)

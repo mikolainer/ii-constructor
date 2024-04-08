@@ -14,6 +14,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QMouseEvent,
     QPainter,
+    QFont,
 )
 
 from PySide6.QtWidgets import (
@@ -255,7 +256,7 @@ class FlowsDelegate(QStyledItemDelegate):
             index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
-            index.data(CustomDataRole.SynonymsSet)[0],
+            index.data(CustomDataRole.SynonymsSet),
             self.parent(),
             parent
         )
@@ -281,7 +282,7 @@ class FlowsDelegate(QStyledItemDelegate):
             index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
-            index.data(CustomDataRole.SynonymsSet)[0],
+            index.data(CustomDataRole.SynonymsSet),
             None,
             self.parent()
         )
@@ -301,7 +302,7 @@ class FlowsDelegate(QStyledItemDelegate):
             index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
-            index.data(CustomDataRole.SynonymsSet)[0],
+            index.data(CustomDataRole.SynonymsSet),
             None
         )
         wgt.set_slider_visible(index.data(CustomDataRole.SliderVisability))
@@ -335,3 +336,85 @@ class FlowsView(QTableView):
             self.openPersistentEditor(item)
 
         return super().mouseMoveEvent(event)
+
+class SynonymsGroupWidgetToSelect(QWidget):
+    def __init__(self, name: str, id: int, description: str, synonyms_set_model:SynonymsSetModel, parent: QWidget = None):
+        super().__init__(parent)
+        main_lay: QVBoxLayout = QVBoxLayout(self)
+
+        title:QLabel = QLabel(name, self)
+        title_font:QFont = title.font()
+        title_font.setBold(True)
+        title.setFont(title_font)
+        main_lay.addWidget(title)
+
+        synonyms_list = QListView(self)
+        synonyms_list.setModel(synonyms_set_model)
+        synonyms_list.setMaximumHeight(50)
+        main_lay.addWidget(synonyms_list)
+class SynonymsSelectorDelegate(QStyledItemDelegate):
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+        data = index.internalPointer()
+        wgt = SynonymsGroupWidgetToSelect(
+            data.on[CustomDataRole.Name],
+            data.on[CustomDataRole.Id],
+            data.on[CustomDataRole.Description],
+            data.on[CustomDataRole.SynonymsSet]
+        )
+        wgt.resize(option.rect.size())
+
+        painter.setClipRect(option.rect)
+
+        painter.save()
+        painter.drawPixmap(option.rect, wgt.grab())
+        painter.restore()
+
+        super().paint(painter, option, index)
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
+        data = index.internalPointer()
+        wgt = SynonymsGroupWidgetToSelect(
+            data.on[CustomDataRole.Name],
+            data.on[CustomDataRole.Id],
+            data.on[CustomDataRole.Description],
+            data.on[CustomDataRole.SynonymsSet]
+        )
+        wgt.adjustSize()
+        return wgt.size()
+    
+class SynonymsSelectorView(QListView):
+    item_selected = Signal(int)
+    __selected: bool
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        self.__selected = False
+        super().__init__(parent)
+        self.setWindowFlag(Qt.WindowType.Window, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
+        self.setSelectionMode(QListView.SelectionMode.SingleSelection)
+        self.setItemDelegate(SynonymsSelectorDelegate(self))
+        self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
+
+        self.resize(600, 400)
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        item = self.indexAt(event.pos())
+        if item.isValid() and not self.__selected:
+            self.item_selected.emit(item.data(CustomDataRole.Id))
+            self.setCursor(Qt.CursorShape.BusyCursor)
+            self.__selected = True
+
+        return super().mouseDoubleClickEvent(event)
+    
+    def accept(self):
+        self.close()
+
+    def decline(self):
+        self.unsetCursor()
+        self.__selected = False
+

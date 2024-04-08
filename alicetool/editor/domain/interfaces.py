@@ -23,6 +23,8 @@ class StateActionsNotifier:
         raise NotImplementedError()
     def state_removed(self, project_id :int, id :int):
         raise NotImplementedError()
+    def step_added(self, from_state:int, to_state:int, synonyms_id:int):
+        raise NotImplementedError()
     
 class StateMachineNotifier(StateActionsNotifier, SynonymsActionsNotifier, FlowActionsNotifier):
     ...
@@ -66,6 +68,8 @@ class StateInterface:
         raise NotImplementedError()
     def set_state_notifier(self, notifier: StateActionsNotifier):
         raise NotImplementedError()
+    def add_step(self, from_id:int, to_id:int, cmd):
+        raise NotImplementedError()
 
 class SynonymsInterface:
     def create_synonyms(self, data) -> int:
@@ -87,6 +91,8 @@ class StateMachineInterface(StateInterface, SynonymsInterface, FlowInterface):
     def synonyms_interface(self) -> SynonymsInterface:
         raise NotImplementedError()
     def content_interface(self) -> FlowInterface:
+        raise NotImplementedError()
+    def add_step(self, from_state:int, to_state:int, synonyms:int):
         raise NotImplementedError()
 
 class ProjectsInterface:

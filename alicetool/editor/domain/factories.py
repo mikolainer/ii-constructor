@@ -220,3 +220,9 @@ class StateFactory(StateInterface):
             raise ValueError('notifier должен быть наследником StateActionsNotifier')
 
         self.__notifier = notifier
+
+    def add_step(self, from_id:int, to_id:int, cmd:Synonyms):
+        _from:State = self.state_obj(from_id)
+        _to:State = self.state_obj(to_id)
+        _from.new_step(Command(_to, cmd))
+        self.__notifier.step_added(from_id, to_id, cmd.id())

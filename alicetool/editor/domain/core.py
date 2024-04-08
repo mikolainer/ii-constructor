@@ -108,8 +108,8 @@ class State:
 
         return _data
     
-    def new_step(self, next_state_id: int, synonyms_id: int):
-        pass
+    def new_step(self, step:Command):
+        self.__steps.append(step)
 
     def remove_step(self, synonyms_id: int):
         pass

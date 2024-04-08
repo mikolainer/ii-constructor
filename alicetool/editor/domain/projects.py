@@ -21,6 +21,9 @@ class StateMachine(StateMachineInterface):
     def get_flow(self, id) -> Flow:
         return self.__content.flow_obj(id)
     
+    def add_step(self, from_state:int, to_state:int, synonyms:int):
+        self.__states.add_step(from_state, to_state, self.__synonyms.synonyms_obj(synonyms))
+
     ### interfaces implementation ###
 
     # state machine
