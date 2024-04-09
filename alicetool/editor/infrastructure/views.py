@@ -35,7 +35,7 @@ from PySide6.QtWidgets import (
     QInputDialog,
 )
 
-from .data import CustomDataRole, SynonymsSetModel, ProxyModelReadOnly
+from .data import CustomDataRole, SynonymsSetModel, ProxyModelReadOnly, SynonymsGroupsModel
 from .widgets import SynonymsGroupWidget, SynonymEditorWidget
 
 class FlowSynonymsSetDelegate(QStyledItemDelegate):
@@ -197,6 +197,76 @@ class SynonymsSetView(QListView):
         self.__delegate = SynonymsSetDelegate(self)
         self.setItemDelegate(self.__delegate)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
+
+class GroupsList(QStackedWidget):
+    __indexed: dict[int, SynonymsGroupsView]
+    __empty_index:int
+
+    def create_value(self, view: SynonymsSetView):
+        model:SynonymsGroupsModel = view.model()
+
+        name, ok = QInputDialog.getText(self, "Имя новой группы", "Имя новой группы:")
+        if not ok: return
+
+        descr, ok = QInputDialog.getText(self, "Описание новой группы", "Описание новой группы:")
+        if not ok: return
+
+        value, ok = QInputDialog.getText(self, "Значение первого синонима", "Первый синоним:")
+        if not ok: return
+
+        #data = {
+        #    CustomDataRole.Name: name,
+        #    CustomDataRole.Description: descr,
+        #    CustomDataRole.SynonymsSet: SynonymsSetModel([value])
+        #}
+
+        new_row:int = model.rowCount()
+        model.insertRow(new_row)
+        index = model.index(new_row)
+        #model.setItemData(index, data)
+        model.setData(index, name, CustomDataRole.Name)
+        model.setData(index, descr, CustomDataRole.Description)
+        model.setData(index, SynonymsSetModel([value]), CustomDataRole.SynonymsSet)
+
+    def addWidget(self, w: SynonymsGroupsView) -> int:
+        if not isinstance(w, SynonymsGroupsView):
+            raise TypeError(w)
+
+        wrapper = QWidget(self)
+        w_lay = QVBoxLayout(wrapper)
+        w_lay.addWidget(w, 0)
+
+        create_btn = QPushButton("Новая группа", self)
+        create_btn.clicked.connect(lambda: self.create_value(w))
+        w_lay.addWidget(create_btn, 1)
+
+        area = QScrollArea(self)
+        area.setWidgetResizable(True)
+        area.setWidget(wrapper)
+
+        return super().addWidget(area)
+    
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.__indexed = {}
+        self.__empty_index = super().addWidget(QWidget(self))
+        self.resize(200, self.height())
+
+    def set_empty(self):
+        self.setCurrentIndex(self.__empty_index)
+    
+    def setList(self, view: SynonymsGroupsView, set_current: bool = False):
+        ''' обновление списка виджетов '''
+        # для нового списка создаём отдельный виджет и сохраняем его индекс
+        if not view in self.__indexed.values():
+            self.__indexed[self.addWidget(view)] = view
+
+        # получаем индекс виджета с полученным списком синонимов
+        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(view)]
+
+        # если указано - устанавливаем текущим виджетом
+        if set_current:
+            self.setCurrentIndex(idx)
 
 class SynonymsList(QStackedWidget):
     __indexed: dict[int, SynonymsSetView]

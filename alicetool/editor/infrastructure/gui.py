@@ -61,7 +61,7 @@ import alicetool.editor.resources.rc_icons
 from alicetool.editor.services.api import EditorAPI
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
-from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, FlowsView, SynonymsSelectorView
+from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, GroupsList, FlowsView, SynonymsSelectorView
 
 class Arrow(QGraphicsItem):
     __start_point: QPointF
@@ -829,12 +829,12 @@ class SynonymsEditor(QWidget):
     __exit_btn: QPushButton
 
     __synonyms_list: SynonymsList
-    __group_list: QStackedWidget
-    __empty_index: int
+    __group_list: GroupsList
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
         self.setWindowTitle('Редактор синонимов')
+        self.resize(600, 500)
         
         main_lay = QVBoxLayout(self)
         main_lay.setContentsMargins(0,0,0,0)
@@ -878,29 +878,21 @@ class SynonymsEditor(QWidget):
         self.__exit_btn.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")
         layout.addWidget(self.__exit_btn)
 
-        self.__group_list = QStackedWidget(self)
-        self.__group_list.resize(200, self.__group_list.height())
-        self.__empty_index = self.__group_list.addWidget(QWidget(self.__group_list))
+        self.__group_list = GroupsList(self)
         splitter.addWidget(self.__group_list)
+        splitter.setStretchFactor(0,0)
 
         self.__synonyms_list = SynonymsList(self)
         splitter.addWidget(self.__synonyms_list)
-        
-        splitter.setStretchFactor(0,0)
         splitter.setStretchFactor(1,1)
         
         main_lay.addWidget(splitter, 1)
-        self.resize(600, 500)
         
     def set_synonyms(self, view: SynonymsSetView, set_current:bool = False):
         self.__synonyms_list.setList(view, set_current)
         
     def set_groups(self, view: SynonymsGroupsModel):
-        index = self.__group_list.indexOf(view)
-        if index == -1:
-            index = self.__group_list.addWidget(view)
-
-        self.__group_list.setCurrentIndex(index)
+        self.__group_list.setList(view, True)
         self.__synonyms_list.set_empty()
 
     def mousePressEvent(self, event):

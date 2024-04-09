@@ -133,6 +133,19 @@ class SynonymsGroupsModel(QAbstractItemModel):
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
     
+    def insertRows(self, row: int, count: int, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> bool:
+        '''count игнорируется. вставка по 1 элементу'''
+        self.beginInsertRows(self.index(self.columnCount()), self.columnCount(), self.columnCount())
+        empty_item = self.Item()
+        empty_item.on[CustomDataRole.Id] = 15
+        empty_item.on[CustomDataRole.Name] = ''
+        empty_item.on[CustomDataRole.Description] = ''
+        empty_item.on[CustomDataRole.SynonymsSet] = None
+        self.__data[15] = empty_item
+        self.endInsertRows()
+
+        return super().insertRows(row, count, parent)
+    
 class FlowsModel(QAbstractItemModel):
     class Item:
         ''' Id, Name, Description, SynonymsSet '''
