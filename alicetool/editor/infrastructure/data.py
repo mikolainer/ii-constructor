@@ -7,6 +7,7 @@ from PySide6.QtCore import (
     QObject,
     QPersistentModelIndex, 
     QAbstractItemModel,
+    QIdentityProxyModel
 )
 
 @verify(UNIQUE)
@@ -64,13 +65,20 @@ class SynonymsSetModel(QAbstractItemModel):
         if role in [CustomDataRole.Text, Qt.ItemDataRole.EditRole] and index.row() in range(len(self.__data)):
             self.__data[index.row()] = value
             return True
-        
+
         return False
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
+    
+    def insertRows(self, row: int, count: int, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> bool:
 
+        self.beginInsertRows(self.index(row-1), row, row+count-1)
+        for i in range(count):
+            self.__data.append("")
+        self.endInsertRows()
 
+        return super().insertRows(row, count, parent)
 
 class SynonymsGroupsModel(QAbstractItemModel):
     class Item:
@@ -124,7 +132,7 @@ class SynonymsGroupsModel(QAbstractItemModel):
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-
+    
 class FlowsModel(QAbstractItemModel):
     class Item:
         ''' Id, Name, Description, SynonymsSet '''
@@ -185,3 +193,8 @@ class FlowsModel(QAbstractItemModel):
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
+
+
+class ProxyModelReadOnly(QIdentityProxyModel):
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return ~Qt.ItemFlag.ItemIsEditable & self.sourceModel().flags(index)

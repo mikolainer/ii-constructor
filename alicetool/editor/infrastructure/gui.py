@@ -656,10 +656,6 @@ class StateMachineQtController:
         self.set_active()
     
     def add_step(self, from_state_id:int, to_state_id:int):
-        if not self.__selector is None:
-            self.__selector.show()
-            return
-
         self.__selector = SynonymsSelectorView(self.__main_window)
         self.__selector.setModel(self.__g_model)
         self.__selector.show()
@@ -802,7 +798,6 @@ class FlowList(QStackedWidget):
         area = QScrollArea(self)
         area.setWidgetResizable(True)
         area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
-
         area.setWidget(w)
         return super().addWidget(area)
     

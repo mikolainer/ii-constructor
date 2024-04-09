@@ -32,9 +32,10 @@ from PySide6.QtWidgets import (
     QGraphicsProxyWidget,
     QLabel,
     QVBoxLayout,
+    QInputDialog,
 )
 
-from .data import CustomDataRole, SynonymsSetModel
+from .data import CustomDataRole, SynonymsSetModel, ProxyModelReadOnly
 from .widgets import SynonymsGroupWidget, SynonymEditorWidget
 
 class FlowSynonymsSetDelegate(QStyledItemDelegate):
@@ -201,16 +202,32 @@ class SynonymsList(QStackedWidget):
     __indexed: dict[int, SynonymsSetView]
     __empty_index:int
 
-    def addWidget(self, w: QWidget = None) -> int:
+    def create_value(self, view: SynonymsSetView):
+        model:SynonymsSetModel = view.model()
+
+        value, ok = QInputDialog.getText(self, "Новое значение", "Новый синоним:")
+        if not ok: return
+
+        new_row:int = model.rowCount()
+        model.insertRow(new_row)
+        model.setData(model.index(new_row), value)
+
+    def addWidget(self, w: SynonymsSetView) -> int:
+        if not isinstance(w, SynonymsSetView):
+            raise TypeError(w)
+
+        wrapper = QWidget(self)
+        w_lay = QVBoxLayout(wrapper)
+        w_lay.addWidget(w, 0)
+
+        create_btn = QPushButton("Новое значение", self)
+        create_btn.clicked.connect(lambda: self.create_value(w))
+        w_lay.addWidget(create_btn, 1)
+
         area = QScrollArea(self)
         area.setWidgetResizable(True)
         area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
-
-        #wrapper = QWidget(self)
-        #QVBoxLayout(wrapper)
-        #w.setParent(wrapper)
-
-        area.setWidget(w)
+        area.setWidget(wrapper)
         return super().addWidget(area)
     
     def __init__(self, parent: QWidget = None):
@@ -237,8 +254,6 @@ class SynonymsList(QStackedWidget):
 class FlowsDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        if isinstance(parent, FlowsView):
-            parent.installEventFilter(self)
 
     def __on_slider_visible_changed(self, visible:bool, index:QModelIndex, editor:FlowWidget):
         index.model().setData(
@@ -246,10 +261,6 @@ class FlowsDelegate(QStyledItemDelegate):
         )
         editor.adjustSize()
         self.parent().setRowHeight(index.row(), editor.height())
-
-    def destroyEditor(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
-        self.__editor = None
-        return super().destroyEditor(editor, index)
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
         editor = FlowWidget(
@@ -343,18 +354,42 @@ class SynonymsGroupWidgetToSelect(QWidget):
         main_lay: QVBoxLayout = QVBoxLayout(self)
 
         title:QLabel = QLabel(name, self)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setAutoFillBackground(True)
         title_font:QFont = title.font()
         title_font.setBold(True)
         title.setFont(title_font)
         main_lay.addWidget(title)
 
         synonyms_list = QListView(self)
-        synonyms_list.setModel(synonyms_set_model)
+        synonyms_list.setVerticalScrollMode(QListView.ScrollMode.ScrollPerPixel)
+        model = ProxyModelReadOnly(self)
+        model.setSourceModel(synonyms_set_model)
+        synonyms_list.setModel(model)
         synonyms_list.setMaximumHeight(50)
         main_lay.addWidget(synonyms_list)
+
 class SynonymsSelectorDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
+
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
+        return SynonymsGroupWidgetToSelect(
+            index.data(CustomDataRole.Name),
+            index.data(CustomDataRole.Id),
+            index.data(CustomDataRole.Description),
+            index.data(CustomDataRole.SynonymsSet),
+            parent
+        )
+    
+    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().updateEditorGeometry(editor, option, index)
+    
+    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+        super().setEditorData(editor, index)
+    
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
+        '''ReadOnly'''
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
         data = index.internalPointer()
@@ -382,6 +417,7 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
             data.on[CustomDataRole.Description],
             data.on[CustomDataRole.SynonymsSet]
         )
+        wgt.setStyleSheet('background-color: #666;')
         wgt.adjustSize()
         return wgt.size()
     
@@ -401,6 +437,18 @@ class SynonymsSelectorView(QListView):
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
         self.resize(600, 400)
+        self.setMouseTracking(True)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        item = self.indexAt(event.pos())
+        if self.isPersistentEditorOpen(item):
+            self.closePersistentEditor(item)
+
+        if item.isValid():
+            self.setCurrentIndex(item)
+            self.openPersistentEditor(item)
+
+        return super().mouseMoveEvent(event)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         item = self.indexAt(event.pos())
