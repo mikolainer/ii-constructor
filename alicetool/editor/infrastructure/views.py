@@ -202,7 +202,7 @@ class GroupsList(QStackedWidget):
     __indexed: dict[int, SynonymsGroupsView]
     __empty_index:int
 
-    def create_value(self, view: SynonymsSetView):
+    def create_value(self, view: SynonymsGroupsView):
         model:SynonymsGroupsModel = view.model()
 
         name, ok = QInputDialog.getText(self, "Имя новой группы", "Имя новой группы:")
@@ -214,16 +214,9 @@ class GroupsList(QStackedWidget):
         value, ok = QInputDialog.getText(self, "Значение первого синонима", "Первый синоним:")
         if not ok: return
 
-        #data = {
-        #    CustomDataRole.Name: name,
-        #    CustomDataRole.Description: descr,
-        #    CustomDataRole.SynonymsSet: SynonymsSetModel([value])
-        #}
-
         new_row:int = model.rowCount()
         model.insertRow(new_row)
         index = model.index(new_row)
-        #model.setItemData(index, data)
         model.setData(index, name, CustomDataRole.Name)
         model.setData(index, descr, CustomDataRole.Description)
         model.setData(index, SynonymsSetModel([value]), CustomDataRole.SynonymsSet)

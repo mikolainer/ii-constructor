@@ -135,7 +135,8 @@ class SynonymsGroupsModel(QAbstractItemModel):
     
     def insertRows(self, row: int, count: int, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> bool:
         '''count игнорируется. вставка по 1 элементу'''
-        self.beginInsertRows(self.index(self.columnCount()), self.columnCount(), self.columnCount())
+        row_cnt = self.rowCount()
+        self.beginInsertRows(self.index(row_cnt), row_cnt, row_cnt)
         empty_item = self.Item()
         empty_item.on[CustomDataRole.Id] = 15
         empty_item.on[CustomDataRole.Name] = ''
@@ -206,6 +207,21 @@ class FlowsModel(QAbstractItemModel):
     
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
+    
+    def insertRows(self, row: int, count: int, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> bool:
+        '''count игнорируется. вставка по 1 элементу'''
+        row_cnt = self.rowCount()
+        self.beginInsertRows(self.index(row_cnt), row_cnt, row_cnt)
+        empty_item = self.Item()
+        empty_item.on[CustomDataRole.Id] = 15
+        empty_item.on[CustomDataRole.Name] = ''
+        empty_item.on[CustomDataRole.Description] = ''
+        empty_item.on[CustomDataRole.SynonymsSet] = None
+        empty_item.on[CustomDataRole.EnterStateId] = 1
+        self.__data[15] = empty_item
+        self.endInsertRows()
+
+        return super().insertRows(row, count, parent)
 
 
 class ProxyModelReadOnly(QIdentityProxyModel):

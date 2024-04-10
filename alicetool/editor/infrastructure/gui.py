@@ -54,7 +54,8 @@ from PySide6.QtWidgets import (
     QStyleOptionGraphicsItem,
     QGraphicsProxyWidget,
     QGraphicsRectItem,
-    QGraphicsPixmapItem 
+    QGraphicsPixmapItem,
+    QInputDialog,
 )
 
 import alicetool.editor.resources.rc_icons
@@ -794,11 +795,50 @@ class FlowList(QStackedWidget):
     __indexed: dict[int, FlowsView]
     __empty_index:int
 
+    @Slot(FlowsModel, str, str, SynonymsSetModel)
+    def __make_value(self, model:FlowsModel, name:str, descr:str, syn_set_model:SynonymsSetModel):
+        new_row:int = model.rowCount()
+        model.insertRow(new_row)
+        index = model.index(new_row)
+        model.setData(index, 15, CustomDataRole.Id)
+        model.setData(index, name, CustomDataRole.Name)
+        model.setData(index, descr, CustomDataRole.Description)
+        model.setData(index, syn_set_model, CustomDataRole.SynonymsSet)
+
+    def create_value(self, view: FlowsView):
+        model:FlowsModel = view.model()
+
+        name, ok = QInputDialog.getText(self, "Имя нового потока", "Имя нового потока:")
+        if not ok: return
+
+        descr, ok = QInputDialog.getText(self, "Описание нового потока", "Описание нового потока:")
+        if not ok: return
+
+        #self.__selector = SynonymsSelectorView(self)
+        #self.__selector.setModel(None)
+        #self.__selector.show()
+        #self.__selector.item_selected.connect(
+        #    lambda g_id: self.__make_value(model, name, descr, SynonymsSetModel(['тестовое для отображения']))
+        #)
+
+        self.__make_value(model, name, descr, SynonymsSetModel(['тестовое для отображения']))
+
     def addWidget(self, w: QWidget = None) -> int:
+        if not isinstance(w, FlowsView):
+            raise TypeError(w)
+
+        wrapper = QWidget(self)
+        w_lay = QVBoxLayout(wrapper)
+        w_lay.addWidget(w, 0)
+
+        create_btn = QPushButton("+", self)
+        create_btn.clicked.connect(lambda: self.create_value(w))
+        w_lay.addWidget(create_btn, 1)
+
         area = QScrollArea(self)
         area.setWidgetResizable(True)
         area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
-        area.setWidget(w)
+        area.setWidget(wrapper)
         return super().addWidget(area)
     
     def __init__(self, parent: QWidget = None):
