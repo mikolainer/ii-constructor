@@ -68,7 +68,7 @@ class Arrow(QGraphicsItem):
     __start_point: QPointF
     __end_point: QPointF
     __pen_width: int
-    __end_wgt: QGraphicsItem
+    __end_wgt: QGraphicsItem #TODO: SceneNode
 
     def set_end_wgt(self, widget: QGraphicsItem):
         ''' установка виджета для вычисления смещения указателя '''
@@ -335,6 +335,7 @@ class Arrow(QGraphicsItem):
         )
 
 class QGraphicsStateItem(QGraphicsProxyWidget):
+    ''' TODO: инкапсулировать в SceneNode '''
     __arrows: dict[str, list[Arrow]]
     __add_btn: 'StateWidget.AddConnectionBtn'
 
@@ -541,6 +542,7 @@ class StateWidget(QWidget):
             self.__item_on_scene.show_add_btn()
 
 class ProxyWidgetControll(QGraphicsRectItem):
+    ''' TODO: инкапсулировать в SceneNode '''
     def __init__(self, x: float, y: float, w: float, h: float, parent = None):
         super().__init__(x, y, w, h, parent)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
@@ -560,6 +562,10 @@ class ProxyWidgetControll(QGraphicsRectItem):
         return super().itemChange(change, value)
 
 class Editor(QGraphicsScene):
+    ''' TODO
+    убрать зависимость от StateMachineQtController (унестив main)
+    '''
+
     __state_machine_ctrl: 'StateMachineQtController'
 
     def controller(self) -> 'StateMachineQtController':
@@ -598,6 +604,8 @@ class Editor(QGraphicsScene):
         return item
     
 class StateMachineQtController:
+    ''' реализация "ProjectController" по uml2'''
+
     # constants
     __START_SIZE = QRect(0, 0, 2000, 2000)
     __START_SPACINS = 30
@@ -792,6 +800,11 @@ class ProjectQtController:
         ''' закрыть проект '''
 
 class FlowList(QStackedWidget):
+    ''' TODO
+    - избавиться от связи с SynonymsSetModel (сделать IOC контейнером).
+    вынести в main установку коллбэка для создания новой точки входа (create_value).
+    '''
+
     __indexed: dict[int, FlowsView]
     __empty_index:int
 
@@ -864,6 +877,12 @@ class FlowList(QStackedWidget):
             self.setCurrentIndex(idx)
 
 class SynonymsEditor(QWidget):
+    ''' TODO
+    изменить время жизни со static like на создание по необходимости:
+    - унести установку моделей в конструктор (убрать set_synonyms, set_groups)
+    - сделать уничтожаемым при закрытии (убрать closeEvent, showEvent)
+    '''
+
     __oldPos: QPoint | None
     __tool_bar: QWidget
     __exit_btn: QPushButton
@@ -971,10 +990,15 @@ class SynonymsEditor(QWidget):
         return super().resizeEvent(event)
 
 class NewProjectDialog(QDialog):
+    ''' TODO
+    - Убрать зависимость от EditorAPI (вынести в main).
+    сделать IOC контейнером - с установкой обработчика кнопки "Начать"
+    '''
+
     proj_id: int
-    __file_path_editor : QLineEdit
+    __file_path_editor : QLineEdit # TODO: убрать в диалог экспорта
+    __db_name_editor : QLineEdit # TODO: убрать в диалог публикации
     __name_editor : QLineEdit
-    __db_name_editor : QLineEdit
     __hello_editor : QTextEdit
     __help_editor : QTextEdit
     __info_editor : QTextEdit
@@ -1053,6 +1077,12 @@ class Workspaces(QTabWidget):
         editor.controller().set_active()
 
 class MainWindow(QMainWindow):
+    ''' TODO
+    - Убрать зависимости от FlowList, Workspaces и NewProjectDialog.
+    это должно стать простой обёрткой для сцен, содержаний и кнопок.
+    - Вынести создание кнопок в main
+    '''
+
     __oldPos: QPoint | None
     __flow_list: FlowList
     __workspaces: Workspaces
