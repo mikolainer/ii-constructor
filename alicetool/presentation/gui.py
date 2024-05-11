@@ -60,9 +60,10 @@ from PySide6.QtWidgets import (
 
 import alicetool.resources.rc_icons
 from alicetool.presentation.api import EditorAPI
+from alicetool.infrastructure.buttons import MainToolButton
 
-from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
-from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, GroupsList, FlowsView, SynonymsSelectorView
+from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
+from ..infrastructure.views import SynonymsGroupsView, SynonymsSetView, SynonymsList, GroupsList, FlowsView, SynonymsSelectorView
 
 class Arrow(QGraphicsItem):
     __start_point: QPointF
@@ -892,6 +893,8 @@ class SynonymsEditor(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
+        self.setWindowFlag(Qt.WindowType.Window, True)
+
         self.setWindowTitle('Редактор синонимов')
         self.resize(600, 500)
         
@@ -1078,7 +1081,7 @@ class Workspaces(QTabWidget):
 
 class MainWindow(QMainWindow):
     ''' TODO
-    - Убрать зависимости от FlowList, Workspaces и NewProjectDialog.
+    - Убрать зависимости от FlowList, Workspaces, SynonymsEditor и NewProjectDialog.
     это должно стать простой обёрткой для сцен, содержаний и кнопок.
     - Вынести создание кнопок в main
     '''
@@ -1086,23 +1089,18 @@ class MainWindow(QMainWindow):
     __oldPos: QPoint | None
     __flow_list: FlowList
     __workspaces: Workspaces
-    __synonyms_editor: SynonymsEditor
     __tool_bar: QWidget
-    __buttons: dict[str, QPushButton]
 
-    def __init__(self, flow_list: FlowList, workspaces: Workspaces, synonyms: SynonymsEditor, parent: QWidget = None):
+    def __init__(self, flow_list: FlowList, workspaces: Workspaces, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
         self.setStyleSheet("MainWindow{background-color: #74869C;}")
 
         self.__oldPos = None
         self.__flow_list = flow_list
         self.__workspaces = workspaces
-        self.__synonyms_editor = synonyms
 
         self.__flow_list.setParent(self)
         self.__workspaces.setParent(self)
-        self.__synonyms_editor.setParent(self)
-        self.__synonyms_editor.setWindowFlag(Qt.WindowType.Window, True)
 
         self.__setup_ui()
         self.__setup_toolbar()
@@ -1138,87 +1136,31 @@ class MainWindow(QMainWindow):
         main_lay.addWidget(main_splitter, 1)
 
         self.setGeometry(0, 0, 900, 700)
+    
+    def insert_button(self, btn: MainToolButton, pos: int = 0):
+        layout: QHBoxLayout = self.__tool_bar.layout()
+        layout.insertWidget(pos, btn)
 
     def __setup_toolbar(self):
-        self.__buttons = {
-            'new' : QPushButton(self),
-            'open' : QPushButton(self),
-            'save' : QPushButton(self),
-            'publish' : QPushButton(self),
-            'synonyms' : QPushButton(self),
-            'exit' : QPushButton(self),
-        }
-
         layout: QHBoxLayout = self.__tool_bar.layout()
 
-        for key in self.__buttons.keys():
-            btn: QPushButton = self.__buttons[key]
-            
-            style = "background-color: #59A5FF; border-radius:32px;"
-            size = QSize(64,64)
-            icon_size = size
+        # добавление крестика
+        layout.addSpacerItem(
+            QSpacerItem( 0,0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum
+            )
+        )
 
-            if key == 'new':
-                tool_tip = 'Новый проект'
-                status_tip = 'Создать новый проект'
-                whats_this = 'Кнопка создания нового проекта'
-                icon = QIcon(":/icons/new_proj_norm.svg")
-                btn.clicked.connect(lambda: self.__make_project())
-
-            if key == 'open':
-                tool_tip = 'Открыть проект'
-                status_tip = 'Открыть файл проекта'
-                whats_this = 'Кнопка открытия проекта из файла'
-                icon = QIcon(":/icons/open_proj_norm.svg")
-
-            if key == 'save':
-                tool_tip = 'Сохранить проект'
-                status_tip = 'Сохранить в файл'
-                whats_this = 'Кнопка сохранения проекта в файл'
-                icon = QIcon(":/icons/save_proj_norm.svg")
-
-            if key == 'publish':
-                tool_tip = 'Опубликовать проект'
-                status_tip = 'Разместить проект в БД '
-                whats_this = 'Кнопка экспорта проекта в базу данных'
-                icon = QIcon(":/icons/export_proj_norm.svg")
-
-            if key == 'synonyms':
-                tool_tip = 'Список синонимов'
-                status_tip = 'Открыть редактор синонимов'
-                whats_this = 'Кнопка открытия редактора синонимов'
-                icon = QIcon(":/icons/synonyms_list_norm.svg")
-                btn.clicked.connect(lambda: self.__synonyms_editor.show())
-
-            if key == 'exit':
-                layout.addSpacerItem(
-                    QSpacerItem(
-                        0,0,
-                        QSizePolicy.Policy.Expanding,
-                        QSizePolicy.Policy.Minimum
-                    )
-                )
-                tool_tip = 'Выйти'
-                status_tip = 'Закрыть программу'
-                whats_this = 'Кнопка завершения программы'
-                style = "background-color: #FF3131; border: none;"
-                icon_size = size * 0.6
-                icon = QIcon(":/icons/exit_norm.svg")
-
-                btn.clicked.connect(lambda: self.close())
-
-            btn.setToolTip(tool_tip)
-            btn.setStatusTip(status_tip)
-            btn.setWhatsThis(whats_this)
-            btn.setFixedSize(size)
-            btn.setIcon(icon)
-            btn.setIconSize(icon_size)
-            btn.setStyleSheet(style)
-            layout.addWidget(btn)
-
-    def __make_project(self):
-        dialog = NewProjectDialog(self)
-        dialog.exec()     
+        btn = MainToolButton('Выйти', QIcon(":/icons/exit_norm.svg"), self)
+        btn.setStyleSheet("background-color: #FF3131; border: none;")
+        
+        btn.status_tip = 'Закрыть программу'
+        btn.whats_this = 'Кнопка завершения программы'
+        btn.icon_size = btn.icon_size * 0.6
+        btn.apply_options()
+        btn.clicked.connect(lambda: self.close())     
+        layout.addWidget(btn)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
