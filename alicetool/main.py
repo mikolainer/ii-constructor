@@ -46,8 +46,8 @@ def __setup_main_toolbar(main_window):
 if __name__ == "__main__":
     app = QApplication([])
 
-    flow_list = FlowList()
     synonyms = SynonymsEditor()
+    flow_list = FlowList()
     workspaces = Workspaces()
     
     main_win = MainWindow(flow_list, workspaces)
