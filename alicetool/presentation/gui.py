@@ -1081,9 +1081,7 @@ class Workspaces(QTabWidget):
 
 class MainWindow(QMainWindow):
     ''' TODO
-    - Убрать зависимости от FlowList, Workspaces, SynonymsEditor и NewProjectDialog.
-    это должно стать простой обёрткой для сцен, содержаний и кнопок.
-    - Вынести создание кнопок в main
+    - Убрать зависимости от FlowList и Workspaces.
     '''
 
     __oldPos: QPoint | None
