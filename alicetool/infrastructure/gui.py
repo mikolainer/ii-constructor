@@ -59,7 +59,7 @@ from PySide6.QtWidgets import (
 )
 
 import alicetool.resources.rc_icons
-from alicetool.services.api import EditorAPI
+from alicetool.presentation.api import EditorAPI
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
 from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, GroupsList, FlowsView, SynonymsSelectorView

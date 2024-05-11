@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from alicetool.domain.projects import ProjectsActionsNotifier, StateMachineNotifier
+from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
 from alicetool.infrastructure.gui import ProjectQtController, StateMachineQtController, FlowList, SynonymsEditor, Workspaces, MainWindow
 
 class StateMachineGuiRefresher(StateMachineNotifier):

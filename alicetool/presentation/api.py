@@ -1,5 +1,5 @@
 from alicetool.domain.core import State, Flow, Synonyms
-from alicetool.domain.projects import ProjectsManager
+from alicetool.application.projects import ProjectsManager
 from alicetool.domain.interfaces import ProjectsActionsNotifier, StateMachineNotifier, StateMachineInterface
 
 class EditorAPI:
