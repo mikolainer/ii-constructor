@@ -1,6 +1,6 @@
-from alicetool.editor.domain.core import *
-from alicetool.editor.domain.interfaces import *
-from alicetool.editor.domain.factories import *
+from alicetool.domain.core import *
+from alicetool.domain.interfaces import *
+from alicetool.domain.factories import *
 
 class StateMachine(StateMachineInterface):
     __states: StateFactory

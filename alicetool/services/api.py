@@ -1,6 +1,6 @@
-from alicetool.editor.domain.core import State, Flow, Synonyms
-from alicetool.editor.domain.projects import ProjectsManager
-from alicetool.editor.domain.interfaces import ProjectsActionsNotifier, StateMachineNotifier, StateMachineInterface
+from alicetool.domain.core import State, Flow, Synonyms
+from alicetool.domain.projects import ProjectsManager
+from alicetool.domain.interfaces import ProjectsActionsNotifier, StateMachineNotifier, StateMachineInterface
 
 class EditorAPI:
     STATE_TEXT_MAX_LEN = State.TEXT_MAX_LEN

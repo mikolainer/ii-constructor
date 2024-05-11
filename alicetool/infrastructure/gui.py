@@ -58,8 +58,8 @@ from PySide6.QtWidgets import (
     QInputDialog,
 )
 
-import alicetool.editor.resources.rc_icons
-from alicetool.editor.services.api import EditorAPI
+import alicetool.resources.rc_icons
+from alicetool.services.api import EditorAPI
 
 from .data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
 from .views import SynonymsGroupsView, SynonymsSetView, SynonymsList, GroupsList, FlowsView, SynonymsSelectorView

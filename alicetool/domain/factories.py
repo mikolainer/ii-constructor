@@ -1,5 +1,5 @@
-from alicetool.editor.domain.core import *
-from alicetool.editor.domain.interfaces import *
+from alicetool.domain.core import *
+from alicetool.domain.interfaces import *
 
 class FlowFactory(FlowInterface):
     __items: dict[int, Flow]
