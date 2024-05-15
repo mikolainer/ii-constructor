@@ -13,8 +13,6 @@ from PySide6.QtWidgets import (
     QLabel,
 )
 
-from .data import SynonymsSetModel
-
 class SynonymEditorWidget(QWidget):
     __edit: QLineEdit
 

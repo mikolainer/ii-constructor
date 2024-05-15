@@ -1,5 +1,4 @@
-import sys
-from math import sqrt, pi
+from math import sqrt
 
 from PySide6.QtCore import (
     QPointF,

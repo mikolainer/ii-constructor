@@ -1,14 +1,26 @@
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialog
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt
+
 from alicetool.presentation.api import EditorAPI
-from alicetool.presentation.gui import MainWindow, FlowList, Workspaces, SynonymsEditor, NewProjectDialog
+from alicetool.presentation.gui import (
+    FlowList,
+    Workspaces,
+    SynonymsEditor,
+)
 from alicetool.application.updates import EditorGuiRefresher
 from alicetool.infrastructure.buttons import MainToolButton
+from alicetool.infrastructure.windows import MainWindow, NewProjectDialog
 
 def __make_project(main_window):
-    dialog = NewProjectDialog(main_window)
+    dialog = NewProjectDialog(main_window, EditorAPI.STATE_TEXT_MAX_LEN)
     dialog.exec()
+
+    if dialog.result() == QDialog.DialogCode.Accepted:
+        proj_id = EditorAPI.instance().create_project(
+            dialog.get_result()
+        )
+    
 
 def __setup_main_toolbar(main_window):
     btn = MainToolButton('Список синонимов', QIcon(":/icons/synonyms_list_norm.svg"), main_window)

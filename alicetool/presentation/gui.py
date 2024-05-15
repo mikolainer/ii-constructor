@@ -1,12 +1,10 @@
-import sys
-from math import sqrt, pi
+from collections.abc import Callable
 
 from PySide6.QtCore import (
     Qt,
     QSize,
     QPoint,
     QPointF,
-    QRectF,
     QRect,
     Slot, Signal,
     QTimer
@@ -26,13 +24,11 @@ from PySide6.QtGui import (
     QColor,
     QBrush,
     QPen,
-    QPainter,
 )
 
 from PySide6.QtWidgets import (
     QGraphicsSceneMouseEvent,
     QMessageBox,
-    QMainWindow,
     QWidget,
     QStackedWidget,
     QVBoxLayout,
@@ -51,16 +47,13 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsItem,
     QSpacerItem,
-    QStyleOptionGraphicsItem,
     QGraphicsProxyWidget,
     QGraphicsRectItem,
     QGraphicsPixmapItem,
     QInputDialog,
 )
 
-import alicetool.resources.rc_icons
 from alicetool.presentation.api import EditorAPI
-from alicetool.infrastructure.buttons import MainToolButton
 
 from ..infrastructure.scene import Arrow
 from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
@@ -350,7 +343,7 @@ class StateMachineQtController:
     __proj_ctrl: 'ProjectQtController'
     __flow_list: 'FlowList'
     __synonyms_editor: 'SynonymsEditor'
-    __main_window: 'MainWindow'
+    __main_window: QWidget
 
     __selector: None | SynonymsSelectorView
 
@@ -379,7 +372,7 @@ class StateMachineQtController:
         proj_ctrl: 'ProjectQtController',
         flow_list: 'FlowList',
         synonyms_list: 'SynonymsEditor',
-        main_window: 'MainWindow'
+        main_window: QWidget
     ):
         self.__scene = Editor(self)
         self.__selector = None
@@ -727,67 +720,6 @@ class SynonymsEditor(QWidget):
 
         return super().resizeEvent(event)
 
-class NewProjectDialog(QDialog):
-    ''' TODO
-    - Убрать зависимость от EditorAPI
-    сделать IOC - установку обработчика кнопки "Начать" в main
-    '''
-
-    proj_id: int
-    __file_path_editor : QLineEdit # TODO: убрать в диалог экспорта
-    __db_name_editor : QLineEdit # TODO: убрать в диалог публикации
-    __name_editor : QLineEdit
-    __hello_editor : QTextEdit
-    __help_editor : QTextEdit
-    __info_editor : QTextEdit
-    __ok_button : QPushButton
-
-    def __init__(self, parent: QWidget | None = None):
-        super().__init__(parent)
-        self.proj_id = -1
-
-        lay = QVBoxLayout(self)
-
-        self.__file_path_editor = QLineEdit(self)
-        self.__name_editor = QLineEdit(self)
-        self.__db_name_editor = QLineEdit(self)
-        self.__hello_editor = QTextEdit(self)
-        self.__help_editor = QTextEdit(self)
-        self.__info_editor = QTextEdit(self)
-        self.__ok_button = QPushButton("Начать", self)
-
-        lay.addWidget(QLabel('Путь к файлу'))
-        lay.addWidget(self.__file_path_editor)
-        lay.addWidget(QLabel('Имя проекта для БД'))
-        lay.addWidget(self.__db_name_editor)
-        lay.addWidget(QLabel('Имя проекта для отображения'))
-        lay.addWidget(self.__name_editor)
-        lay.addWidget(QLabel('Текст приветственной фразы'))
-        lay.addWidget(self.__hello_editor)
-        lay.addWidget(QLabel('Текст ответа "Помощь"'))
-        lay.addWidget(self.__help_editor)
-        lay.addWidget(QLabel('Текст ответа "Что ты умеешь?"'))
-        lay.addWidget(self.__info_editor)
-        lay.addWidget(self.__ok_button)
-
-        self.__ok_button.clicked.connect(self.__new_project)
-    
-    def __new_project(self):
-        self.proj_id = EditorAPI.instance().create_project(
-            self.get_result()
-        )
-        self.close()
-
-    def get_result(self):
-        return (
-            f'name={self.__name_editor.text()}; '
-            f'db_name={self.__db_name_editor.text()}; '
-            f'file_path={self.__file_path_editor.text()}; '
-            f'hello={self.__hello_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}; '
-            f'help={self.__help_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}; '
-            f'info={self.__info_editor.toPlainText()[: EditorAPI.instance().STATE_TEXT_MAX_LEN]}'
-        )
-
 class Workspaces(QTabWidget):
     __map = dict[int, QGraphicsView] # key = id
 
@@ -813,98 +745,3 @@ class Workspaces(QTabWidget):
     def __activated(self, view:QGraphicsView):
         editor:Editor = view.scene()
         editor.controller().set_active()
-
-class MainWindow(QMainWindow):
-    ''' TODO
-    - Убрать зависимости от FlowList и Workspaces.
-     ( передать в __setup_ui() аргументами )
-    '''
-
-    __oldPos: QPoint | None
-    __flow_list: FlowList
-    __workspaces: Workspaces
-    __tool_bar: QWidget
-
-    def insert_button(self, btn: MainToolButton, pos: int = 0):
-        layout: QHBoxLayout = self.__tool_bar.layout()
-        layout.insertWidget(pos, btn)
-
-    def __init__(self, flow_list: FlowList, workspaces: Workspaces, parent: QWidget = None):
-        super().__init__(None, Qt.WindowType.FramelessWindowHint)
-        self.setStyleSheet("MainWindow{background-color: #74869C;}")
-
-        self.__oldPos = None
-        self.__flow_list = flow_list
-        self.__workspaces = workspaces
-
-        self.__flow_list.setParent(self)
-        self.__workspaces.setParent(self)
-
-        self.__setup_ui()
-        self.__setup_toolbar()
-
-        self.show()
-
-    def __setup_ui(self):
-        self.setCentralWidget(QWidget(self))
-
-        main_lay = QVBoxLayout(self.centralWidget())
-        main_lay.setContentsMargins(0,0,0,0)
-        main_lay.setSpacing(0)
-
-        self.__tool_bar = QWidget(self)
-        self.__tool_bar.setMinimumHeight(64)
-        main_lay.addWidget(self.__tool_bar, 0)
-        self.__tool_bar.setStyleSheet('background-color : #666;')
-
-        tool_bar_layout = QHBoxLayout(self.__tool_bar)
-        tool_bar_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        tool_bar_layout.setSpacing(10)
-        tool_bar_layout.setContentsMargins(5, 3, 3, 5)
-        
-        main_splitter = QSplitter(
-            self,
-            Qt.Orientation.Horizontal
-        )
-        main_splitter.addWidget(self.__flow_list)
-        main_splitter.addWidget(self.__workspaces)
-        main_splitter.setStretchFactor(0,0)
-        main_splitter.setStretchFactor(1,1)
-        
-        main_lay.addWidget(main_splitter, 1)
-
-        self.setGeometry(0, 0, 900, 700)
-
-    def __setup_toolbar(self):
-        layout: QHBoxLayout = self.__tool_bar.layout()
-
-        # добавление крестика
-        layout.addSpacerItem(
-            QSpacerItem( 0,0,
-                QSizePolicy.Policy.Expanding,
-                QSizePolicy.Policy.Minimum
-            )
-        )
-
-        btn = MainToolButton('Выйти', QIcon(":/icons/exit_norm.svg"), self)
-        btn.setStyleSheet("background-color: #FF3131; border: none;")
-        
-        btn.status_tip = 'Закрыть программу'
-        btn.whats_this = 'Кнопка завершения программы'
-        btn.icon_size = btn.icon_size * 0.6
-        btn.apply_options()
-        btn.clicked.connect(lambda: self.close())     
-        layout.addWidget(btn)
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.__oldPos = event.globalPos()
-
-    def mouseMoveEvent(self, event):
-        if self.__oldPos is not None:
-            delta = event.globalPos() - self.__oldPos
-            self.move(self.pos() + delta)
-            self.__oldPos = event.globalPos()
-
-    def mouseReleaseEvent(self, event):
-        self.__oldPos = None

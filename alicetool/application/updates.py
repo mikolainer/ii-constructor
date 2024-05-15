@@ -1,7 +1,9 @@
 from collections.abc import Callable
 
+from PySide6.QtWidgets import QWidget
+
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, FlowList, SynonymsEditor, Workspaces, MainWindow
+from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, FlowList, SynonymsEditor, Workspaces
 
 class StateMachineGuiRefresher(StateMachineNotifier):
     __sm_ctrl: StateMachineQtController
@@ -49,7 +51,7 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
     __flow_list: FlowList
     __synonyms: SynonymsEditor
     __workspaces: Workspaces
-    __main_window: MainWindow
+    __main_window: QWidget
 
     def __init__( self,
         set_content_refresher_callback: Callable[
@@ -58,7 +60,7 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
         flow_list: FlowList,
         synonyms: SynonymsEditor,
         workspaces: Workspaces,
-        main_window: MainWindow
+        main_window: QWidget
     ):
         self.__opened_projects = {}
         self.__set_content_refresher = set_content_refresher_callback
