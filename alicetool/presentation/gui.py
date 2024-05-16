@@ -54,6 +54,7 @@ from PySide6.QtWidgets import (
 )
 
 from alicetool.presentation.api import EditorAPI
+from alicetool.infrastructure.widgets import FlowListWidget
 
 from ..infrastructure.scene import Arrow
 from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
@@ -344,6 +345,7 @@ class StateMachineQtController:
     __flow_list: 'FlowList'
     __synonyms_editor: 'SynonymsEditor'
     __main_window: QWidget
+    __flows_wgt: FlowListWidget
 
     __selector: None | SynonymsSelectorView
 
@@ -420,7 +422,7 @@ class StateMachineQtController:
 
     def set_active(self):
         self.__synonyms_editor.set_groups(self.__synonym_groups)
-        self.__flow_list.setList(self.__flows, True)
+        self.__flow_list.setWidget(self.__flows_wgt, True)
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
@@ -459,8 +461,12 @@ class StateMachineQtController:
             
             f_model_data[id] = item
 
-        self.__flows = FlowsView()
-        self.__flows.setModel(FlowsModel(f_model_data, self.__flows))
+        self.__flows = FlowsView(self.__main_window)
+        self.__f_model = FlowsModel(f_model_data, self.__flows)
+        self.__flows.setModel(self.__f_model)
+
+        self.__flows_wgt = FlowListWidget(self.__flows, self.__main_window)
+        self.__flows_wgt.create_value.connect(self.__on_flow_add_pressed)
 
         # группы синонимов
         g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
@@ -484,12 +490,16 @@ class StateMachineQtController:
             lambda now, prev: self.__on_syn_group_changed(now.indexes())
         )
 
-    Slot(list)
+    @Slot(list)
     def __on_syn_group_changed(self, selected_index_list):
         if len(selected_index_list):
             selected_index = selected_index_list[0]
             selected_id = self.__g_model.data(selected_index, CustomDataRole.Id)
             self.__synonyms_editor.set_synonyms(self.__synonyms[selected_id], True)
+
+    @Slot(str, str)
+    def __on_flow_add_pressed(self, name:str, descr:str):
+        QMessageBox.information(self.__main_window, "Ещё не реализовано", "Здесь будет выбор состояния и синонима")
 
 class ProjectQtController:
     __proj_id : int
@@ -527,83 +537,6 @@ class ProjectQtController:
 
     def saved(self):
         ''' закрыть проект '''
-
-class FlowList(QStackedWidget):
-    ''' TODO
-    - избавиться от связи с SynonymsSetModel (сделать IOC).
-    вынести в main установку коллбэка для создания новой точки входа (create_value).
-    '''
-
-    __indexed: dict[int, FlowsView]
-    __empty_index:int
-
-    @Slot(FlowsModel, str, str, SynonymsSetModel)
-    def __make_value(self, model:FlowsModel, name:str, descr:str, syn_set_model:SynonymsSetModel):
-        new_row:int = model.rowCount()
-        model.insertRow(new_row)
-        index = model.index(new_row)
-        model.setData(index, 15, CustomDataRole.Id)
-        model.setData(index, name, CustomDataRole.Name)
-        model.setData(index, descr, CustomDataRole.Description)
-        model.setData(index, syn_set_model, CustomDataRole.SynonymsSet)
-
-    def create_value(self, view: FlowsView):
-        model:FlowsModel = view.model()
-
-        name, ok = QInputDialog.getText(self, "Имя нового потока", "Имя нового потока:")
-        if not ok: return
-
-        descr, ok = QInputDialog.getText(self, "Описание нового потока", "Описание нового потока:")
-        if not ok: return
-
-        #self.__selector = SynonymsSelectorView(self)
-        #self.__selector.setModel(None)
-        #self.__selector.show()
-        #self.__selector.item_selected.connect(
-        #    lambda g_id: self.__make_value(model, name, descr, SynonymsSetModel(['тестовое для отображения']))
-        #)
-
-        self.__make_value(model, name, descr, SynonymsSetModel(['тестовое для отображения']))
-
-    def addWidget(self, w: QWidget = None) -> int:
-        if not isinstance(w, FlowsView):
-            raise TypeError(w)
-
-        wrapper = QWidget(self)
-        w_lay = QVBoxLayout(wrapper)
-        w_lay.addWidget(w, 0)
-
-        create_btn = QPushButton("+", self)
-        create_btn.clicked.connect(lambda: self.create_value(w))
-        w_lay.addWidget(create_btn, 1)
-
-        area = QScrollArea(self)
-        area.setWidgetResizable(True)
-        area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
-        area.setWidget(wrapper)
-        return super().addWidget(area)
-    
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        self.__indexed = {}
-        self.__empty_index = super().addWidget(QWidget(self))
-        self.setMinimumWidth(200)
-
-    def set_empty(self):
-        self.setCurrentIndex(self.__empty_index)
-    
-    def setList(self, view: FlowsView, set_current: bool = False):
-        ''' обновление списка виджетов '''
-        # для нового списка создаём отдельный виджет и сохраняем его индекс
-        if not view in self.__indexed.values():
-            self.__indexed[self.addWidget(view)] = view
-
-        # получаем индекс виджета с полученным списком синонимов
-        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(view)]
-
-        # если указано - устанавливаем текущим виджетом
-        if set_current:
-            self.setCurrentIndex(idx)
 
 class SynonymsEditor(QWidget):
     ''' TODO

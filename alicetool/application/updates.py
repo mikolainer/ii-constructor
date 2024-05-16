@@ -3,7 +3,8 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QWidget
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, FlowList, SynonymsEditor, Workspaces
+from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, SynonymsEditor, Workspaces
+from alicetool.infrastructure.widgets import FlowList
 
 class StateMachineGuiRefresher(StateMachineNotifier):
     __sm_ctrl: StateMachineQtController
