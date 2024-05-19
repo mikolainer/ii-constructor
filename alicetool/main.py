@@ -5,7 +5,6 @@ from PySide6.QtCore import Qt
 from alicetool.presentation.api import EditorAPI
 from alicetool.presentation.gui import (
     Workspaces,
-    SynonymsEditor,
 )
 from alicetool.application.updates import EditorGuiRefresher
 from alicetool.infrastructure.buttons import MainToolButton
@@ -22,12 +21,12 @@ def __make_project(main_window):
         )
     
 
-def __setup_main_toolbar(main_window):
+def __setup_main_toolbar(main_window: MainWindow, handler: EditorGuiRefresher):
     btn = MainToolButton('Список синонимов', QIcon(":/icons/synonyms_list_norm.svg"), main_window)
     btn.status_tip = 'Открыть редактор синонимов'
     btn.whats_this = 'Кнопка открытия редактора синонимов'
     btn.apply_options()
-    btn.clicked.connect(lambda: synonyms.show())
+    btn.clicked.connect(lambda: handler.open_synonyms_editor())
     main_window.insert_button(btn)
 
     btn = MainToolButton('Опубликовать проект', QIcon(":/icons/export_proj_norm.svg"), main_window)
@@ -58,21 +57,21 @@ def __setup_main_toolbar(main_window):
 if __name__ == "__main__":
     app = QApplication([])
 
-    synonyms = SynonymsEditor()
     flow_list = FlowList()
     workspaces = Workspaces()
     
     main_win = MainWindow(flow_list, workspaces)
     #synonyms.setParent(main_win)
-    __setup_main_toolbar(main_win)
 
     set_sm_notifier = (
         lambda id, notifier:
             EditorAPI.instance().set_content_notifier(id, notifier)
     )
     main_changes_handler = EditorGuiRefresher(
-        set_sm_notifier, flow_list, synonyms, workspaces, main_win
+        set_sm_notifier, flow_list, workspaces, main_win
     )
     EditorAPI(main_changes_handler)
+
+    __setup_main_toolbar(main_win, main_changes_handler)
 
     app.exec()

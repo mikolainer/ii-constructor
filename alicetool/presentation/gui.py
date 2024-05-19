@@ -59,6 +59,7 @@ from alicetool.infrastructure.widgets import FlowListWidget
 from ..infrastructure.scene import Arrow
 from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
 from ..infrastructure.views import SynonymsGroupsView, SynonymsSetView, SynonymsList, GroupsList, FlowsView, SynonymsSelectorView
+from ..infrastructure.widgets import FlowList
 
 class QGraphicsStateItem(QGraphicsProxyWidget):
     ''' TODO: инкапсулировать в SceneNode '''
@@ -342,8 +343,7 @@ class StateMachineQtController:
 
     # controlls
     __proj_ctrl: 'ProjectQtController'
-    __flow_list: 'FlowList'
-    __synonyms_editor: 'SynonymsEditor'
+    __flow_list: FlowList
     __main_window: QWidget
     __flows_wgt: FlowListWidget
 
@@ -354,15 +354,13 @@ class StateMachineQtController:
     __states: dict[int, QGraphicsStateItem]
     __steps: dict[int, list[Arrow]]
 
-    # views
-    __flows: FlowsView
-    __synonym_groups: SynonymsGroupsView
-    __synonyms: dict[int, SynonymsSetView]
-
     # models
     __f_model: FlowsModel
     __g_model: SynonymsGroupsModel
     __s_models: dict[int, SynonymsSetModel]
+
+    def synonyms_groups(self) -> SynonymsGroupsModel:
+        return self.__g_model
 
     def project_controller(self) -> 'ProjectQtController':
         return self.__proj_ctrl
@@ -373,7 +371,6 @@ class StateMachineQtController:
     def __init__(self,
         proj_ctrl: 'ProjectQtController',
         flow_list: 'FlowList',
-        synonyms_list: 'SynonymsEditor',
         main_window: QWidget
     ):
         self.__scene = Editor(self)
@@ -384,11 +381,8 @@ class StateMachineQtController:
         self.__main_window = main_window
 
         self.__flow_list = flow_list
-        self.__synonyms_editor = synonyms_list
         self.__states = {}
         self.__steps = {}
-        self.__synonyms = {}
-        self.__synonym_groups = SynonymsGroupsView(self.__synonyms_editor)
         self.__s_models = {}
         
         self.__build_editor()
@@ -421,7 +415,6 @@ class StateMachineQtController:
         self.__selector = None
 
     def set_active(self):
-        self.__synonyms_editor.set_groups(self.__synonym_groups)
         self.__flow_list.setWidget(self.__flows_wgt, True)
 
     def __build_editor(self):
@@ -461,21 +454,25 @@ class StateMachineQtController:
             
             f_model_data[id] = item
 
-        self.__flows = FlowsView(self.__main_window)
-        self.__f_model = FlowsModel(f_model_data, self.__flows)
-        self.__flows.setModel(self.__f_model)
+        flows = FlowsView(self.__main_window)
+        self.__f_model = FlowsModel(f_model_data, flows)
+        flows.setModel(self.__f_model)
 
-        self.__flows_wgt = FlowListWidget(self.__flows, self.__main_window)
+        self.__flows_wgt = FlowListWidget(flows, self.__main_window)
         self.__flows_wgt.create_value.connect(self.__on_flow_add_pressed)
 
         # группы синонимов
         g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
         for group_id in synonyms_data.keys():
             gr_id = int(group_id)
+            if not gr_id in self.__s_models.keys():
+                self.__s_models[gr_id] = (
+                    SynonymsSetModel(synonyms_data[gr_id]['values'], gr_id, id)
+                )
 
-            view = SynonymsSetView()
-            view.setModel(self.__s_models[gr_id])
-            self.__synonyms[gr_id] = view
+            #view = SynonymsSetView()
+            #view.setModel(self.__s_models[gr_id])
+            #self.__synonyms[gr_id] = view
             
             item = SynonymsGroupsModel.Item()
             item.on[CustomDataRole.Id] = synonyms_data[gr_id]['id']
@@ -484,18 +481,7 @@ class StateMachineQtController:
             item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id]
             g_model_data[gr_id] = item
 
-        self.__g_model = SynonymsGroupsModel(g_model_data, self.__synonyms_editor)
-        self.__synonym_groups.setModel(self.__g_model)
-        self.__synonym_groups.selectionModel().selectionChanged.connect(
-            lambda now, prev: self.__on_syn_group_changed(now.indexes())
-        )
-
-    @Slot(list)
-    def __on_syn_group_changed(self, selected_index_list):
-        if len(selected_index_list):
-            selected_index = selected_index_list[0]
-            selected_id = self.__g_model.data(selected_index, CustomDataRole.Id)
-            self.__synonyms_editor.set_synonyms(self.__synonyms[selected_id], True)
+        self.__g_model = SynonymsGroupsModel(g_model_data, self.__main_window)
 
     @Slot(str, str)
     def __on_flow_add_pressed(self, name:str, descr:str):
@@ -538,7 +524,7 @@ class ProjectQtController:
     def saved(self):
         ''' закрыть проект '''
 
-class SynonymsEditor(QWidget):
+class SynonymsEditor(QDialog):
     ''' TODO
     изменить время жизни со static like на создание по необходимости:
     - унести установку моделей в конструктор (убрать set_synonyms, set_groups)
@@ -546,13 +532,17 @@ class SynonymsEditor(QWidget):
     '''
 
     __oldPos: QPoint | None
-    __tool_bar: QWidget
+    __tool_bar: QWidget # полоска с кнопкой "закрыть"
     __exit_btn: QPushButton
 
     __synonyms_list: SynonymsList
     __group_list: GroupsList
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    __g_model:SynonymsGroupsModel
+
+    def __init__(self, g_model:SynonymsGroupsModel, parent: QWidget | None = None) -> None:
+        self.__g_model = g_model
+
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
         self.setWindowFlag(Qt.WindowType.Window, True)
 
@@ -562,25 +552,18 @@ class SynonymsEditor(QWidget):
         main_lay = QVBoxLayout(self)
         main_lay.setContentsMargins(0,0,0,0)
         main_lay.setSpacing(0)
-        
-        splitter = QSplitter(
-            self,
-            Qt.Orientation.Horizontal
-        )
 
-        self.__oldPos = None
+        # полоска с кнопкой закрыть
         self.__tool_bar = QWidget(self)
         self.__tool_bar.setMinimumHeight(24)
         main_lay.addWidget(self.__tool_bar, 0)
         self.__tool_bar.setStyleSheet('background-color : #666;')
+        self.__oldPos = None
 
         tool_bar_layout = QHBoxLayout(self.__tool_bar)
         tool_bar_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
         tool_bar_layout.setSpacing(10)
         tool_bar_layout.setContentsMargins(2, 2, 2, 2)
-
-        layout: QHBoxLayout = self.__tool_bar.layout()
-
         tool_bar_layout.addSpacerItem(
             QSpacerItem(
                 0,0,
@@ -599,24 +582,29 @@ class SynonymsEditor(QWidget):
         self.__exit_btn.setIconSize(size)
         self.__exit_btn.setFixedSize(size)
         self.__exit_btn.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")
-        layout.addWidget(self.__exit_btn)
+        tool_bar_layout.addWidget(self.__exit_btn)
 
         self.__group_list = GroupsList(self)
-        splitter.addWidget(self.__group_list)
-        splitter.setStretchFactor(0,0)
+        
+        g_view = SynonymsGroupsView(self)
+        g_view.setModel(g_model)
+        self.__group_list.setList(g_view, True)
 
         self.__synonyms_list = SynonymsList(self)
+        self.__synonyms_list.set_empty()
+
+        g_view.selectionModel().selectionChanged.connect(
+            lambda now, prev: self.__on_syn_group_changed(now.indexes())
+        )
+
+        # рабочая область
+        splitter = QSplitter( self, Qt.Orientation.Horizontal )
+        splitter.addWidget(self.__group_list)
+        splitter.setStretchFactor(0,0)
         splitter.addWidget(self.__synonyms_list)
         splitter.setStretchFactor(1,1)
         
         main_lay.addWidget(splitter, 1)
-        
-    def set_synonyms(self, view: SynonymsSetView, set_current:bool = False):
-        self.__synonyms_list.setList(view, set_current)
-        
-    def set_groups(self, view: SynonymsGroupsModel):
-        self.__group_list.setList(view, True)
-        self.__synonyms_list.set_empty()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -631,27 +619,21 @@ class SynonymsEditor(QWidget):
     def mouseReleaseEvent(self, event):
         self.__oldPos = None
 
-    def closeEvent(self, event: QCloseEvent) -> None:
-        # это окно создаётся при старте и живёт до закрытия программы
-        self.hide()
-        event.ignore()
-
-    def showEvent(self, event: QShowEvent) -> None:
-        # пока окно открыто пользователь не должен ничего тыкать в остальной программе
-        self.setWindowModality(Qt.WindowModality.WindowModal)
-        return super().showEvent(event)
-    
-    def hideEvent(self, event: QHideEvent) -> None:
-        # при сокрытии этого окна остальная программа должна получать все события
-        self.setWindowModality(Qt.WindowModality.NonModal)
-        return super().hideEvent(event)
-
     def resizeEvent(self, event: QResizeEvent) -> None:
         # костыль
         if event.oldSize() != event.size():
             self.resize(event.size())
 
         return super().resizeEvent(event)
+    
+    @Slot(list)
+    def __on_syn_group_changed(self, selected_index_list):
+        if len(selected_index_list):
+            synonyms = self.__g_model.data(
+                selected_index_list[0],
+                CustomDataRole.SynonymsSet
+            )
+            self.__synonyms_list.set_current(synonyms)
 
 class Workspaces(QTabWidget):
     __map = dict[int, QGraphicsView] # key = id
@@ -663,6 +645,11 @@ class Workspaces(QTabWidget):
 
     def set_active(self, project_id: int):
         self.setCurrentWidget(self.__map[project_id])
+
+    def cur_project(self) -> StateMachineQtController: 
+        view:QGraphicsView = self.currentWidget()
+        editor:Editor = view.scene()
+        return editor.controller()
 
     def add_editor(self, view:QGraphicsView):
         editor:Editor = view.scene()

@@ -262,18 +262,9 @@ class GroupsList(QStackedWidget):
             self.setCurrentIndex(idx)
 
 class SynonymsList(QStackedWidget):
-    __indexed: dict[int, SynonymsSetView]
+    __indexed: dict[int, SynonymsSetModel]
     __empty_index:int
-
-    def create_value(self, view: SynonymsSetView):
-        model:SynonymsSetModel = view.model()
-
-        value, ok = QInputDialog.getText(self, "Новое значение", "Новый синоним:")
-        if not ok: return
-
-        new_row:int = model.rowCount()
-        model.insertRow(new_row)
-        model.setData(model.index(new_row), value)
+    new_value_request = Signal(SynonymsSetModel)
 
     def addWidget(self, w: SynonymsSetView) -> int:
         if not isinstance(w, SynonymsSetView):
@@ -284,7 +275,7 @@ class SynonymsList(QStackedWidget):
         w_lay.addWidget(w, 0)
 
         create_btn = QPushButton("Новое значение", self)
-        create_btn.clicked.connect(lambda: self.create_value(w))
+        create_btn.clicked.connect(lambda: self.new_value_request.emit(w.model()))
         w_lay.addWidget(create_btn, 1)
 
         area = QScrollArea(self)
@@ -301,18 +292,16 @@ class SynonymsList(QStackedWidget):
     def set_empty(self):
         self.setCurrentIndex(self.__empty_index)
     
-    def setList(self, view: SynonymsSetView, set_current: bool = False):
-        ''' обновление списка виджетов '''
+    def set_current(self, model: SynonymsSetModel):
         # для нового списка создаём отдельный виджет и сохраняем его индекс
-        if not view in self.__indexed.values():
-            self.__indexed[self.addWidget(view)] = view
+        if not model in self.__indexed.values():
+            view = SynonymsSetView(self)
+            view.setModel(model)
+            self.__indexed[self.addWidget(view)] = model
 
         # получаем индекс виджета с полученным списком синонимов
-        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(view)]
-
-        # если указано - устанавливаем текущим виджетом
-        if set_current:
-            self.setCurrentIndex(idx)
+        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(model)]
+        self.setCurrentIndex(idx)
 
 class FlowsDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:

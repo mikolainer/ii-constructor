@@ -3,7 +3,7 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QWidget
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, SynonymsEditor, Workspaces
+from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Workspaces, SynonymsEditor
 from alicetool.infrastructure.widgets import FlowList
 
 class StateMachineGuiRefresher(StateMachineNotifier):
@@ -50,7 +50,6 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
     __opened_projects: dict[int, ProjectQtController]
     __set_content_refresher: Callable[[int, StateMachineNotifier], None]
     __flow_list: FlowList
-    __synonyms: SynonymsEditor
     __workspaces: Workspaces
     __main_window: QWidget
 
@@ -59,16 +58,19 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
             [int, StateMachineNotifier], None
         ],
         flow_list: FlowList,
-        synonyms: SynonymsEditor,
         workspaces: Workspaces,
         main_window: QWidget
     ):
         self.__opened_projects = {}
         self.__set_content_refresher = set_content_refresher_callback
         self.__flow_list = flow_list
-        self.__synonyms = synonyms
         self.__workspaces = workspaces
         self.__main_window = main_window
+
+    def open_synonyms_editor(self):
+        s_editor = SynonymsEditor(self.__workspaces.cur_project().synonyms_groups(), self.__main_window)
+        s_editor.exec()
+        debug = "just to set the break"
 
     def created(self, id:int, data):
         # парсинг
@@ -86,7 +88,7 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
         p_ctrl = ProjectQtController(id, name if len(name) > 0 else str(id) )
         self.__opened_projects[id] = p_ctrl
         
-        c_ctrl = StateMachineQtController(p_ctrl, self.__flow_list, self.__synonyms, self.__main_window)
+        c_ctrl = StateMachineQtController(p_ctrl, self.__flow_list, self.__main_window)
         p_ctrl.set_sm_ctrl(c_ctrl)
 
         self.__set_content_refresher(id, StateMachineGuiRefresher(c_ctrl))
