@@ -539,11 +539,20 @@ class SynonymsEditor(QDialog):
     __group_list: GroupsList
 
     __g_model:SynonymsGroupsModel
+    __create_group_handler:Callable
+    __create_value_handler:Callable
 
-    def __init__(self, g_model:SynonymsGroupsModel, parent: QWidget | None = None) -> None:
+    def __init__(
+            self, g_model:SynonymsGroupsModel,
+            create_group_handler:Callable[[SynonymsGroupsModel], None],
+            create_value_handler:Callable[[SynonymsSetModel], None],
+            parent: QWidget | None = None
+        ) -> None:
         self.__g_model = g_model
+        self.__create_group_handler = create_group_handler
+        self.__create_value_handler = create_value_handler
 
-        super().__init__(None, Qt.WindowType.FramelessWindowHint)
+        super().__init__(parent, Qt.WindowType.FramelessWindowHint)
         self.setWindowFlag(Qt.WindowType.Window, True)
 
         self.setWindowTitle('Редактор синонимов')
@@ -585,12 +594,14 @@ class SynonymsEditor(QDialog):
         tool_bar_layout.addWidget(self.__exit_btn)
 
         self.__group_list = GroupsList(self)
+        self.__group_list.create_value.connect(lambda model: self.__create_group_handler(model))
         
         g_view = SynonymsGroupsView(self)
         g_view.setModel(g_model)
         self.__group_list.setList(g_view, True)
 
         self.__synonyms_list = SynonymsList(self)
+        self.__synonyms_list.create_value.connect(lambda model: self.__create_value_handler(model))
         self.__synonyms_list.set_empty()
 
         g_view.selectionModel().selectionChanged.connect(

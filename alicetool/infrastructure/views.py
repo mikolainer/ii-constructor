@@ -201,25 +201,7 @@ class SynonymsSetView(QListView):
 class GroupsList(QStackedWidget):
     __indexed: dict[int, SynonymsGroupsView]
     __empty_index:int
-
-    def create_value(self, view: SynonymsGroupsView):
-        model:SynonymsGroupsModel = view.model()
-
-        name, ok = QInputDialog.getText(self, "Имя новой группы", "Имя новой группы:")
-        if not ok: return
-
-        descr, ok = QInputDialog.getText(self, "Описание новой группы", "Описание новой группы:")
-        if not ok: return
-
-        value, ok = QInputDialog.getText(self, "Значение первого синонима", "Первый синоним:")
-        if not ok: return
-
-        new_row:int = model.rowCount()
-        model.insertRow(new_row)
-        index = model.index(new_row)
-        model.setData(index, name, CustomDataRole.Name)
-        model.setData(index, descr, CustomDataRole.Description)
-        model.setData(index, SynonymsSetModel([value]), CustomDataRole.SynonymsSet)
+    create_value = Signal(SynonymsGroupsModel)
 
     def addWidget(self, w: SynonymsGroupsView) -> int:
         if not isinstance(w, SynonymsGroupsView):
@@ -230,7 +212,7 @@ class GroupsList(QStackedWidget):
         w_lay.addWidget(w, 0)
 
         create_btn = QPushButton("Новая группа", self)
-        create_btn.clicked.connect(lambda: self.create_value(w))
+        create_btn.clicked.connect(lambda: self.create_value.emit(w.model()))
         w_lay.addWidget(create_btn, 1)
 
         area = QScrollArea(self)
@@ -264,7 +246,7 @@ class GroupsList(QStackedWidget):
 class SynonymsList(QStackedWidget):
     __indexed: dict[int, SynonymsSetModel]
     __empty_index:int
-    new_value_request = Signal(SynonymsSetModel)
+    create_value = Signal(SynonymsSetModel)
 
     def addWidget(self, w: SynonymsSetView) -> int:
         if not isinstance(w, SynonymsSetView):
@@ -275,7 +257,7 @@ class SynonymsList(QStackedWidget):
         w_lay.addWidget(w, 0)
 
         create_btn = QPushButton("Новое значение", self)
-        create_btn.clicked.connect(lambda: self.new_value_request.emit(w.model()))
+        create_btn.clicked.connect(lambda: self.create_value.emit(w.model()))
         w_lay.addWidget(create_btn, 1)
 
         area = QScrollArea(self)

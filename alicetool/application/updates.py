@@ -1,10 +1,11 @@
 from collections.abc import Callable
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QInputDialog
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
 from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Workspaces, SynonymsEditor
 from alicetool.infrastructure.widgets import FlowList
+from alicetool.infrastructure.data import SynonymsGroupsModel, SynonymsSetModel, CustomDataRole
 
 class StateMachineGuiRefresher(StateMachineNotifier):
     __sm_ctrl: StateMachineQtController
@@ -68,7 +69,12 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
         self.__main_window = main_window
 
     def open_synonyms_editor(self):
-        s_editor = SynonymsEditor(self.__workspaces.cur_project().synonyms_groups(), self.__main_window)
+        s_editor = SynonymsEditor(
+            self.__workspaces.cur_project().synonyms_groups(),
+            self.create_s_group,
+            self.create_s_value,
+            self.__main_window
+        )
         s_editor.exec()
         debug = "just to set the break"
 
@@ -106,3 +112,28 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
     def removed(self, id:int):
         self.__opened_projects[id].close()
         del self.__opened_projects[id]
+
+    def create_s_group(self, model: SynonymsGroupsModel):
+        name, ok = QInputDialog.getText(None, "Имя новой группы", "Имя новой группы:")
+        if not ok: return
+
+        descr, ok = QInputDialog.getText(None, "Описание новой группы", "Описание новой группы:")
+        if not ok: return
+
+        value, ok = QInputDialog.getText(None, "Значение первого синонима", "Первый синоним:")
+        if not ok: return
+
+        new_row:int = model.rowCount()
+        model.insertRow(new_row)
+        index = model.index(new_row)
+        model.setData(index, name, CustomDataRole.Name)
+        model.setData(index, descr, CustomDataRole.Description)
+        model.setData(index, SynonymsSetModel([value]), CustomDataRole.SynonymsSet)
+
+    def create_s_value(self, model: SynonymsSetModel):
+        value, ok = QInputDialog.getText(None, "Новый синоним", "Текст синонима:")
+        if not ok: return
+        new_row:int = model.rowCount()
+        model.insertRow(new_row)
+        index = model.index(new_row)
+        model.setData(index, value)
