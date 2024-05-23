@@ -286,3 +286,4 @@ class Arrow(QGraphicsItem):
             self.mapFromScene(self.__start_point),
             self.mapFromScene(end_point)
         )
+

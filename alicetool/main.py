@@ -3,13 +3,10 @@ from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt
 
 from alicetool.presentation.api import EditorAPI
-from alicetool.presentation.gui import (
-    Workspaces,
-)
 from alicetool.application.updates import EditorGuiRefresher
 from alicetool.infrastructure.buttons import MainToolButton
 from alicetool.infrastructure.windows import MainWindow, NewProjectDialog
-from alicetool.infrastructure.widgets import FlowList
+from alicetool.infrastructure.widgets import FlowList, Workspaces
 
 def __make_project(main_window):
     dialog = NewProjectDialog(main_window, EditorAPI.STATE_TEXT_MAX_LEN)

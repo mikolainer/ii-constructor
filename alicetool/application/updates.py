@@ -3,8 +3,8 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QWidget, QInputDialog
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Workspaces
-from alicetool.infrastructure.widgets import FlowList
+from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Editor
+from alicetool.infrastructure.widgets import FlowList, Workspaces
 from alicetool.infrastructure.windows import SynonymsEditor
 from alicetool.infrastructure.data import SynonymsGroupsModel, SynonymsSetModel, CustomDataRole
 
@@ -65,9 +65,26 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
         self.__workspaces = workspaces
         self.__main_window = main_window
 
+        self.__workspaces.activated.connect(lambda editor: self.set_active_project(editor))
+
+    def set_active_project(self, editor: Editor):
+        for proj in self.__opened_projects.values():
+            if proj.editor() is editor:
+                proj.get_sm_controller().set_active()
+
     def open_synonyms_editor(self):
+        synonyms: SynonymsGroupsModel = None
+
+        editor: Editor = self.__workspaces.currentWidget()
+        for proj in self.__opened_projects.values():
+            if proj.editor() is editor:
+                synonyms = proj.get_sm_controller().synonyms_groups()
+                break
+
+        if synonyms is None: raise RuntimeError(synonyms)
+
         s_editor = SynonymsEditor(
-            self.__workspaces.cur_project().synonyms_groups(),
+            synonyms,
             self.create_s_group,
             self.create_s_value,
             self.__main_window
@@ -96,8 +113,8 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
 
         self.__set_content_refresher(id, StateMachineGuiRefresher(c_ctrl))
 
-        self.__workspaces.add_editor(p_ctrl.editor())
-        self.__workspaces.set_active(id)
+        editor = p_ctrl.editor()
+        self.__workspaces.open_editor(editor, p_ctrl.project_name())
 
     def saved(self, id:int, data):
         self.__opened_projects[id].saved()

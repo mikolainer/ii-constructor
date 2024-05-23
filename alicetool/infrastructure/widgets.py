@@ -18,7 +18,26 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QStackedWidget,
     QScrollArea,
+    QTabWidget,
+    QGraphicsView
 )
+
+class Workspaces(QTabWidget):
+    activated = Signal(QGraphicsView)
+
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.currentChanged.connect(lambda index: self.activated.emit(self.widget(index)))
+
+    def set_active(self, view:QGraphicsView):
+        self.setCurrentWidget(view)
+
+    def open_editor(self, view:QGraphicsView, name:str):
+        self.addTab(view, name)
+        self.set_active(view)
+
+    def close_editor(self, view:QGraphicsView):
+        self.removeTab(self.indexOf(view))
 
 class FlowListWidget(QWidget):
     __view: QWidget

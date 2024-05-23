@@ -1,4 +1,7 @@
+from typing import Optional
+
 from PySide6.QtCore import (
+    QObject,
     Qt,
     QPoint,
     QPointF,
@@ -23,7 +26,6 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QTabWidget,
     QPushButton,
     QTextEdit,
     QLabel,
@@ -278,17 +280,9 @@ class Editor(QGraphicsScene):
     !!! возможно надо связывать StateMachineQtController напрямую с элементами сцены через инверсию управления
     или сделать глобально доступную фабрику синглтонов для контроллеров проектов (??? тогда придётся хранить принадлежность к конкретному проекту)
     '''
-
-    __state_machine_ctrl: 'StateMachineQtController'
-
-    def controller(self) -> 'StateMachineQtController':
-        return self.__state_machine_ctrl
-    
-    def __init__(self, controller: 'StateMachineQtController'):
-        super().__init__()
+    def __init__(self, parent: Optional[QObject]):
+        super().__init__(parent)
         self.setBackgroundBrush(QColor("#DDDDDD"))
-
-        self.__state_machine_ctrl = controller
 
     def addState(self, content:str, name:str, id:int, initPos:QPoint) -> QGraphicsStateItem:
         widget = StateWidget(content, name, id)
@@ -355,12 +349,13 @@ class StateMachineQtController:
         flow_list: 'FlowList',
         main_window: QWidget
     ):
-        self.__scene = Editor(self)
-        self.__selector = None
-
         self.__proj_ctrl = proj_ctrl
-        self.__proj_ctrl.editor().setScene(self.__scene)
         self.__main_window = main_window
+
+        self.__scene = Editor(self.__main_window)
+        self.__selector = None
+        
+        self.__proj_ctrl.editor().setScene(self.__scene)
 
         self.__flow_list = flow_list
         self.__states = {}
@@ -505,34 +500,3 @@ class ProjectQtController:
 
     def saved(self):
         ''' закрыть проект '''
-
-class Workspaces(QTabWidget):
-    __map = dict[int, QGraphicsView] # key = id
-
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        self.__map = {}
-        self.currentChanged.connect(lambda index: self.__activated(self.widget(index)))
-
-    def set_active(self, project_id: int):
-        self.setCurrentWidget(self.__map[project_id])
-
-    def cur_project(self) -> StateMachineQtController: 
-        view:QGraphicsView = self.currentWidget()
-        editor:Editor = view.scene()
-        return editor.controller()
-
-    def add_editor(self, view:QGraphicsView):
-        editor:Editor = view.scene()
-        p_ctrl = editor.controller().project_controller()
-        self.__map[p_ctrl.project_id()] = view
-        self.addTab(view, p_ctrl.project_name())
-
-    def remove_editor(self, view:QGraphicsView):
-        editor:Editor = view.scene()
-        del self.__map[editor.controller().project_controller().project_id()]
-        self.removeTab(self.indexOf())
-
-    def __activated(self, view:QGraphicsView):
-        editor:Editor = view.scene()
-        editor.controller().set_active()
