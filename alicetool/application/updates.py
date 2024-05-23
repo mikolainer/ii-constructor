@@ -3,8 +3,9 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QWidget, QInputDialog
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Workspaces, SynonymsEditor
+from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Workspaces
 from alicetool.infrastructure.widgets import FlowList
+from alicetool.infrastructure.windows import SynonymsEditor
 from alicetool.infrastructure.data import SynonymsGroupsModel, SynonymsSetModel, CustomDataRole
 
 class StateMachineGuiRefresher(StateMachineNotifier):
@@ -44,10 +45,6 @@ class StateMachineGuiRefresher(StateMachineNotifier):
         ...
         
 class EditorGuiRefresher(ProjectsActionsNotifier):
-    '''
-    обработчик изменений верхнего уровня
-    создаёт и удаляет инфраструктурные контроллеры
-    '''
     __opened_projects: dict[int, ProjectQtController]
     __set_content_refresher: Callable[[int, StateMachineNotifier], None]
     __flow_list: FlowList
