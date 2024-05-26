@@ -5,12 +5,14 @@ from PySide6.QtCore import (
     QPoint,
     Slot,
     QSize,
+    QObject,
 )
 
 from PySide6.QtGui import (
     QIcon,
     QResizeEvent,
     QPixmap,
+    QMouseEvent,
 )
 
 from PySide6.QtWidgets import (
@@ -29,7 +31,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
-from alicetool.infrastructure.buttons import MainToolButton
+from alicetool.infrastructure.buttons import MainToolButton, CloseButton
 from alicetool.infrastructure.views import SynonymsGroupsView, SynonymsList, GroupsList
 from alicetool.infrastructure.data import CustomDataRole, SynonymsSetModel, SynonymsGroupsModel
 
@@ -39,9 +41,9 @@ class MainWindow(QMainWindow):
     __oldPos: QPoint | None
     __tool_bar: QWidget
 
-    def insert_button(self, btn: MainToolButton, pos: int = 0):
+    def insert_button(self, btn: MainToolButton, index: int = 0):
         layout: QHBoxLayout = self.__tool_bar.layout()
-        layout.insertWidget(pos, btn)
+        layout.insertWidget(index, btn)
 
     def __init__(self, flow_list: QWidget, workspaces: QWidget, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
@@ -124,7 +126,7 @@ class MainWindow(QMainWindow):
 class SynonymsEditor(QDialog):
     __oldPos: QPoint | None
     __tool_bar: QWidget # полоска с кнопкой "закрыть"
-    __exit_btn: QPushButton
+    __close_btn: CloseButton
 
     __synonyms_list: SynonymsList
     __group_list: GroupsList
@@ -172,17 +174,9 @@ class SynonymsEditor(QDialog):
             )
         )
 
-        size = QSize(20,20)
-        self.__exit_btn: QPushButton = QPushButton(self)
-        self.__exit_btn.clicked.connect(lambda: self.close())
-        self.__exit_btn.setToolTip('Закрыть')
-        self.__exit_btn.setStatusTip('Закрыть редактор синонимов')
-        self.__exit_btn.setWhatsThis('Закрыть редактор синонимов')
-        self.__exit_btn.setIcon(QIcon(QPixmap(":/icons/exit_norm.svg").scaled(12,12)))
-        self.__exit_btn.setIconSize(size)
-        self.__exit_btn.setFixedSize(size)
-        self.__exit_btn.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")
-        tool_bar_layout.addWidget(self.__exit_btn)
+        self.__close_btn = CloseButton(self)
+        self.__close_btn.clicked.connect(lambda: self.close())
+        tool_bar_layout.addWidget(self.__close_btn)
 
         self.__group_list = GroupsList(self)
         self.__group_list.create_value.connect(lambda model: self.__create_group_handler(model))

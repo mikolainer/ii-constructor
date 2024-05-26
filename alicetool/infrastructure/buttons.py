@@ -1,8 +1,20 @@
 from typing import Optional, overload
 
 from PySide6.QtWidgets import QPushButton, QWidget
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSize
+
+class CloseButton(QPushButton):
+    def __init__(self, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.setToolTip('Закрыть')
+        self.setStatusTip('Закрыть')
+        self.setWhatsThis('Закрыть')
+        self.setIcon(QIcon(QPixmap(":/icons/exit_norm.svg").scaled(12,12)))
+        size = QSize(20,20)
+        self.setIconSize(size)
+        self.setFixedSize(size)
+        self.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")
 
 class MainToolButton(QPushButton):
     tool_tip : str
@@ -36,3 +48,4 @@ class MainToolButton(QPushButton):
         self.setFixedSize(self.__size)
         self.setIcon(self.icon)
         self.setIconSize(self.icon_size)
+        
