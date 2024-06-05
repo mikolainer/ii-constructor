@@ -8,7 +8,13 @@ from PySide6.QtCore import (
     QObject,
     QPersistentModelIndex, 
     QAbstractItemModel,
-    QIdentityProxyModel
+    QIdentityProxyModel,
+)
+
+from PySide6.QtGui import (
+    QFont,
+    QBrush,
+    QColor,
 )
 
 @verify(UNIQUE)
@@ -48,7 +54,7 @@ class PresentationModelMixinBase():
 
     def add_item(self, item:ItemData) -> int:
         ''' Добавляет item и возвращает его индекс '''
-        if not issubclass(ItemData, item):
+        if not issubclass(type(item), ItemData):
             raise TypeError(item)
 
         # проверка наличия ролей для индексации
@@ -69,7 +75,7 @@ class PresentationModelMixinBase():
     
     def cut_item(self, item:ItemData) -> None:
         ''' Удаляет `item` '''
-        if not issubclass(ItemData, item):
+        if not issubclass(type(item), ItemData):
             raise TypeError(item)
         
         self.__data.remove(item)
@@ -78,7 +84,7 @@ class PresentationModelMixinBase():
     
     def get_item(self, index:int) -> ItemData:
         ''' ищет item по индексу '''
-        if not issubclass(int, index):
+        if not issubclass(type(index), int):
             raise TypeError(index)
         
         if index < 0:
@@ -88,7 +94,7 @@ class PresentationModelMixinBase():
     
     def get_item_by(self, role:CustomDataRole, value:Any) -> ItemData:
         ''' ищет item по значению роли '''
-        if not issubclass(CustomDataRole, role):
+        if not issubclass(type(role), CustomDataRole):
             raise TypeError(role)
 
         if not role in self.__index_roles:
@@ -103,10 +109,20 @@ class PresentationModelMixinBase():
 class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     ''' Базовая надстройка над базовой моделью Qt для работы с ItemData в виде списка '''
     __prepared_item: Optional[ItemData]
+    __map_custom_as_qt_role: dict[Qt.ItemDataRole, CustomDataRole]
 
     def __init__( self, parent: QObject | None = None, prepared_item: Optional[ItemData] = None) -> None:
         super().__init__(parent)
+        self.__map_custom_as_qt_role = {}
         self.__prepared_item = prepared_item
+
+    def map_role_as(self, role: CustomDataRole, as_role: Qt.ItemDataRole):
+        ''' устанавливает соответствие ролей для получения данных через `data()` '''
+        self.__map_custom_as_qt_role[as_role] = role
+
+    def unmap_role(self, role: Qt.ItemDataRole):
+        ''' удаляет соответствие роли для получения данных через `data()` '''
+        del self.__map_custom_as_qt_role[role]
 
     def prepare_item(self, item:ItemData):
         ''' Подготовить элемент для вставки в модель '''
@@ -121,7 +137,7 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
 
     def index(self, row: int, column: int = 0, parent: QModelIndex | QPersistentModelIndex = None) -> QModelIndex:
         ''' возвращает индекс по строке (аргумент `column` игнорируется, всегда 0) '''
-        return self.createIndex(row, column, self.__data[row])
+        return self.createIndex(row, column, self.get_item(row))
     
     def rowCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
         ''' Возвращает количество элементов в модели '''
@@ -133,22 +149,40 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     
     def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole) -> bool:
         ''' Устанавливает значение для роли элемента, с индексом `index.row()` '''
-        self.get_item(index).on[role] = value
+        if role == Qt.ItemDataRole.EditRole and Qt.ItemDataRole.DisplayRole in self.__map_custom_as_qt_role.keys():
+            self.get_item(index.row()).on[self.__map_custom_as_qt_role[Qt.ItemDataRole.DisplayRole]] = value
+            return True
+
+        self.get_item(index.row()).on[role] = value
         return True # ошибки обрабатываем исключениями
     
     def data(self, index: QModelIndex | QPersistentModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         ''' Возвращает значение роли у элемента, с индексом `index.row()` '''
-        return self.get_item(index.row()).on[role]
+        if role < Qt.ItemDataRole.UserRole:
+            if role in self.__map_custom_as_qt_role.keys():
+                return self.get_item(index.row()).on[self.__map_custom_as_qt_role[role]]
+            else:
+                return None
+        else:
+            return self.get_item(index.row()).on[role]
     
+    def insertRow(self, row: int = None, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
+        ''' Добавляет 1 подготовленный элемент в конец. Все аргументы игнорируются. '''
+        return super().insertRow(self.rowCount(), QModelIndex())
+
     def insertRows(self, row: int, count: int = None, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
-        ''' Добавляет 1 элемент в конец. Все аргументы игнорируются. '''
+        ''' Добавляет 1 подготовленный элемент в конец. Все аргументы игнорируются. '''
         new_row: int = self.rowCount()
         self.beginInsertRows(QModelIndex(), new_row, new_row)
         self.add_item(self.__prepared_item)
         self.endInsertRows()
-        self.__prepared_item = self.__default_item
+        self.__prepared_item = None
         return True # ошибки обрабатываем исключениями
-        
+    
+    def removeRow(self, row: int, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
+        ''' Удаляет 1 элемент с индексом `row`. Аргумент `parent` игнорируeтся. '''
+        return super().removeRow(row, parent)
+    
     def removeRows(self, row: int, count: int = None, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
         ''' Удаляет 1 элемент с индексом `row`. Аргументы `count` и `parent` игнорируются. '''
         self.beginRemoveRows(QModelIndex(), row, row)
@@ -157,17 +191,34 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         return True # ошибки обрабатываем исключениями
 
 class SynonymsSetModel(BaseModel):
+    def __init__( self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init() # TODO
+        self.map_role_as(CustomDataRole.Text, Qt.ItemDataRole.DisplayRole)
+
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 
 class SynonymsGroupsModel(BaseModel):
+    def __init__( self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init() # TODO
+
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
     
 class FlowsModel(BaseModel):
+    def __init__( self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init() # TODO
+
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 
 class ProxyModelReadOnly(BaseModel):
+    def __init__( self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init() # TODO
+
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return ~Qt.ItemFlag.ItemIsEditable & self.sourceModel().flags(index)

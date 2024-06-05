@@ -41,7 +41,7 @@ from alicetool.presentation.api import EditorAPI
 from alicetool.infrastructure.widgets import FlowListWidget
 
 from ..infrastructure.scene import Arrow
-from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel
+from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel, ItemData
 from ..infrastructure.views import FlowsView, SynonymsSelectorView
 from ..infrastructure.widgets import FlowList
 
@@ -396,12 +396,24 @@ class StateMachineQtController:
 
     def __build_editor(self):
         self.__scene.setSceneRect(StateMachineQtController.__START_SIZE)
-        data = EditorAPI.instance().get_all_project_states(self.__proj_ctrl.project_id())
         
-        for state_id in data.keys():
+
+    def __init_models(self):
+        # получение точек входа
+        flows_data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
+
+        # получение существующих векторов
+        synonyms_data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
+
+        # получение существующих состояний
+        states_data = EditorAPI.instance().get_all_project_states(self.__proj_ctrl.project_id())
+        
+        # формирование сцены
+        # TODO: сделать модель состояний
+        for state_id in states_data.keys():
             self.__states[state_id] = self.__scene.addState(
-                data[state_id]['content'],
-                data[state_id]['name'],
+                states_data[state_id]['content'],
+                states_data[state_id]['name'],
                 state_id,
                 QPoint(
                         StateWidget.START_WIDTH * (state_id - 1) +
@@ -410,55 +422,52 @@ class StateMachineQtController:
                     )
             )
 
-    def __init_models(self):
-        flows_data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
-        synonyms_data = EditorAPI.instance().get_all_project_synonyms(self.__proj_ctrl.project_id())
-
-        f_model_data: dict[int, FlowsModel.Item] = {}
-
+        flows = FlowsView(self.__main_window)
+        # модель точек входа
+        self.__f_model = FlowsModel(flows)
         for id in flows_data.keys():
             gr_id = flows_data[id]['synonym_group_id']
-            self.__s_models[gr_id] = (
-                SynonymsSetModel(synonyms_data[gr_id]['values'], gr_id, id)
-            )
+            self.__s_models[gr_id] = SynonymsSetModel(self.__main_window)
+            for value in synonyms_data[gr_id]['values']:
+                item = ItemData()
+                item.on[CustomDataRole.Text] = value
+                self.__s_models[gr_id].prepare_item(item)
+                self.__s_models[gr_id].insertRow()
 
-            item = SynonymsGroupsModel.Item()
+            item = ItemData()
             item.on[CustomDataRole.Id] = id
             item.on[CustomDataRole.Name] = flows_data[id]['name']
             item.on[CustomDataRole.Description] = flows_data[id]['description']
             item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id]
             item.on[CustomDataRole.EnterStateId] = flows_data[id]['enter_state_id']
-            
-            f_model_data[id] = item
+            item.on[CustomDataRole.SliderVisability] = False
+            self.__f_model.prepare_item(item)
+            self.__f_model.insertRow()
 
-        flows = FlowsView(self.__main_window)
-        self.__f_model = FlowsModel(f_model_data, flows)
         flows.setModel(self.__f_model)
 
-        self.__flows_wgt = FlowListWidget(flows, self.__main_window)
+        self.__flows_wgt = FlowListWidget(flows)
         self.__flows_wgt.create_value.connect(self.__on_flow_add_pressed)
 
-        # группы синонимов
-        g_model_data: dict[int, SynonymsGroupsModel.Item] = {}
+        # модель векторов
+        self.__g_model = SynonymsGroupsModel(self.__main_window)
         for group_id in synonyms_data.keys():
             gr_id = int(group_id)
             if not gr_id in self.__s_models.keys():
-                self.__s_models[gr_id] = (
-                    SynonymsSetModel(synonyms_data[gr_id]['values'], gr_id, id)
-                )
-
-            #view = SynonymsSetView()
-            #view.setModel(self.__s_models[gr_id])
-            #self.__synonyms[gr_id] = view
+                self.__s_models[gr_id] = SynonymsSetModel(self.__main_window)
+                for value in synonyms_data[gr_id]['values']:
+                    item = ItemData()
+                    item.on[CustomDataRole.Text] = value
+                    self.__s_models[gr_id].prepare_item(item)
+                    self.__s_models[gr_id].insertRow()
             
-            item = SynonymsGroupsModel.Item()
+            item = ItemData()
             item.on[CustomDataRole.Id] = synonyms_data[gr_id]['id']
             item.on[CustomDataRole.Name] = synonyms_data[gr_id]['name']
             item.on[CustomDataRole.Description] = synonyms_data[gr_id]['description']
             item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id]
-            g_model_data[gr_id] = item
-
-        self.__g_model = SynonymsGroupsModel(g_model_data, self.__main_window)
+            self.__g_model.prepare_item(item)
+            self.__g_model.insertRow()
 
     @Slot(str, str)
     def __on_flow_add_pressed(self, name:str, descr:str):

@@ -45,6 +45,12 @@ class FlowSynonymsSetDelegate(QStyledItemDelegate):
     def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
         editor.setText(index.data())
 
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
+        data = index.data(CustomDataRole.Text)
+        wgt = SynonymEditorWidget(data)
+        wgt.adjustSize()
+        return QSize(option.rect.size().width(), wgt.size().height())
+    
 class FlowSynonymsSetView(QListView):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -78,7 +84,7 @@ class FlowWidget(QWidget):
     def __init__(self, id :int, 
                  name: str, description :str,
                  synonyms: SynonymsSetModel, 
-                 start_state :QGraphicsProxyWidget,
+                 start_state,# :QGraphicsProxyWidget,
                  parent = None
                 ):
         super().__init__(parent)
@@ -89,7 +95,7 @@ class FlowWidget(QWidget):
         self.__description = QLabel(description, self)
         self.__description.setWordWrap(True)
         self.__synonyms_name = QLabel("синонимы", self)
-        self.__synonyms_list = FlowSynonymsSetView(self)
+        self.__synonyms_list = FlowSynonymsSetView(self)#FlowSynonymsSetView(self)
         self.__synonyms_list.hide()
         self.__synonyms_list.setModel(synonyms)
         
@@ -171,7 +177,7 @@ class SynonymsSetDelegate(QStyledItemDelegate):
         model.setData(index, editor.text())
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
-        data = index.internalPointer()
+        data = index.data(CustomDataRole.Text)
         wgt = SynonymEditorWidget(data)
         wgt.resize(option.rect.size())
 
@@ -184,7 +190,7 @@ class SynonymsSetDelegate(QStyledItemDelegate):
         super().paint(painter, option, index)
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
-        data = index.internalPointer()
+        data = index.data(CustomDataRole.Text)
         wgt = SynonymEditorWidget(data)
         wgt.adjustSize()
         return wgt.size()
