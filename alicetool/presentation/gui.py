@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
 from alicetool.presentation.api import EditorAPI
 from alicetool.infrastructure.widgets import FlowListWidget
 
-from ..infrastructure.scene import Arrow
+from ..infrastructure.scene import Arrow, AddConnectionBtn
 from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel, ItemData
 from ..infrastructure.views import FlowsView, SynonymsSelectorView
 from ..infrastructure.widgets import FlowList
@@ -48,26 +48,30 @@ from ..infrastructure.widgets import FlowList
 class QGraphicsStateItem(QGraphicsProxyWidget):
     ''' TODO: инкапсулировать в SceneNode '''
     __arrows: dict[str, list[Arrow]]
-    __add_btn: 'StateWidget.AddConnectionBtn'
+    __add_btns: list[AddConnectionBtn]
 
     def __init__(self, parent: QGraphicsItem = None):
         super().__init__(parent)
         self.__arrows = {"from": list[Arrow](), "to": list[Arrow]()}
         self.setZValue(100)
-        self.__add_btn = None
+        self.__add_btns = []
         #self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
 
     def show_add_btn(self):
         editor:Editor = self.scene()
         wgt: StateWidget = self.widget()
 
-        if not self.__add_btn is None:
-            return
+        for btn in self.__add_btns:
+            if btn.is_active:
+                return
 
-        self.__add_btn = StateWidget.AddConnectionBtn(wgt.state_id())
-        self.__add_btn.setParentItem(self)
-        self.__add_btn.setPos(wgt.add_btn_pos())
-        editor.addItem(self.__add_btn)
+        pos = wgt.add_btn_pos()
+        add_btn = AddConnectionBtn(self)
+        add_btn.setParentItem(self)
+        add_btn.setPos(pos)
+        self.__add_btns.append(add_btn)
+
+        editor.addItem(add_btn)
 
     def remove_add_btn(self):
         self.__add_btn = None
@@ -105,55 +109,6 @@ class QGraphicsStateItem(QGraphicsProxyWidget):
             arrow.set_start_point(self.scenePos() + center)
 
 class StateWidget(QWidget):
-    class AddConnectionBtn(QGraphicsPixmapItem):
-        __arrow: Arrow | None
-        __state_id: int
-
-        def __init__(self, state_id: int):
-            self.__state_id = state_id
-
-            pixmap = QMessageBox.standardIcon(QMessageBox.Icon.Information)
-            super().__init__(pixmap.scaled(20,20))
-            
-            self.setZValue(110)
-            self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-        
-        def __remove(self, mouse_pos:QPointF):
-            self.__arrow.set_end_wgt(None)
-            scene: Editor = self.scene()
-            sm_ctrl: StateMachineQtController = scene.controller()
-
-            scene.removeItem(self.__arrow)
-            self.__arrow = None
-            
-            state_id = self.__state_id
-            scene.removeItem(self)
-            sm_ctrl.get_state(state_id).remove_add_btn()
-
-            end_item:QGraphicsStateItem = scene.itemAt(mouse_pos, QTransform())
-            if isinstance(end_item, QGraphicsStateItem):
-                end_wgt: StateWidget = end_item.widget()
-                sm_ctrl.add_step(state_id, end_wgt.state_id())
-        
-        def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-            center = QPointF( 10, 10 )
-            self.__arrow.set_end_point(self.scenePos() + center)
-            return super().mouseMoveEvent(event)
-        
-        def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-            scene: Editor = self.scene()
-            self.__arrow = Arrow()
-            scene.controller().get_state(self.__state_id).arrow_connect_as_start(self.__arrow)
-            self.__arrow.set_end_wgt(self)
-            scene.addItem(self.__arrow)
-
-            return super().mousePressEvent(event)
-        
-        def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-            scene_pos = event.scenePos()
-            QTimer.singleShot(0, lambda: self.__remove(scene_pos)) # нельзя обновлять сцену до возвращения в цикл событий Qt
-            return super().mouseReleaseEvent(event)
-
     class CloseBtn(QPushButton):
         mouse_enter = Signal()
 

@@ -3,18 +3,26 @@ from math import sqrt
 from PySide6.QtCore import (
     QPointF,
     QRectF,
+    QTimer,
+    Signal,
+    QObject,
 )
 
 from PySide6.QtGui import (
     QColor,
     QPen,
     QPainter,
+    QTransform,
 )
 
 from PySide6.QtWidgets import (
     QWidget,
     QGraphicsItem,
+    QGraphicsProxyWidget,
+    QGraphicsPixmapItem,
     QStyleOptionGraphicsItem,
+    QMessageBox,
+    QGraphicsSceneMouseEvent,
 )
 
 class Arrow(QGraphicsItem):
@@ -287,3 +295,62 @@ class Arrow(QGraphicsItem):
             self.mapFromScene(end_point)
         )
 
+class AddConnectionBtn(QGraphicsPixmapItem, QObject):
+        __arrow: Arrow | None
+        __state: QGraphicsProxyWidget
+        end_pos: QPointF
+        is_active: bool
+        connection_added = Signal()
+
+        def __init__(self, start_item: QGraphicsProxyWidget):
+            self.__state = start_item
+            self.end_pos = None
+            self.is_active = True
+
+            pixmap = QMessageBox.standardIcon(QMessageBox.Icon.Information)
+            QObject.__init__(self)
+            super().__init__(pixmap.scaled(20,20))
+            
+            self.setZValue(110)
+            self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+        
+        def __start_effect(self):
+            pos = self.__state.scenePos()
+            size = self.__state.size()
+            pos.setX(pos.x() + size.width()/2)
+            pos.setY(pos.y() + size.height()/2)
+
+            self.__arrow = Arrow()
+            self.__arrow.set_start_point(pos)
+            
+            center = QPointF( 10, 10 )
+            self.__arrow.set_end_point(self.scenePos() + center)
+
+            self.scene().addItem(self.__arrow)
+
+        def __end_effect(self, mouse_pos:QPointF):
+            self.scene().removeItem(self.__arrow)
+            self.__arrow = None
+            self.is_active = False
+            self.end_pos = mouse_pos
+            self.connection_added.emit()
+            self.hide()
+        
+        def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            center = QPointF( 10, 10 )
+            self.__arrow.set_end_point(self.scenePos() + center)
+            return super().mouseMoveEvent(event)
+
+        def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            QTimer.singleShot(0, # нельзя обновлять сцену до возвращения в цикл событий Qt
+                lambda: self.__start_effect()
+            )
+            return super().mousePressEvent(event)
+
+        def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            pos = event.scenePos()
+            QTimer.singleShot(0, # нельзя обновлять сцену до возвращения в цикл событий Qt
+                lambda: self.__end_effect(pos)
+            ) 
+            return super().mouseReleaseEvent(event)
+        
