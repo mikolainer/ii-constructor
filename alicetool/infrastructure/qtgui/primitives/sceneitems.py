@@ -1,30 +1,49 @@
 from math import sqrt
+from typing import overload, Union, Optional
 
 from PySide6.QtCore import (
+    Qt,
+    Slot,
     QPointF,
     QRectF,
+    QRect,
     QTimer,
     Signal,
     QObject,
+    QPoint,
+    QSize,
 )
 
 from PySide6.QtGui import (
     QColor,
     QPen,
     QPainter,
+    QFont,
+    QBrush,
+    QPainterPath
 )
 
 from PySide6.QtWidgets import (
+    QTextEdit,
+    QGraphicsScene,
+    QVBoxLayout,
+    QHBoxLayout,
     QWidget,
+    QLabel,
     QGraphicsItem,
     QGraphicsProxyWidget,
     QGraphicsPixmapItem,
     QStyleOptionGraphicsItem,
     QMessageBox,
     QGraphicsSceneMouseEvent,
+    QScrollArea,
+    QGraphicsRectItem,
 )
 
+from alicetool.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
+
 class Arrow(QGraphicsItem):
+    ''' Ребро графа на сцене '''
     __start_point: QPointF
     __end_point: QPointF
     __pen_width: int
@@ -353,4 +372,228 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
             ) 
             return super().mouseReleaseEvent(event)
 
+class NodeControll(QGraphicsRectItem):
+    ''' манипулятор (невидимый объект для управления позицией) '''
+    def __init__(self, rect: Union[QRectF, QRect], parent: Optional[QGraphicsItem] = None) -> None:
+        super().__init__(rect, parent)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
+        self.setPen(QPen(Qt.GlobalColor.transparent))
+        self.setBrush(QBrush(Qt.GlobalColor.transparent))
+    
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value):
+        if change in [
+            QGraphicsItem.GraphicsItemChange.ItemPositionChange,
+            QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged
+        ] and len(self.childItems()):
+            child:SceneNode = self.childItems()[0]
+            child.update_arrows()
 
+        return super().itemChange(change, value)
+class SceneNode(QGraphicsProxyWidget):
+    ''' Вершина графа на сцене '''
+    __Z_VAL = 100
+
+    __add_btns: list[AddConnectionBtn]
+    __arrows: dict[str, list[Arrow]]
+    
+    __controll: NodeControll
+
+    def __init__(self, scene: QGraphicsScene):
+        # контейнеры для соединений
+        self.__arrows = {"from": list[Arrow](), "to": list[Arrow]()}
+        self.__add_btns = []
+
+        # обёртка содержимого
+        widget = NodeWidget("")
+
+        # элемент сцены
+        super().__init__()
+        self.setZValue(self.__Z_VAL)
+        super().setWidget(widget)
+        scene.addItem(self)
+
+        self.setWidget(QTextEdit())
+        
+        # инициализация манипулятора
+        controll_pos = self.scenePos()
+        controll_size = QSize(
+            NodeWidget.START_WIDTH - NodeWidget.BUTTON_SIZE - NodeWidget.BUTTONS_MARGIN*2,
+            NodeWidget.TITLE_HEIGHT
+        )
+
+        self.__controll = NodeControll(QRectF(controll_pos, controll_size))
+        self.__controll.setZValue(self.__Z_VAL)
+        scene.addItem(self.__controll)
+
+        self.setParentItem(self.__controll)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
+        self.installSceneEventFilter(self.__controll)
+        
+        # обратная связь для управления дополнительными элементами
+        widget.set_graphics_item_ptr(self)
+
+    def setWidget(self, widget: QWidget) -> None:
+        wgt: NodeWidget = super().widget()
+        wgt.setWidget(widget)
+    
+    def widget(self) -> QWidget:
+        wgt: NodeWidget = super().widget()
+        return wgt.widget()
+
+    def setPos(self, x: float, y: float) -> None:
+        self.__controll.setPos(x, y)
+
+    def set_title(self, text:str):
+        wgt: NodeWidget = super().widget()
+        wgt.set_title()
+
+    def hide_tools(self):
+        ''''''
+
+    def show_tools(self):
+        ''''''
+
+    def reset_tools(self):
+        for btn in self.__add_btns:
+            if btn.is_active:
+                return
+            
+        wgt:NodeWidget = super().widget()
+        pos = wgt.add_btn_pos()
+        add_btn = AddConnectionBtn(self)
+        add_btn.setParentItem(self)
+        add_btn.setPos(pos)
+        self.__add_btns.append(add_btn)
+
+        self.scene().addItem(add_btn)
+
+    def arrow_connect_as_start(self, arrow: Arrow):
+        if (not arrow in self.__arrows['from']):
+            self.__arrows['from'].append(arrow)
+            bounding = self.boundingRect()
+            center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
+            arrow.set_start_point(self.scenePos() + center)
+
+    def arrow_connect_as_end(self, arrow: Arrow):
+        if (not arrow in self.__arrows['to']):
+            self.__arrows['to'].append(arrow)
+            bounding = self.boundingRect()
+            center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
+            arrow.set_end_point(self.scenePos() + center)
+            arrow.set_end_wgt(self)
+
+    def arrow_disconnect(self, arrow: Arrow):
+        if (arrow in self.__arrows['from']):
+            self.__arrows['from'].remove(arrow)
+
+        if (arrow in self.__arrows['to']):
+            self.__arrows['to'].remove(arrow)
+            
+    def update_arrows(self):
+        bounding = self.boundingRect()
+        center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
+
+        for arrow in self.__arrows['to']:
+            arrow.set_end_point(self.scenePos() + center)
+
+        for arrow in self.__arrows['from']:
+            arrow.set_start_point(self.scenePos() + center)
+
+class NodeWidget(QWidget):
+    ''' Визуальная обёртка над содержимым вершины графа '''
+    BUTTONS_MARGIN = 2
+    BUTTON_SIZE = 15
+    TITLE_HEIGHT = 20
+    START_WIDTH = 150
+
+    __title: QLabel
+    __close_btn: EnterDetectionButton
+    __content: QScrollArea
+    __item_on_scene: SceneNode | None
+    
+    def __init__(self, title: str, parent = None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        self.__item_on_scene = None
+        self.__title = QLabel(title, self)
+        font = self.__title.font()
+        font.setWeight(QFont.Weight.ExtraBold)
+        self.__title.setFont(font)
+        self.__title.setFixedHeight(self.TITLE_HEIGHT)
+        self.__close_btn = EnterDetectionButton("", self)
+        self.__close_btn.setFlat(True)
+        self.__close_btn.setStyleSheet(
+            "QPushButton"
+            "{"
+            "   background-color: #666666;"
+            "   border: 0px; color: #FFFFFF;"
+            "   border-radius: 7px;"
+            "}"
+        )
+        font = self.__close_btn.font()
+        font.setWeight(QFont.Weight.ExtraBold)
+        self.__close_btn.setFont(font)
+        self.__close_btn.setFixedHeight(self.BUTTON_SIZE)
+        self.__close_btn.setFixedWidth(self.BUTTON_SIZE)
+        
+        self.__content = QScrollArea(self)
+        self.__content.setWidgetResizable(True)
+        self.__content.setStyleSheet(
+            "QScrollArea{"
+            "   border: 0px;"
+            "   border-top: 1px solid #59A5FF;"
+            "   border-bottom-right-radius: 10px;"
+            "   border-bottom-left-radius: 10px;"
+            "   background-color: #FFFFFF;"
+            "}"
+        )
+
+        main_lay = QVBoxLayout(self)
+        main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setSpacing(0)
+
+        title = QWidget(self)
+        title.setStyleSheet(
+            "QWidget{"
+            "   border: 0px;"
+            "   border-top-right-radius: 10px;"
+            "   border-top-left-radius: 10px;"
+            "   background-color: #FFFFFF;"
+            "}"
+        )
+        title_lay = QHBoxLayout(title)
+        title_lay.setContentsMargins(5,2,2,2)
+
+        title_lay.addWidget(self.__title)
+        title_lay.addWidget(self.__close_btn)
+        
+        main_lay.addWidget(title)
+        main_lay.addWidget(self.__content)
+
+        self.resize(self.START_WIDTH, self.START_WIDTH)
+
+    def set_title(self, text:str):
+        self.__title.setText(text)
+        self.__title.setToolTip(text)
+
+    def setWidget(self, widget: QWidget) -> None:
+        return self.__content.setWidget(widget)
+    
+    def widget(self) -> QWidget:
+        return self.__content.widget()
+
+    def add_btn_pos(self) -> QPoint:
+        pos = self.__close_btn.pos()
+        pos.setX(pos.x() + self.__close_btn.width() + 4)
+        return pos
+    
+    def set_graphics_item_ptr(self, item: SceneNode):
+        self.__item_on_scene = item
+        self.__close_btn.mouse_enter.connect(self.on_close_btn_mouse_enter)
+
+    @Slot()
+    def on_close_btn_mouse_enter(self):
+        if not self.__item_on_scene is None:
+            self.__item_on_scene.show_tools()

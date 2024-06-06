@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
 
 from alicetool.presentation.api import EditorAPI
 from alicetool.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, AddConnectionBtn
+from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, AddConnectionBtn, SceneNode
 from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel, ItemData
 from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelectorView
@@ -210,6 +210,13 @@ class Editor(QGraphicsScene):
     def __init__(self, parent: Optional[QObject]):
         super().__init__(parent)
         self.setBackgroundBrush(QColor("#DDDDDD"))
+
+        self.addNode(QTextEdit(), QPoint(100, 100))
+
+    def addNode(self, content:QWidget, pos:QPoint) -> SceneNode:
+        node = SceneNode(self)
+        node.setPos(pos.x(), pos.y())
+        return node
 
     def addState(self, content:str, name:str, id:int, initPos:QPoint) -> QGraphicsStateItem:
         widget = StateWidget(content, name, id)
