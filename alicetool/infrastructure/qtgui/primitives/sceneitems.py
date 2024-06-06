@@ -50,16 +50,18 @@ class Arrow(QGraphicsItem):
     __end_wgt: QGraphicsItem #TODO: SceneNode
 
     def set_end_wgt(self, widget: QGraphicsItem):
-        ''' установка виджета для вычисления смещения указателя '''
+        ''' Прикрепляет конец ребра к элементу сцены '''
         self.set_end_point(self.__arrow_ptr_pos())
         self.__end_wgt = widget
 
     def set_start_point(self, point: QPointF):
+        ''' Устанавливает позицию начала '''
         self.prepareGeometryChange()
         self.__start_point = point
         self.setPos(self.__center())
     
     def set_end_point(self, point: QPointF):
+        ''' Устанавливает позицию конца '''
         self.prepareGeometryChange()
         self.__end_point = point
         self.setPos(self.__center())
@@ -87,7 +89,7 @@ class Arrow(QGraphicsItem):
 
     def __dir_pointer_half(self) -> QPointF:
         ''' 
-        вектор половинки указателя стрелки:
+        Возвращает вектор половинки указателя стрелки:
         x - отступ от линии,
         y - расстояние от указываемой точки вдоль линии
         '''
@@ -98,7 +100,7 @@ class Arrow(QGraphicsItem):
     
     def __arrow_directions(self) -> dict:
         '''
-        направдения (tg углов от направления оси глобальных координат x):
+        Возвращает направдения (tg углов от направления оси глобальных координат x):
         back - вектор направленный от указываемой точки к началу линии;
         left, right - от указываемой точки в направлении половинок указателя стрелки
         '''
@@ -130,7 +132,7 @@ class Arrow(QGraphicsItem):
     
     def __delta(self) -> QPointF:
         '''
-        длины проекций линии стрелки на оси глобальных координат
+        Возвращает длину проекций линии стрелки на оси глобальных координат
         '''
         x = ( max(self.__start_point.x(), self.__end_point.x())
             - min(self.__start_point.x(), self.__end_point.x()) )
@@ -142,8 +144,8 @@ class Arrow(QGraphicsItem):
     
     def __center(self) -> QPointF:
         '''
-        вычисление центра в глобальных координатах
-        из начальной и конечной точек
+        Вычисляет центр объекта на сцене из начальной и конечной точек
+        в глобальных координатах
         '''
         x = max(self.__start_point.x(), self.__end_point.x())
         y = max(self.__start_point.y(), self.__end_point.y())
@@ -152,7 +154,7 @@ class Arrow(QGraphicsItem):
 
     def boundingRect(self) -> QRectF:
         '''
-        область границ объекта в локальных координатах
+        Возвращает область границ объекта на сцене в локальных координатах
         '''
         pen_padding = QPointF(
             float(self.__pen_width),
@@ -170,10 +172,12 @@ class Arrow(QGraphicsItem):
         return QRectF(x, y, size.x(), size.y())
     
     def __line_len(self) -> float:
+        ''' Вычисляет длину ребра '''
         delt = self.__delta()
         return sqrt(delt.x()**2 + delt.y()**2)
     
     def __arrow_ptr_pos(self) -> QPointF:
+        ''' Вычисляет положение указателя направления ребра '''
         if self.__end_wgt is None:
             return (self.__end_point)
         
@@ -314,6 +318,7 @@ class Arrow(QGraphicsItem):
         )
 
 class AddConnectionBtn(QGraphicsPixmapItem, QObject):
+        ''' Инструмент добавления рёбер в граф '''
         __arrow: Arrow | None
         __state: QGraphicsProxyWidget
         end_pos: QPointF
@@ -333,6 +338,7 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
             self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
         
         def __start_effect(self):
+            ''' Инициирует отображение временной стрелки '''
             pos = self.__state.scenePos()
             size = self.__state.size()
             pos.setX(pos.x() + size.width()/2)
@@ -347,6 +353,7 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
             self.scene().addItem(self.__arrow)
 
         def __end_effect(self, mouse_pos:QPointF):
+            ''' Завершает отображение временной стрелки '''
             self.scene().removeItem(self.__arrow)
             self.__arrow = None
             self.is_active = False
@@ -434,27 +441,32 @@ class SceneNode(QGraphicsProxyWidget):
         widget.set_graphics_item_ptr(self)
 
     def setWidget(self, widget: QWidget) -> None:
+        ''' Устанавливает виджет внутрь обёртки '''
         wgt: NodeWidget = super().widget()
         wgt.setWidget(widget)
     
     def widget(self) -> QWidget:
+        ''' Возвращает виджет из обёртки '''
         wgt: NodeWidget = super().widget()
         return wgt.widget()
 
     def setPos(self, x: float, y: float) -> None:
+        ''' Перемещает манипулятор '''
         self.__controll.setPos(x, y)
 
     def set_title(self, text:str):
+        ''' Устанавливает текст заголовка обёртки '''
         wgt: NodeWidget = super().widget()
-        wgt.set_title()
+        wgt.set_title(text)
 
     def hide_tools(self):
-        ''''''
+        ''' Прячет дополнительные органы управления '''
 
     def show_tools(self):
-        ''''''
+        ''' Отображает дополнительные органы управления '''
 
     def reset_tools(self):
+        ''' Инициализирует или возвращает в исходное состояние дополнительные органы управления '''
         for btn in self.__add_btns:
             if btn.is_active:
                 return
@@ -469,6 +481,7 @@ class SceneNode(QGraphicsProxyWidget):
         self.scene().addItem(add_btn)
 
     def arrow_connect_as_start(self, arrow: Arrow):
+        ''' Связывает начало ребра с этой вершиной '''
         if (not arrow in self.__arrows['from']):
             self.__arrows['from'].append(arrow)
             bounding = self.boundingRect()
@@ -476,6 +489,7 @@ class SceneNode(QGraphicsProxyWidget):
             arrow.set_start_point(self.scenePos() + center)
 
     def arrow_connect_as_end(self, arrow: Arrow):
+        ''' Связывает конец ребра с этой вершиной '''
         if (not arrow in self.__arrows['to']):
             self.__arrows['to'].append(arrow)
             bounding = self.boundingRect()
@@ -484,6 +498,7 @@ class SceneNode(QGraphicsProxyWidget):
             arrow.set_end_wgt(self)
 
     def arrow_disconnect(self, arrow: Arrow):
+        ''' Удаляет связь ребра с этой вершиной '''
         if (arrow in self.__arrows['from']):
             self.__arrows['from'].remove(arrow)
 
@@ -491,6 +506,7 @@ class SceneNode(QGraphicsProxyWidget):
             self.__arrows['to'].remove(arrow)
             
     def update_arrows(self):
+        ''' Обновляет связанные рёбра графа '''
         bounding = self.boundingRect()
         center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
 
@@ -575,21 +591,26 @@ class NodeWidget(QWidget):
         self.resize(self.START_WIDTH, self.START_WIDTH)
 
     def set_title(self, text:str):
+        ''' Устанавливает заголовок. Прямое использование не ожидается (обрабатывается в SceneNode) '''
         self.__title.setText(text)
         self.__title.setToolTip(text)
 
     def setWidget(self, widget: QWidget) -> None:
+        ''' Устанавливает содержимое. Прямое использование не ожидается (обрабатывается в SceneNode) '''
         return self.__content.setWidget(widget)
     
     def widget(self) -> QWidget:
+        ''' Возвращает содержимое '''
         return self.__content.widget()
 
     def add_btn_pos(self) -> QPoint:
+        ''' Возвращает позицию для AddConnectionBtn '''
         pos = self.__close_btn.pos()
         pos.setX(pos.x() + self.__close_btn.width() + 4)
         return pos
     
     def set_graphics_item_ptr(self, item: SceneNode):
+        ''' Устанавливает обратную связь для управления отображением дополнительных органов управления SceneNode '''
         self.__item_on_scene = item
         self.__close_btn.mouse_enter.connect(self.on_close_btn_mouse_enter)
 

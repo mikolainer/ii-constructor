@@ -1,5 +1,6 @@
 from typing import List
 from PySide6.QtCore import (
+    Qt,
     QAbstractItemModel,
     QModelIndex,
     QObject,
@@ -28,10 +29,19 @@ from PySide6.QtWidgets import (
     QInputDialog,
 )
 
-from .data import CustomDataRole, SynonymsSetModel
+from .data import CustomDataRole, BaseModel, SynonymsSetModel
 from .primitives.widgets import SynonymEditorWidget
 
+class FlowsModel(BaseModel):
+    ''' Модель содержания проекта. Реализация части MVC фреймворка Qt для содержания проекта '''
+    def __init__( self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init() # TODO
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 class FlowWidget(QWidget):
+    ''' Единица содержания проекта. Отображение элемента модели содержания '''
     __id: int
     __title: QLabel
     __description: QLabel
@@ -96,6 +106,7 @@ class FlowWidget(QWidget):
         main_lay.addWidget(synonyms_wrapper)
 
 class FlowListWidget(QWidget):
+    ''' Обёртка содержания. Уникальная и единственная для проекта. '''
     __view: QWidget
 
     '''args: name, descr'''
@@ -124,6 +135,7 @@ class FlowListWidget(QWidget):
         lay.addWidget(btn, 1)
 
 class FlowSynonymsSetDelegate(QStyledItemDelegate):
+    ''' Реализация части MVC фреймворка Qt для набора синонимов в содержании проекта '''
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
         return super().createEditor(parent, option, index)
 
@@ -137,11 +149,13 @@ class FlowSynonymsSetDelegate(QStyledItemDelegate):
         return QSize(option.rect.size().width(), wgt.size().height())
     
 class FlowSynonymsSetView(QListView):
+    ''' Реализация части MVC фреймворка Qt для набора синонимов в содержании проекта '''
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setItemDelegate(FlowSynonymsSetDelegate(self))
 
 class FlowsDelegate(QStyledItemDelegate):
+    ''' Реализация части MVC фреймворка Qt для содержания проекта '''
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
@@ -211,6 +225,7 @@ class FlowsDelegate(QStyledItemDelegate):
         return wgt.size()
 
 class FlowsView(QTableView):
+    ''' Реализация части MVC фреймворка Qt для содержания проекта '''
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.__last_row = -1

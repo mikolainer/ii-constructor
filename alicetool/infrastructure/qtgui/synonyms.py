@@ -53,10 +53,20 @@ from PySide6.QtWidgets import (
 from .data import ProxyModelReadOnly
 
 from alicetool.infrastructure.qtgui.primitives.buttons import CloseButton
-from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, SynonymsGroupsModel
+from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, BaseModel
 from alicetool.infrastructure.qtgui.primitives.widgets import SynonymEditorWidget
 
+class SynonymsGroupsModel(BaseModel):
+    ''' Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов '''
+    def __init__( self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init() # TODO
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+
 class SynonymsGroupWidget(QWidget):
+    ''' Единица списка групп синонимов. Отображение элемента модели групп синонимов '''
     __id: int
     __title: QLabel
     __description: QLabel
@@ -98,6 +108,7 @@ class SynonymsGroupWidget(QWidget):
         #return super().mouseReleaseEvent(event)
         
 class SynonymsGroupsDelegate(QStyledItemDelegate):
+    ''' Реализация части MVC фреймворка Qt для групп синонимов '''
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
@@ -121,6 +132,7 @@ class SynonymsGroupsDelegate(QStyledItemDelegate):
         return wgt.size()
 
 class SynonymsGroupsView(QListView):
+    ''' Реализация части MVC фреймворка Qt для групп синонимов '''
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
@@ -136,6 +148,7 @@ class SynonymsGroupsView(QListView):
         return super().selectionChanged(selected, deselected)
 
 class SynonymsSetDelegate(QStyledItemDelegate):
+    ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
@@ -173,6 +186,7 @@ class SynonymsSetDelegate(QStyledItemDelegate):
         return wgt.size()
 
 class SynonymsSetView(QListView):
+    ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
@@ -182,6 +196,7 @@ class SynonymsSetView(QListView):
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
 class GroupsList(QStackedWidget):
+    ''' Обёртка для набора синонимов в группе'''
     __indexed: dict[int, SynonymsGroupsView]
     __empty_index:int
     create_value = Signal(SynonymsGroupsModel)
@@ -227,6 +242,7 @@ class GroupsList(QStackedWidget):
             self.setCurrentIndex(idx)
 
 class SynonymsList(QStackedWidget):
+    ''' Обёртка для списка групп синонимов '''
     __indexed: dict[int, SynonymsSetModel]
     __empty_index:int
     create_value = Signal(SynonymsSetModel)
@@ -269,6 +285,7 @@ class SynonymsList(QStackedWidget):
         self.setCurrentIndex(idx)
 
 class SynonymsEditor(QDialog):
+    ''' Редактор синонимов. Содержит список групп синонимов (слева) и набор синонимов в выбранной группе (справа) '''
     __oldPos: QPoint | None
     __tool_bar: QWidget # полоска с кнопкой "закрыть"
     __close_btn: CloseButton

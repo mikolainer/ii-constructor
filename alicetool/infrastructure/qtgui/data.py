@@ -183,7 +183,18 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         self.endRemoveRows()
         return True # ошибки обрабатываем исключениями
 
+class ProxyModelReadOnly(QIdentityProxyModel):
+    ''' Модификатор модели только для чтения '''
+    def __init__( self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init() # TODO
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return ~Qt.ItemFlag.ItemIsEditable & self.sourceModel().flags(index)
+
+# COMMON 
 class SynonymsSetModel(BaseModel):
+    ''' Модель набора синонимов '''
     def __init__( self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._data_init() # TODO
@@ -191,27 +202,4 @@ class SynonymsSetModel(BaseModel):
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-
-class SynonymsGroupsModel(BaseModel):
-    def __init__( self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self._data_init() # TODO
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
     
-class FlowsModel(BaseModel):
-    def __init__( self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self._data_init() # TODO
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-
-class ProxyModelReadOnly(QIdentityProxyModel):
-    def __init__( self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self._data_init() # TODO
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return ~Qt.ItemFlag.ItemIsEditable & self.sourceModel().flags(index)

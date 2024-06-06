@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 import alicetool.resources.rc_icons
 
 class MainToolButton(QPushButton):
+    ''' Кнопка туллбара главного окна '''
     tool_tip : str
     status_tip : str
     whats_this : str
@@ -59,6 +60,7 @@ class MainToolButton(QPushButton):
         self.apply_options()
 
     def apply_options(self):
+        ''' Применяет значения указанные в публичных атрибутах класса '''
         self.setToolTip(self.tool_tip)
         self.setStatusTip(self.status_tip)
         self.setWhatsThis(self.whats_this)
@@ -67,12 +69,9 @@ class MainToolButton(QPushButton):
         self.setIconSize(self.icon_size)
 
 class MainWindow(QMainWindow):
+    ''' Главное окно клиента работы над сценариями '''
     __oldPos: QPoint | None
     __tool_bar: QWidget
-
-    def insert_button(self, btn: MainToolButton, index: int = 0):
-        layout: QHBoxLayout = self.__tool_bar.layout()
-        layout.insertWidget(index, btn)
 
     def __init__(self, flow_list: QWidget, workspaces: QWidget, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
@@ -87,6 +86,11 @@ class MainWindow(QMainWindow):
         self.__setup_toolbar()
 
         self.show()
+
+    def insert_button(self, btn: MainToolButton, index: int = 0):
+        ''' Добавляет кнопку в туллбар '''
+        layout: QHBoxLayout = self.__tool_bar.layout()
+        layout.insertWidget(index, btn)
 
     def __setup_ui(self, flow_list: QWidget, workspaces: QWidget):
         self.setCentralWidget(QWidget(self))
@@ -153,6 +157,8 @@ class MainWindow(QMainWindow):
         self.__oldPos = None
 
 class NewProjectDialog(QDialog):
+    ''' Диалог создания нового сценария '''
+
     __file_path_editor : QLineEdit # TODO: убрать в диалог экспорта
     __db_name_editor : QLineEdit # TODO: убрать в диалог публикации
     __name_editor : QLineEdit
@@ -192,6 +198,7 @@ class NewProjectDialog(QDialog):
         self.__ok_button.clicked.connect(lambda: self.accept())
 
     def get_result(self):
+        ''' возвращает сериализованные данные для создания сценария '''
         return (
             f'name={self.__name_editor.text()}; '
             f'db_name={self.__db_name_editor.text()}; '
@@ -202,6 +209,7 @@ class NewProjectDialog(QDialog):
         )
     
 class Workspaces(QTabWidget):
+    ''' Область графической сцены сценариев и выбора активного проекта (правая часть главного окна) '''
     activated = Signal(QGraphicsView)
 
     def __init__(self, parent: QWidget = None):
@@ -219,6 +227,7 @@ class Workspaces(QTabWidget):
         self.removeTab(self.indexOf(view))
 
 class FlowList(QStackedWidget):
+    ''' Содержание активного проекта. (левая часть главного окна) '''
     __indexed: dict[int, QWidget]
     __empty_index:int
 
@@ -239,7 +248,7 @@ class FlowList(QStackedWidget):
         self.setCurrentIndex(self.__empty_index)
     
     def setWidget(self, item: QWidget, set_current: bool = False):
-        ''' обновление списка виджетов '''
+        ''' Добавляет уникальное для проекта содержание '''
         # для нового списка создаём отдельный виджет и сохраняем его индекс
         if not item in self.__indexed.values():
             self.__indexed[self.addWidget(item)] = item

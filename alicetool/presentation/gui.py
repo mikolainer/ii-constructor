@@ -33,9 +33,9 @@ from PySide6.QtWidgets import (
 from alicetool.presentation.api import EditorAPI
 from alicetool.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, AddConnectionBtn, SceneNode
-from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel, ItemData
-from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget
-from alicetool.infrastructure.qtgui.synonyms import SynonymsSelectorView
+from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, ItemData
+from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
+from alicetool.infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel
 from alicetool.infrastructure.qtgui.main_w import FlowList
 
 class QGraphicsStateItem(QGraphicsProxyWidget):

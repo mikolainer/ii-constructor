@@ -4,8 +4,8 @@ from PySide6.QtWidgets import QWidget, QInputDialog
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
 from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Editor
-from alicetool.infrastructure.qtgui.synonyms import SynonymsEditor
-from alicetool.infrastructure.qtgui.data import SynonymsGroupsModel, SynonymsSetModel, CustomDataRole
+from alicetool.infrastructure.qtgui.synonyms import SynonymsEditor, SynonymsGroupsModel
+from alicetool.infrastructure.qtgui.data import SynonymsSetModel, CustomDataRole, ItemData
 from alicetool.infrastructure.qtgui.main_w import FlowList, Workspaces
 
 class StateMachineGuiRefresher(StateMachineNotifier):
@@ -136,18 +136,28 @@ class EditorGuiRefresher(ProjectsActionsNotifier):
 
         value, ok = QInputDialog.getText(None, "Значение первого синонима", "Первый синоним:")
         if not ok: return
+        
+        item = ItemData()
+        item.on[CustomDataRole.Id] = 15 # TODO: вставлять в модель после создания с присвоением идентификатора
+        item.on[CustomDataRole.Name] = name
+        item.on[CustomDataRole.Description] = descr
 
-        new_row:int = model.rowCount()
-        model.insertRow(new_row)
-        index = model.index(new_row)
-        model.setData(index, name, CustomDataRole.Name)
-        model.setData(index, descr, CustomDataRole.Description)
-        model.setData(index, SynonymsSetModel([value]), CustomDataRole.SynonymsSet)
+        value_item = ItemData()
+        value_item.on[CustomDataRole.Text] = value
+        synonyms_set = SynonymsSetModel()
+        synonyms_set.prepare_item(value_item)
+        synonyms_set.insertRow()
+
+        item.on[CustomDataRole.SynonymsSet] = synonyms_set
+
+        model.prepare_item(item)
+        model.insertRow()
 
     def create_s_value(self, model: SynonymsSetModel):
         value, ok = QInputDialog.getText(None, "Новый синоним", "Текст синонима:")
         if not ok: return
-        new_row:int = model.rowCount()
-        model.insertRow(new_row)
-        index = model.index(new_row)
-        model.setData(index, value)
+
+        value_item = ItemData()
+        value_item.on[CustomDataRole.Text] = value
+        model.prepare_item(value_item)
+        model.insertRow()

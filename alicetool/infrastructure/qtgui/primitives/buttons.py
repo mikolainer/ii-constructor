@@ -5,16 +5,16 @@ from PySide6.QtGui import QIcon, QPixmap, QEnterEvent, QMouseEvent
 from PySide6.QtCore import QSize, Signal
 
 class EnterDetectionButton(QPushButton):
-        mouse_enter = Signal()
+    mouse_enter = Signal()
 
-        def __init__(self, text:str, parent = None):
-            super().__init__(text, parent)
-            self.setMouseTracking(True)
+    def __init__(self, text:str, parent = None):
+        super().__init__(text, parent)
+        self.setMouseTracking(True)
 
-        def enterEvent(self, event: QEnterEvent) -> None:
-            if event.type() == QMouseEvent.Type.Enter:
-                self.mouse_enter.emit()
-            return super().enterEvent(event)
+    def enterEvent(self, event: QEnterEvent) -> None:
+        if event.type() == QMouseEvent.Type.Enter:
+            self.mouse_enter.emit()
+        return super().enterEvent(event)
         
 class CloseButton(QPushButton):
     def __init__(self, parent: Optional[QWidget] = None):
