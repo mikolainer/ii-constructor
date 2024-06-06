@@ -12,7 +12,6 @@ from PySide6.QtGui import (
     QColor,
     QPen,
     QPainter,
-    QTransform,
 )
 
 from PySide6.QtWidgets import (
@@ -353,4 +352,5 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
                 lambda: self.__end_effect(pos)
             ) 
             return super().mouseReleaseEvent(event)
-        
+
+

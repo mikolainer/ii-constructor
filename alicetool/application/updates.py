@@ -4,9 +4,9 @@ from PySide6.QtWidgets import QWidget, QInputDialog
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
 from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Editor
-from alicetool.infrastructure.widgets import FlowList, Workspaces
-from alicetool.infrastructure.windows import SynonymsEditor
-from alicetool.infrastructure.data import SynonymsGroupsModel, SynonymsSetModel, CustomDataRole
+from alicetool.infrastructure.qtgui.synonyms import SynonymsEditor
+from alicetool.infrastructure.qtgui.data import SynonymsGroupsModel, SynonymsSetModel, CustomDataRole
+from alicetool.infrastructure.qtgui.main_w import FlowList, Workspaces
 
 class StateMachineGuiRefresher(StateMachineNotifier):
     __sm_ctrl: StateMachineQtController

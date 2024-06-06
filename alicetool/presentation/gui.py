@@ -6,27 +6,21 @@ from PySide6.QtCore import (
     QPoint,
     QPointF,
     QRect,
-    Slot, Signal,
-    QTimer
+    Slot,
 )
 
 from PySide6.QtGui import (
-    QEnterEvent,
-    QMouseEvent,
     QFont,
-    QTransform,
     QColor,
     QBrush,
     QPen,
 )
 
 from PySide6.QtWidgets import (
-    QGraphicsSceneMouseEvent,
     QMessageBox,
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
     QTextEdit,
     QLabel,
     QGraphicsView,
@@ -34,16 +28,15 @@ from PySide6.QtWidgets import (
     QGraphicsItem,
     QGraphicsProxyWidget,
     QGraphicsRectItem,
-    QGraphicsPixmapItem,
 )
 
 from alicetool.presentation.api import EditorAPI
-from alicetool.infrastructure.widgets import FlowListWidget
-
-from ..infrastructure.scene import Arrow, AddConnectionBtn
-from ..infrastructure.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel, ItemData
-from ..infrastructure.views import FlowsView, SynonymsSelectorView
-from ..infrastructure.widgets import FlowList
+from alicetool.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
+from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, AddConnectionBtn
+from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, FlowsModel, SynonymsGroupsModel, ItemData
+from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget
+from alicetool.infrastructure.qtgui.synonyms import SynonymsSelectorView
+from alicetool.infrastructure.qtgui.main_w import FlowList
 
 class QGraphicsStateItem(QGraphicsProxyWidget):
     ''' TODO: инкапсулировать в SceneNode '''
@@ -58,7 +51,6 @@ class QGraphicsStateItem(QGraphicsProxyWidget):
         #self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
 
     def show_add_btn(self):
-        editor:Editor = self.scene()
         wgt: StateWidget = self.widget()
 
         for btn in self.__add_btns:
@@ -71,10 +63,7 @@ class QGraphicsStateItem(QGraphicsProxyWidget):
         add_btn.setPos(pos)
         self.__add_btns.append(add_btn)
 
-        editor.addItem(add_btn)
-
-    def remove_add_btn(self):
-        self.__add_btn = None
+        self.scene().addItem(add_btn)
 
     def arrow_connect_as_start(self, arrow: Arrow):
         if (not arrow in self.__arrows['from']):
@@ -109,23 +98,12 @@ class QGraphicsStateItem(QGraphicsProxyWidget):
             arrow.set_start_point(self.scenePos() + center)
 
 class StateWidget(QWidget):
-    class CloseBtn(QPushButton):
-        mouse_enter = Signal()
-
-        def __init__(self, text:str, parent = None):
-            super().__init__(text, parent)
-            self.setMouseTracking(True)
-
-        def enterEvent(self, event: QEnterEvent) -> None:
-            if event.type() == QMouseEvent.Type.Enter:
-                self.mouse_enter.emit()
-            return super().enterEvent(event)
-        
     TITLE_HEIGHT = 15
     START_WIDTH = 150
 
+    __state_id: int
     __title: QLabel
-    __close_btn: CloseBtn
+    __close_btn: EnterDetectionButton
     __content: QTextEdit
     __item_on_scene: QGraphicsStateItem | None
     
@@ -133,13 +111,14 @@ class StateWidget(QWidget):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
+        self.__state_id = id
         self.__item_on_scene = None
         self.__title = QLabel(name, self)
         font = self.__title.font()
         font.setWeight(QFont.Weight.ExtraBold)
         self.__title.setFont(font)
-        self.__title.setFixedHeight(StateWidget.TITLE_HEIGHT)
-        self.__close_btn = StateWidget.CloseBtn(str(id), self)
+        self.__title.setFixedHeight(self.TITLE_HEIGHT)
+        self.__close_btn = EnterDetectionButton(str(self.__state_id), self)
         self.__close_btn.setFlat(True)
         self.__close_btn.setStyleSheet(
             "QPushButton"
@@ -152,8 +131,8 @@ class StateWidget(QWidget):
         font = self.__close_btn.font()
         font.setWeight(QFont.Weight.ExtraBold)
         self.__close_btn.setFont(font)
-        self.__close_btn.setFixedHeight(StateWidget.TITLE_HEIGHT)
-        self.__close_btn.setFixedWidth(StateWidget.TITLE_HEIGHT)
+        self.__close_btn.setFixedHeight(self.TITLE_HEIGHT)
+        self.__close_btn.setFixedWidth(self.TITLE_HEIGHT)
         
         self.__content = QTextEdit(content, self)
         self.__content.setStyleSheet(
@@ -188,9 +167,9 @@ class StateWidget(QWidget):
         main_lay.addWidget(title)
         main_lay.addWidget(self.__content)
 
-        self.resize(StateWidget.START_WIDTH, StateWidget.START_WIDTH)
+        self.resize(self.START_WIDTH, self.START_WIDTH)
 
-    def add_btn_pos(self) -> QPoint:
+    def add_btn_pos(self) -> QPoint:                    
         pos = self.__close_btn.pos()
         pos.setX(pos.x() + self.__close_btn.width() + 4)
         return pos
@@ -200,7 +179,7 @@ class StateWidget(QWidget):
         self.__close_btn.mouse_enter.connect(self.on_close_btn_mouse_enter)
 
     def state_id(self) -> int:
-        return int(self.__close_btn.text())
+        return self.__state_id
 
     @Slot()
     def on_close_btn_mouse_enter(self):
@@ -228,13 +207,6 @@ class ProxyWidgetControll(QGraphicsRectItem):
         return super().itemChange(change, value)
 
 class Editor(QGraphicsScene):
-    ''' TODO
-    убрать зависимость от StateMachineQtController (унестив main)
-    ??? возможно нельзя потому что это используется для получения доступа к контроллеру проекта через сцену
-    (нужна не только связь от контроллера к сцене чтобы её обновлять, но и от сцены к контроллеру чтобы сообщать об изменениях)
-    !!! возможно надо связывать StateMachineQtController напрямую с элементами сцены через инверсию управления
-    или сделать глобально доступную фабрику синглтонов для контроллеров проектов (??? тогда придётся хранить принадлежность к конкретному проекту)
-    '''
     def __init__(self, parent: Optional[QObject]):
         super().__init__(parent)
         self.setBackgroundBrush(QColor("#DDDDDD"))
@@ -264,7 +236,7 @@ class Editor(QGraphicsScene):
         item.installSceneEventFilter(proxyControl)
 
         return item
-    
+
 class StateMachineQtController:
     ''' реализация "ProjectController" по uml2'''
 

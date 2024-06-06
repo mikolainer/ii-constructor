@@ -1,5 +1,10 @@
-from typing import List
+from collections.abc import Callable
+
 from PySide6.QtCore import (
+    Qt,
+    QPoint,
+    Slot,
+    Signal,
     QAbstractItemModel,
     QItemSelection,
     QModelIndex,
@@ -12,12 +17,24 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtGui import (
+    QResizeEvent,
+    QMouseEvent,
     QMouseEvent,
     QPainter,
     QFont,
 )
 
 from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QSizePolicy,
+    QSplitter,
+    QSpacerItem,
+    QSpacerItem,
+    QDialog,
+    QLabel,
+    QLineEdit,
     QScrollArea,
     QStackedWidget,
     QStyleOptionViewItem,
@@ -29,97 +46,57 @@ from PySide6.QtWidgets import (
     QPushButton,
     QListView,
     QHBoxLayout,
-    QGraphicsProxyWidget,
     QLabel,
     QVBoxLayout,
-    QInputDialog,
 )
 
-from .data import CustomDataRole, SynonymsSetModel, ProxyModelReadOnly, SynonymsGroupsModel
-from .widgets import SynonymsGroupWidget, SynonymEditorWidget
+from .data import ProxyModelReadOnly
 
-class FlowSynonymsSetDelegate(QStyledItemDelegate):
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
-        return super().createEditor(parent, option, index)
+from alicetool.infrastructure.qtgui.primitives.buttons import CloseButton
+from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, SynonymsGroupsModel
+from alicetool.infrastructure.qtgui.primitives.widgets import SynonymEditorWidget
 
-    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
-        editor.setText(index.data())
-
-    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
-        data = index.data(CustomDataRole.Text)
-        wgt = SynonymEditorWidget(data)
-        wgt.adjustSize()
-        return QSize(option.rect.size().width(), wgt.size().height())
-    
-class FlowSynonymsSetView(QListView):
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setItemDelegate(FlowSynonymsSetDelegate(self))
-
-class FlowWidget(QWidget):
+class SynonymsGroupWidget(QWidget):
     __id: int
     __title: QLabel
     __description: QLabel
-    __synonyms_name: QLabel
-    __synonyms_list: FlowSynonymsSetView
-    __slider_btn: QPushButton
 
-    def id(self): return self.__id
-    def name(self): return self.__title.text()
-
-    slider_visible_changed = Signal(bool)
-
-    def set_slider_visible(self, visible:bool):
-        self.__on_slider_click(visible)
-
-    @Slot()
-    def __on_slider_click(self, checked: bool):
-        self.__slider_btn.setText("^" if checked else "v")
-        self.__synonyms_list.setVisible(checked)
-
-        if not self.sender() is self:
-            self.slider_visible_changed.emit(checked)
-
-
-    def __init__(self, id :int, 
-                 name: str, description :str,
-                 synonyms: SynonymsSetModel, 
-                 start_state,# :QGraphicsProxyWidget,
-                 parent = None
-                ):
-        super().__init__(parent)
-        self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
-        self.__id = id
-        self.__title = QLabel(name, self)
-        self.__title.setWordWrap(True)
-        self.__description = QLabel(description, self)
-        self.__description.setWordWrap(True)
-        self.__synonyms_name = QLabel("синонимы", self)
-        self.__synonyms_list = FlowSynonymsSetView(self)#FlowSynonymsSetView(self)
-        self.__synonyms_list.hide()
-        self.__synonyms_list.setModel(synonyms)
-        
-        main_lay = QVBoxLayout(self)
-        main_lay.setContentsMargins(0,0,0,0)
-        main_lay.setSpacing(0)
-
-        synonyms_wrapper = QWidget(self)
-        synonyms_lay = QVBoxLayout(synonyms_wrapper)
-
-        synonyms_title_lay = QHBoxLayout()
-        synonyms_title_lay.addWidget(self.__synonyms_name)
-        self.__slider_btn = QPushButton('v', self)
-        self.__slider_btn.setCheckable(True)
-        self.__slider_btn.clicked.connect(self.__on_slider_click)
-        synonyms_title_lay.addWidget(self.__slider_btn)
-
-        synonyms_lay.addLayout(synonyms_title_lay)
-        synonyms_lay.addWidget(self.__synonyms_list)
-
-        main_lay.addWidget(self.__title)
-        main_lay.addWidget(self.__description)
-        main_lay.addWidget(synonyms_wrapper)
+    def id(self):
+        return self.__id
     
+    def name(self):
+        return self.__title.text()
+    
+    def description(self):
+        return self.__description.text()
+
+    clicked = Signal()
+
+    def __init__(self, name:str, id:int, description: str, parent: QWidget = None):
+        super().__init__(parent)
+        self.__id = id
+
+        self.setStyleSheet('QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}')
+        main_lay = QVBoxLayout(self)
+
+        self.__title = QLabel(name, self)
+        self.__title.setMinimumHeight(30)
+        font = self.__title.font()
+        font.setBold(True)
+        self.__title.setFont(font)
+        main_lay.addWidget(self.__title)
+
+        self.__description = QLabel(description, self)
+        self.__description.setMinimumHeight(30)
+        main_lay.addWidget(self.__description)
+
+        main_lay.setContentsMargins(5,0,5,0)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self.clicked.emit()
+        event.accept()
+        #return super().mouseReleaseEvent(event)
+        
 class SynonymsGroupsDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -291,102 +268,114 @@ class SynonymsList(QStackedWidget):
         idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(model)]
         self.setCurrentIndex(idx)
 
-class FlowsDelegate(QStyledItemDelegate):
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
+class SynonymsEditor(QDialog):
+    __oldPos: QPoint | None
+    __tool_bar: QWidget # полоска с кнопкой "закрыть"
+    __close_btn: CloseButton
 
-    def __on_slider_visible_changed(self, visible:bool, index:QModelIndex, editor:FlowWidget):
-        index.model().setData(
-            index, visible, CustomDataRole.SliderVisability
+    __synonyms_list: SynonymsList
+    __group_list: GroupsList
+
+    __g_model:SynonymsGroupsModel
+    __create_group_handler:Callable
+    __create_value_handler:Callable
+
+    def __init__(
+            self, g_model:SynonymsGroupsModel,
+            create_group_handler:Callable[[SynonymsGroupsModel], None],
+            create_value_handler:Callable[[SynonymsSetModel], None],
+            parent: QWidget | None = None
+        ) -> None:
+        self.__g_model = g_model
+        self.__create_group_handler = create_group_handler
+        self.__create_value_handler = create_value_handler
+
+        super().__init__(parent, Qt.WindowType.FramelessWindowHint)
+        self.setWindowFlag(Qt.WindowType.Window, True)
+
+        self.setWindowTitle('Редактор синонимов')
+        self.resize(600, 500)
+        
+        main_lay = QVBoxLayout(self)
+        main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setSpacing(0)
+
+        # полоска с кнопкой закрыть
+        self.__tool_bar = QWidget(self)
+        self.__tool_bar.setMinimumHeight(24)
+        main_lay.addWidget(self.__tool_bar, 0)
+        self.__tool_bar.setStyleSheet('background-color : #666;')
+        self.__oldPos = None
+
+        tool_bar_layout = QHBoxLayout(self.__tool_bar)
+        tool_bar_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+        tool_bar_layout.setSpacing(10)
+        tool_bar_layout.setContentsMargins(2, 2, 2, 2)
+        tool_bar_layout.addSpacerItem(
+            QSpacerItem(
+                0,0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum
+            )
         )
-        editor.adjustSize()
-        self.parent().setRowHeight(index.row(), editor.height())
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
-        editor = FlowWidget(
-            index.data(CustomDataRole.Id),
-            index.data(CustomDataRole.Name),
-            index.data(CustomDataRole.Description),
-            index.data(CustomDataRole.SynonymsSet),
-            self.parent(),
-            parent
+        self.__close_btn = CloseButton(self)
+        self.__close_btn.clicked.connect(lambda: self.close())
+        tool_bar_layout.addWidget(self.__close_btn)
+
+        self.__group_list = GroupsList(self)
+        self.__group_list.create_value.connect(lambda model: self.__create_group_handler(model))
+        
+        g_view = SynonymsGroupsView(self)
+        g_view.setModel(g_model)
+        self.__group_list.setList(g_view, True)
+
+        self.__synonyms_list = SynonymsList(self)
+        self.__synonyms_list.create_value.connect(lambda model: self.__create_value_handler(model))
+        self.__synonyms_list.set_empty()
+
+        g_view.selectionModel().selectionChanged.connect(
+            lambda now, prev: self.__on_syn_group_changed(now.indexes())
         )
-        editor.set_slider_visible(index.data(CustomDataRole.SliderVisability))
 
-        editor.slider_visible_changed.connect(
-            lambda visible: self.__on_slider_visible_changed(visible, index, editor)
-        )
+        # рабочая область
+        splitter = QSplitter( self, Qt.Orientation.Horizontal )
+        splitter.addWidget(self.__group_list)
+        splitter.setStretchFactor(0,0)
+        splitter.addWidget(self.__synonyms_list)
+        splitter.setStretchFactor(1,1)
+        
+        main_lay.addWidget(splitter, 1)
 
-        return editor
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.__oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        if self.__oldPos is not None:
+            delta = event.globalPos() - self.__oldPos
+            self.move(self.pos() + delta)
+            self.__oldPos = event.globalPos()
+
+    def mouseReleaseEvent(self, event):
+        self.__oldPos = None
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        # костыль
+        if event.oldSize() != event.size():
+            self.resize(event.size())
+
+        return super().resizeEvent(event)
     
-    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
-        super().updateEditorGeometry(editor, option, index)
-    
-    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
-        super().setEditorData(editor, index)
-    
-    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
-        '''ReadOnly'''
+    @Slot(list)
+    def __on_syn_group_changed(self, selected_index_list):
+        if len(selected_index_list):
+            synonyms = self.__g_model.data(
+                selected_index_list[0],
+                CustomDataRole.SynonymsSet
+            )
+            self.__synonyms_list.set_current(synonyms)
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
-        wgt = FlowWidget(
-            index.data(CustomDataRole.Id),
-            index.data(CustomDataRole.Name),
-            index.data(CustomDataRole.Description),
-            index.data(CustomDataRole.SynonymsSet),
-            None,
-            self.parent()
-        )
-        wgt.set_slider_visible(index.data(CustomDataRole.SliderVisability))
-        wgt.resize(option.rect.size())
-
-        painter.setClipRect(option.rect)
-
-        painter.save()
-        painter.drawPixmap(option.rect, wgt.grab())
-        painter.restore()
-
-        super().paint(painter, option, index)
-
-    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
-        wgt = FlowWidget(
-            index.data(CustomDataRole.Id),
-            index.data(CustomDataRole.Name),
-            index.data(CustomDataRole.Description),
-            index.data(CustomDataRole.SynonymsSet),
-            None
-        )
-        wgt.set_slider_visible(index.data(CustomDataRole.SliderVisability))
-        wgt.adjustSize()
-        return wgt.size()
-
-class FlowsView(QTableView):
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.__last_row = -1
-        self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
-        self.setSelectionMode(QListView.SelectionMode.SingleSelection)
-        self.__delegate = FlowsDelegate(self)
-        self.setItemDelegate(self.__delegate)
-        self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        self.horizontalHeader().hide()
-        self.verticalHeader().hide()
-
-        self.setEditTriggers(QTableView.EditTrigger.AllEditTriggers)
-        self.setMouseTracking(True)
-
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        item = self.indexAt(event.pos())
-        if self.isPersistentEditorOpen(item):
-            self.closePersistentEditor(item)
-
-        if item.isValid():
-            self.setCurrentIndex(item)
-            self.openPersistentEditor(item)
-
-        return super().mouseMoveEvent(event)
 
 class SynonymsGroupWidgetToSelect(QWidget):
     def __init__(self, name: str, id: int, description: str, synonyms_set_model:SynonymsSetModel, parent: QWidget = None):

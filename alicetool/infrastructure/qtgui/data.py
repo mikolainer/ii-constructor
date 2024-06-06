@@ -1,6 +1,5 @@
 from enum import IntEnum, verify, UNIQUE
-from typing import Any, List, Union, Any, Optional
-from dataclasses import dataclass
+from typing import Any, Union, Any, Optional
 
 from PySide6.QtCore import (
     Qt,
@@ -9,12 +8,6 @@ from PySide6.QtCore import (
     QPersistentModelIndex, 
     QAbstractItemModel,
     QIdentityProxyModel,
-)
-
-from PySide6.QtGui import (
-    QFont,
-    QBrush,
-    QColor,
 )
 
 @verify(UNIQUE)
@@ -215,7 +208,7 @@ class FlowsModel(BaseModel):
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 
-class ProxyModelReadOnly(BaseModel):
+class ProxyModelReadOnly(QIdentityProxyModel):
     def __init__( self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._data_init() # TODO
