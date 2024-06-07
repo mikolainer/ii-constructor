@@ -1,0 +1,60 @@
+//----- СОСТОЯНИЯ -----
+{
+  "Id": 1,
+  "Name": "Enter",
+  "Text": ""
+}
+{
+  "Id": 2,
+  "Name": "Help",
+  "Text": ""
+}
+{
+  "Id": 3,
+  "Name": "Info",
+  "Text": ""
+}
+//----- ПОТОКИ -----
+{
+  "Id": 1,
+  "Name": "Help",
+  "Description": "Помощь, например в навигации",
+  "SynonymsSet": [
+    "Помощь",
+    "Помоги",
+    "Справка"
+  ],
+  "EnterStateId": 2,
+  "SliderVisability": false
+}
+{
+  "Id": 2,
+  "Name": "Info",
+  "Description": "Информация, например описание команд",
+  "SynonymsSet": [
+    "Информация",
+    "Что ты умеешь"
+  ],
+  "EnterStateId": 3,
+  "SliderVisability": false
+}
+//----- ГРУППЫ -----
+{
+  "Id": 1,
+  "Name": "Help",
+  "Description": "Описание",
+  "SynonymsSet": [
+    "Помощь",
+    "Помоги",
+    "Справка"
+  ]
+}
+{
+  "Id": 2,
+  "Name": "Info",
+  "Description": "Описание",
+  "SynonymsSet": [
+    "Информация",
+    "Что ты умеешь"
+  ]
+}

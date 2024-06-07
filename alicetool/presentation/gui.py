@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget
-from ..infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
+from ..infrastructure.qtgui.data import CustomDataRole, ItemData, DataType, SynonymsSetModel
 from ..infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from ..infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel
 from ..infrastructure.qtgui.states import Editor, StatesModel
@@ -111,6 +111,8 @@ class StateMachineQtController:
         
 
     def __init_models(self):
+        print("===== создание Qt моделей проекта =====")
+
         # получение точек входа
         flows_data = EditorAPI.instance().get_all_project_flows(self.__proj_ctrl.project_id())
 
@@ -123,6 +125,7 @@ class StateMachineQtController:
         # формирование сцены
         self.__states = StatesModel()
 
+        print("----- СОСТОЯНИЯ -----")
         for state_id in states_data.keys():
             item = ItemData()
             item.on[CustomDataRole.Id] = state_id
@@ -130,12 +133,15 @@ class StateMachineQtController:
             item.on[CustomDataRole.Text] = states_data[state_id]['content']
             self.__states.prepare_item(item)
             self.__states.insertRow()
+            print(item.to_json_string())
             
         self.__scene.setModel(self.__states)
 
         flows = FlowsView(self.__main_window)
         # модель точек входа
         self.__f_model = FlowsModel(flows)
+
+        print("----- ПОТОКИ -----")
         for id in flows_data.keys():
             gr_id = flows_data[id]['synonym_group_id']
             self.__s_models[gr_id] = SynonymsSetModel(self.__main_window)
@@ -155,6 +161,8 @@ class StateMachineQtController:
             self.__f_model.prepare_item(item)
             self.__f_model.insertRow()
 
+            print(item.to_json_string(DataType.SynonymsGroup))
+
         flows.setModel(self.__f_model)
 
         self.__flows_wgt = FlowListWidget(flows)
@@ -162,6 +170,8 @@ class StateMachineQtController:
 
         # модель векторов
         self.__g_model = SynonymsGroupsModel(self.__main_window)
+
+        print("----- ГРУППЫ -----")
         for group_id in synonyms_data.keys():
             gr_id = int(group_id)
             if not gr_id in self.__s_models.keys():
@@ -179,6 +189,8 @@ class StateMachineQtController:
             item.on[CustomDataRole.SynonymsSet] = self.__s_models[gr_id]
             self.__g_model.prepare_item(item)
             self.__g_model.insertRow()
+
+            print(item.to_json_string(DataType.SynonymsGroup))
 
     @Slot(str, str)
     def __on_flow_add_pressed(self, name:str, descr:str):
