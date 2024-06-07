@@ -50,11 +50,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from .data import ProxyModelReadOnly
-
-from alicetool.infrastructure.qtgui.primitives.buttons import CloseButton
-from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, BaseModel
-from alicetool.infrastructure.qtgui.primitives.widgets import SynonymEditorWidget
+from .data import CustomDataRole, BaseModel, SynonymsSetModel, ProxyModelReadOnly
+from .primitives.buttons import CloseButton
+from .primitives.widgets import SynonymEditorWidget
 
 class SynonymsGroupsModel(BaseModel):
     ''' Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов '''

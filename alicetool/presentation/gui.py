@@ -1,255 +1,33 @@
 from typing import Optional
 
 from PySide6.QtCore import (
-    QObject,
-    Qt,
     QPoint,
-    QPointF,
     QRect,
     Slot,
-)
-
-from PySide6.QtGui import (
-    QFont,
-    QColor,
-    QBrush,
-    QPen,
 )
 
 from PySide6.QtWidgets import (
     QMessageBox,
     QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QTextEdit,
-    QLabel,
     QGraphicsView,
-    QGraphicsScene,
-    QGraphicsItem,
-    QGraphicsProxyWidget,
-    QGraphicsRectItem,
+    QTextEdit
 )
 
-from alicetool.presentation.api import EditorAPI
-from alicetool.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, AddConnectionBtn, SceneNode
-from alicetool.infrastructure.qtgui.data import CustomDataRole, SynonymsSetModel, ItemData
-from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
-from alicetool.infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel
-from alicetool.infrastructure.qtgui.main_w import FlowList
+from ..infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget
+from ..infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
+from ..infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
+from ..infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel
+from ..infrastructure.qtgui.states import Editor, StatesModel
+from ..infrastructure.qtgui.main_w import FlowList
 
-class QGraphicsStateItem(QGraphicsProxyWidget):
-    ''' TODO: инкапсулировать в SceneNode '''
-    __arrows: dict[str, list[Arrow]]
-    __add_btns: list[AddConnectionBtn]
-
-    def __init__(self, parent: QGraphicsItem = None):
-        super().__init__(parent)
-        self.__arrows = {"from": list[Arrow](), "to": list[Arrow]()}
-        self.setZValue(100)
-        self.__add_btns = []
-        #self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
-
-    def show_add_btn(self):
-        wgt: StateWidget = self.widget()
-
-        for btn in self.__add_btns:
-            if btn.is_active:
-                return
-
-        pos = wgt.add_btn_pos()
-        add_btn = AddConnectionBtn(self)
-        add_btn.setParentItem(self)
-        add_btn.setPos(pos)
-        self.__add_btns.append(add_btn)
-
-        self.scene().addItem(add_btn)
-
-    def arrow_connect_as_start(self, arrow: Arrow):
-        if (not arrow in self.__arrows['from']):
-            self.__arrows['from'].append(arrow)
-            bounding = self.boundingRect()
-            center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
-            arrow.set_start_point(self.scenePos() + center)
-
-    def arrow_connect_as_end(self, arrow: Arrow):
-        if (not arrow in self.__arrows['to']):
-            self.__arrows['to'].append(arrow)
-            bounding = self.boundingRect()
-            center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
-            arrow.set_end_point(self.scenePos() + center)
-            arrow.set_end_wgt(self)
-
-    def arrow_disconnect(self, arrow: Arrow):
-        if (arrow in self.__arrows['from']):
-            self.__arrows['from'].remove(arrow)
-
-        if (arrow in self.__arrows['to']):
-            self.__arrows['to'].remove(arrow)
-            
-    def update_arrows(self):
-        bounding = self.boundingRect()
-        center = QPointF(bounding.width() / 2.0, bounding.height() / 2.0)
-
-        for arrow in self.__arrows['to']:
-            arrow.set_end_point(self.scenePos() + center)
-
-        for arrow in self.__arrows['from']:
-            arrow.set_start_point(self.scenePos() + center)
-
-class StateWidget(QWidget):
-    TITLE_HEIGHT = 15
-    START_WIDTH = 150
-
-    __state_id: int
-    __title: QLabel
-    __close_btn: EnterDetectionButton
-    __content: QTextEdit
-    __item_on_scene: QGraphicsStateItem | None
-    
-    def __init__(self, content: str, name: str, id :int, parent = None):
-        super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
-        self.__state_id = id
-        self.__item_on_scene = None
-        self.__title = QLabel(name, self)
-        font = self.__title.font()
-        font.setWeight(QFont.Weight.ExtraBold)
-        self.__title.setFont(font)
-        self.__title.setFixedHeight(self.TITLE_HEIGHT)
-        self.__close_btn = EnterDetectionButton(str(self.__state_id), self)
-        self.__close_btn.setFlat(True)
-        self.__close_btn.setStyleSheet(
-            "QPushButton"
-            "{"
-            "   background-color: #666666;"
-            "   border: 0px; color: #FFFFFF;"
-            "   border-radius: 7px;"
-            "}"
-        )
-        font = self.__close_btn.font()
-        font.setWeight(QFont.Weight.ExtraBold)
-        self.__close_btn.setFont(font)
-        self.__close_btn.setFixedHeight(self.TITLE_HEIGHT)
-        self.__close_btn.setFixedWidth(self.TITLE_HEIGHT)
-        
-        self.__content = QTextEdit(content, self)
-        self.__content.setStyleSheet(
-            "QTextEdit{"
-            "   border: 0px;"
-            "   border-top: 1px solid #59A5FF;"
-            "   border-bottom-right-radius: 10px;"
-            "   border-bottom-left-radius: 10px;"
-            "   background-color: #FFFFFF;"
-            "}"
-        )
-
-        main_lay = QVBoxLayout(self)
-        main_lay.setContentsMargins(0,0,0,0)
-        main_lay.setSpacing(0)
-
-        title = QWidget(self)
-        title.setStyleSheet(
-            "QWidget{"
-            "   border: 0px;"
-            "   border-top-right-radius: 10px;"
-            "   border-top-left-radius: 10px;"
-            "   background-color: #FFFFFF;"
-            "}"
-        )
-        title_lay = QHBoxLayout(title)
-        title_lay.setContentsMargins(5,2,2,2)
-
-        title_lay.addWidget(self.__title)
-        title_lay.addWidget(self.__close_btn)
-        
-        main_lay.addWidget(title)
-        main_lay.addWidget(self.__content)
-
-        self.resize(self.START_WIDTH, self.START_WIDTH)
-
-    def add_btn_pos(self) -> QPoint:                    
-        pos = self.__close_btn.pos()
-        pos.setX(pos.x() + self.__close_btn.width() + 4)
-        return pos
-    
-    def set_graphics_item_ptr(self, item: QGraphicsStateItem):
-        self.__item_on_scene = item
-        self.__close_btn.mouse_enter.connect(self.on_close_btn_mouse_enter)
-
-    def state_id(self) -> int:
-        return self.__state_id
-
-    @Slot()
-    def on_close_btn_mouse_enter(self):
-        if not self.__item_on_scene is None:
-            self.__item_on_scene.show_add_btn()
-
-class ProxyWidgetControll(QGraphicsRectItem):
-    ''' TODO: инкапсулировать в SceneNode '''
-    def __init__(self, x: float, y: float, w: float, h: float, parent = None):
-        super().__init__(x, y, w, h, parent)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
-        self.setPen(QPen(Qt.GlobalColor.transparent))
-        self.setBrush(QBrush(Qt.GlobalColor.transparent))
-        self.setZValue(100)
-    
-    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value):
-        if change in [
-            QGraphicsItem.GraphicsItemChange.ItemPositionChange,
-            QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged
-        ] and len(self.childItems()):
-            child:QGraphicsStateItem = self.childItems()[0]
-            child.update_arrows()
-
-        return super().itemChange(change, value)
-
-class Editor(QGraphicsScene):
-    def __init__(self, parent: Optional[QObject]):
-        super().__init__(parent)
-        self.setBackgroundBrush(QColor("#DDDDDD"))
-
-        self.addNode(QTextEdit(), QPoint(100, 100))
-
-    def addNode(self, content:QWidget, pos:QPoint) -> SceneNode:
-        node = SceneNode(self)
-        node.setPos(pos.x(), pos.y())
-        return node
-
-    def addState(self, content:str, name:str, id:int, initPos:QPoint) -> QGraphicsStateItem:
-        widget = StateWidget(content, name, id)
-        proxy = self.__addStateProxyWidget(widget, initPos)
-        widget.set_graphics_item_ptr(proxy)
-
-        return proxy
-
-    def __addStateProxyWidget(self, widget: StateWidget, initPos:QPoint) -> QGraphicsStateItem:
-        close_btn_margins = 2 *2
-
-        proxyControl = ProxyWidgetControll(
-            initPos.x(), initPos.y(),
-            widget.width() - StateWidget.TITLE_HEIGHT - close_btn_margins, 20
-        )
-        self.addItem(proxyControl)
-        
-        item = QGraphicsStateItem(proxyControl)
-        item.setWidget(widget)
-        item.setPos(initPos.x(), initPos.y())
-        item.setParentItem(proxyControl)
-        item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
-        
-        item.installSceneEventFilter(proxyControl)
-
-        return item
+#from alicetool.presentation
+from .api import EditorAPI
 
 class StateMachineQtController:
     ''' реализация "ProjectController" по uml2'''
 
     # constants
     __START_SIZE = QRect(0, 0, 2000, 2000)
-    __START_SPACINS = 30
 
     # controlls
     __proj_ctrl: 'ProjectQtController'
@@ -261,10 +39,10 @@ class StateMachineQtController:
 
     # scene
     __scene: Editor
-    __states: dict[int, QGraphicsStateItem]
     __steps: dict[int, list[Arrow]]
 
     # models
+    __states: StatesModel
     __f_model: FlowsModel
     __g_model: SynonymsGroupsModel
     __s_models: dict[int, SynonymsSetModel]
@@ -343,18 +121,17 @@ class StateMachineQtController:
         states_data = EditorAPI.instance().get_all_project_states(self.__proj_ctrl.project_id())
         
         # формирование сцены
-        # TODO: сделать модель состояний
+        self.__states = StatesModel()
+
         for state_id in states_data.keys():
-            self.__states[state_id] = self.__scene.addState(
-                states_data[state_id]['content'],
-                states_data[state_id]['name'],
-                state_id,
-                QPoint(
-                        StateWidget.START_WIDTH * (state_id - 1) +
-                        StateMachineQtController.__START_SPACINS * (state_id),
-                        StateMachineQtController.__START_SPACINS
-                    )
-            )
+            item = ItemData()
+            item.on[CustomDataRole.Id] = state_id
+            item.on[CustomDataRole.Name] = states_data[state_id]['name']
+            item.on[CustomDataRole.Text] = states_data[state_id]['content']
+            self.__states.prepare_item(item)
+            self.__states.insertRow()
+            
+        self.__scene.setModel(self.__states)
 
         flows = FlowsView(self.__main_window)
         # модель точек входа

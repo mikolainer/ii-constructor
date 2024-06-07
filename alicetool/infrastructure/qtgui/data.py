@@ -20,6 +20,7 @@ class CustomDataRole(IntEnum):
     SynonymsSet     : 'CustomDataRole' = Qt.ItemDataRole.UserRole +4,   # SynonymsSetModel
     EnterStateId    : 'CustomDataRole' = Qt.ItemDataRole.UserRole +5,   # int
     SliderVisability: 'CustomDataRole' = Qt.ItemDataRole.UserRole +6,   # bool
+    Node            : 'CustomDataRole' = Qt.ItemDataRole.UserRole +7,   # SceneNode
 
 class ItemData:
     ''' Обёртка над данными с использованием ролей '''
