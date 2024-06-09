@@ -224,10 +224,10 @@ class GroupsList(QStackedWidget):
         self.resize(200, self.height())
 
     def set_empty(self):
+        ''' Показать заглушку '''
         self.setCurrentIndex(self.__empty_index)
     
     def setList(self, view: SynonymsGroupsView, set_current: bool = False):
-        ''' обновление списка виджетов '''
         # для нового списка создаём отдельный виджет и сохраняем его индекс
         if not view in self.__indexed.values():
             self.__indexed[self.addWidget(view)] = view
@@ -269,6 +269,7 @@ class SynonymsList(QStackedWidget):
         self.__empty_index = super().addWidget(QWidget(self))
 
     def set_empty(self):
+        ''' Показать заглушку '''
         self.setCurrentIndex(self.__empty_index)
     
     def set_current(self, model: SynonymsSetModel):
@@ -393,6 +394,7 @@ class SynonymsEditor(QDialog):
 
 
 class SynonymsGroupWidgetToSelect(QWidget):
+    ''' Внутренний виджет для отображения элемента модели в окне выбора существующего набора синонимов '''
     def __init__(self, name: str, id: int, description: str, synonyms_set_model:SynonymsSetModel, parent: QWidget = None):
         super().__init__(parent)
         main_lay: QVBoxLayout = QVBoxLayout(self)
@@ -414,6 +416,7 @@ class SynonymsGroupWidgetToSelect(QWidget):
         main_lay.addWidget(synonyms_list)
 
 class SynonymsSelectorDelegate(QStyledItemDelegate):
+    ''' Реализация части MVC фреймворка Qt для окна выбора существующего набора синонимов '''
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
@@ -466,6 +469,7 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
         return wgt.size()
     
 class SynonymsSelectorView(QListView):
+    ''' Реализация части MVC фреймворка Qt для окна выбора существующего набора синонимов '''
     item_selected = Signal(int)
     __selected: bool
 

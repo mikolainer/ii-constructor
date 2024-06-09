@@ -39,6 +39,11 @@ class PresentationModelMixinBase():
         index_roles: list[CustomDataRole] = [],
         required_roles: list[CustomDataRole] = []
     ):
+        '''
+        Настройка для вызова в конструкторе. 
+        @index_roles - список ролей для быстрого поиска get_item_by(),
+        @required_roles - обязательные роли. например используемые в paint() делегата Qt
+        '''
         self.__index_roles = index_roles
         self.__required_roles = required_roles
         self.__data = []

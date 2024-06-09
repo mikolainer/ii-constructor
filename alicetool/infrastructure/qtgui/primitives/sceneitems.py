@@ -390,7 +390,7 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
             return super().mouseReleaseEvent(event)
 
 class NodeControll(QGraphicsRectItem):
-    ''' манипулятор (невидимый объект для управления позицией) '''
+    ''' Манипулятор (невидимый объект для управления позицией) '''
     def __init__(self, rect: Union[QRectF, QRect], parent: Optional[QGraphicsItem] = None) -> None:
         super().__init__(rect, parent)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
@@ -407,6 +407,7 @@ class NodeControll(QGraphicsRectItem):
             child.update_arrows()
 
         return super().itemChange(change, value)
+
 class SceneNode(QGraphicsProxyWidget):
     ''' Вершина графа на сцене '''
     __Z_VAL = 100

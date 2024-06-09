@@ -52,6 +52,7 @@ class Editor(QGraphicsScene):
         self.__model = None
     
     def setModel(self, model: StatesModel):
+        ''' Устанавливает модель для регистрации и отслеживания изменений состояний и связей. (на сцене и в источнеике данных) '''
         self.__model = model
 
         for row in range(model.rowCount()):
@@ -76,6 +77,7 @@ class Editor(QGraphicsScene):
             self.__model.setData(self.__model.index(row), node, CustomDataRole.Node)
 
     def __addNode(self, pos:QPoint, content:QWidget = None) -> SceneNode:
+        ''' Добавляет вершину графа на сцену '''
         node = SceneNode(self)
         
         if not content is None:

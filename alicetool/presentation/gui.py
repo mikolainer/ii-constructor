@@ -1,7 +1,6 @@
 from typing import Optional
 
 from PySide6.QtCore import (
-    QPoint,
     QRect,
     Slot,
 )
@@ -10,10 +9,9 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QWidget,
     QGraphicsView,
-    QTextEdit
 )
 from .data import to_json_string
-from ..infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget
+from ..infrastructure.qtgui.primitives.sceneitems import Arrow
 from ..infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from ..infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from ..infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel

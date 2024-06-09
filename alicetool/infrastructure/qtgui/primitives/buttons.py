@@ -5,6 +5,7 @@ from PySide6.QtGui import QIcon, QPixmap, QEnterEvent, QMouseEvent
 from PySide6.QtCore import QSize, Signal
 
 class EnterDetectionButton(QPushButton):
+    ''' QPushButton c сигналом mouse_enter() '''
     mouse_enter = Signal()
 
     def __init__(self, text:str, parent = None):
@@ -17,6 +18,7 @@ class EnterDetectionButton(QPushButton):
         return super().enterEvent(event)
         
 class CloseButton(QPushButton):
+    ''' Стиллизованая кнопка "Закрыть" '''
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setToolTip('Закрыть')
