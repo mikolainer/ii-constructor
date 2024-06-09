@@ -1,4 +1,3 @@
-import json
 from enum import IntEnum, verify, UNIQUE
 from typing import Any, Union, Optional
 
@@ -23,94 +22,11 @@ class CustomDataRole(IntEnum):
     SliderVisability: 'CustomDataRole' = Qt.ItemDataRole.UserRole +7,   # bool
     Node            : 'CustomDataRole' = Qt.ItemDataRole.UserRole +8,   # SceneNode
 
-# TODO: унести в presentation layer
-def role_by_str(string: str) -> CustomDataRole:
-    if string == 'Id':
-        return CustomDataRole.Id
-    elif string == 'Name':
-        return CustomDataRole.Name
-    elif string == 'Description':
-        return CustomDataRole.Description
-    elif string == 'Text':
-        return CustomDataRole.Text
-    elif string == 'SynonymsSet':
-        return CustomDataRole.SynonymsSet
-    elif string == 'EnterStateId':
-        return CustomDataRole.EnterStateId
-    elif string == 'SliderVisability':
-        return CustomDataRole.SliderVisability
-    elif string == 'Node':
-        return CustomDataRole.Node
-    else:
-        return None
-
-# TODO: унести в presentation layer
-def str_by_role(role: CustomDataRole) -> str:
-    if role == CustomDataRole.Id:
-        return 'Id'
-    elif role == CustomDataRole.Name:
-        return 'Name'
-    elif role == CustomDataRole.Description:
-        return 'Description'
-    elif role == CustomDataRole.Text:
-        return 'Text'
-    elif role == CustomDataRole.SynonymsSet:
-        return 'SynonymsSet'
-    elif role == CustomDataRole.EnterStateId:
-        return 'EnterStateId'
-    elif role == CustomDataRole.SliderVisability:
-        return 'SliderVisability'
-    elif role == CustomDataRole.Node:
-        return 'Node'
-    else:
-        return 'UnknownRole'
-
-@verify(UNIQUE)
-class DataType(IntEnum):
-    ''' Указание на способ сериализации/десериализации '''
-    Unknown: 'DataType' = 0
-    State: 'DataType' = 1
-    SynonymsGroup: 'DataType' = 2
-
 class ItemData:
     ''' Обёртка над данными с использованием ролей '''
     on: dict[int, Any] # role, data
     def __init__(self) -> None:
         self.on = {}
-
-    def to_json_string(self, d_type: DataType = DataType.Unknown) -> str:
-        ''' Cериализует данные в json '''
-        # TODO: унести в presentation layer
-        data = {}
-
-        for role in self.on.keys():
-            if d_type == DataType.SynonymsGroup and role == CustomDataRole.SynonymsSet:
-                model: SynonymsSetModel = self.on[CustomDataRole.SynonymsSet]
-                synonyms = list[str]()
-                for row in range(model.rowCount()):
-                    synonyms.append(
-                        model.data(model.index(row), CustomDataRole.Text)
-                    )
-
-                value = synonyms
-            else:
-                value = self.on[role]
-
-            data[str_by_role(role)] = value
-
-        return json.dumps(data, indent=2, ensure_ascii=False)
-
-    @staticmethod
-    def from_json_str(json_str:str, type: DataType = DataType.Unknown) -> 'ItemData':
-         # TODO: унести в presentation layer
-        ''' Десериализует данные из json '''
-
-    def update_from(self, json_str:str, type: DataType = DataType.Unknown) -> None:
-         # TODO: унести в presentation layer
-        '''
-        Дополняет данными из другого источника.
-        Например информацией для отображения объектов у конкретного клиента
-        '''
 
 class PresentationModelMixinBase():
     ''' Реализация контейнера для данных, обёрнутых в ItemData '''

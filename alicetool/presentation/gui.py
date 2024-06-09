@@ -12,9 +12,9 @@ from PySide6.QtWidgets import (
     QGraphicsView,
     QTextEdit
 )
-
+from .data import to_json_string
 from ..infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget
-from ..infrastructure.qtgui.data import CustomDataRole, ItemData, DataType, SynonymsSetModel
+from ..infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from ..infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from ..infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel
 from ..infrastructure.qtgui.states import Editor, StatesModel
@@ -133,7 +133,7 @@ class StateMachineQtController:
             item.on[CustomDataRole.Text] = states_data[state_id]['content']
             self.__states.prepare_item(item)
             self.__states.insertRow()
-            print(item.to_json_string())
+            print(to_json_string(item))
             
         self.__scene.setModel(self.__states)
 
@@ -161,7 +161,7 @@ class StateMachineQtController:
             self.__f_model.prepare_item(item)
             self.__f_model.insertRow()
 
-            print(item.to_json_string(DataType.SynonymsGroup))
+            print(to_json_string(item))
 
         flows.setModel(self.__f_model)
 
@@ -190,7 +190,7 @@ class StateMachineQtController:
             self.__g_model.prepare_item(item)
             self.__g_model.insertRow()
 
-            print(item.to_json_string(DataType.SynonymsGroup))
+            print(to_json_string(item))
 
     @Slot(str, str)
     def __on_flow_add_pressed(self, name:str, descr:str):

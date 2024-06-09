@@ -323,12 +323,16 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
         __state: QGraphicsProxyWidget
         end_pos: QPointF
         is_active: bool
+        __is_hide_disabled: bool
+
         connection_added = Signal()
+
 
         def __init__(self, start_item: QGraphicsProxyWidget):
             self.__state = start_item
             self.end_pos = None
             self.is_active = True
+            self.__is_hide_disabled = False
 
             pixmap = QMessageBox.standardIcon(QMessageBox.Icon.Information)
             QObject.__init__(self)
@@ -339,6 +343,7 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
         
         def __start_effect(self):
             ''' Инициирует отображение временной стрелки '''
+            self.__is_hide_disabled = True
             pos = self.__state.scenePos()
             size = self.__state.size()
             pos.setX(pos.x() + size.width()/2)
@@ -354,6 +359,7 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
 
         def __end_effect(self, mouse_pos:QPointF):
             ''' Завершает отображение временной стрелки '''
+            self.__is_hide_disabled = False
             self.scene().removeItem(self.__arrow)
             self.__arrow = None
             self.is_active = False
@@ -361,6 +367,10 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
             self.connection_added.emit()
             self.hide()
         
+        def hide(self) -> None:
+            if not self.__is_hide_disabled:
+                return super().hide()
+
         def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
             center = QPointF( 10, 10 )
             self.__arrow.set_end_point(self.scenePos() + center)
@@ -400,13 +410,22 @@ class NodeControll(QGraphicsRectItem):
 class SceneNode(QGraphicsProxyWidget):
     ''' Вершина графа на сцене '''
     __Z_VAL = 100
+    __WATCHDOG_TIMEOUT = 3000
 
     __add_btns: list[AddConnectionBtn]
     __arrows: dict[str, list[Arrow]]
     
     __controll: NodeControll
 
+    __watchdog: QTimer
+
     def __init__(self, scene: QGraphicsScene):
+        super().__init__()
+        self.__watchdog = QTimer()
+        self.__watchdog.setInterval(self.__WATCHDOG_TIMEOUT)
+        self.__watchdog.setSingleShot(True)
+        self.__watchdog.timeout.connect(self.hide_tools)
+
         # контейнеры для соединений
         self.__arrows = {"from": list[Arrow](), "to": list[Arrow]()}
         self.__add_btns = []
@@ -415,10 +434,10 @@ class SceneNode(QGraphicsProxyWidget):
         widget = NodeWidget("")
 
         # элемент сцены
-        super().__init__()
         self.setZValue(self.__Z_VAL)
         super().setWidget(widget)
         scene.addItem(self)
+        self.hide_tools()
 
         self.setWidget(QTextEdit())
         
@@ -459,11 +478,23 @@ class SceneNode(QGraphicsProxyWidget):
         wgt: NodeWidget = super().widget()
         wgt.set_title(text)
 
+    @Slot()
     def hide_tools(self):
         ''' Прячет дополнительные органы управления '''
+        self.reset_tools()
+        self.__watchdog.stop()
+
+        for btn in self.__add_btns:
+            if btn.is_active:
+                btn.hide()
 
     def show_tools(self):
         ''' Отображает дополнительные органы управления '''
+        for btn in self.__add_btns:
+            if btn.is_active:
+                btn.show()
+        
+        self.__watchdog.start()
 
     def reset_tools(self):
         ''' Инициализирует или возвращает в исходное состояние дополнительные органы управления '''
@@ -476,6 +507,7 @@ class SceneNode(QGraphicsProxyWidget):
         add_btn = AddConnectionBtn(self)
         add_btn.setParentItem(self)
         add_btn.setPos(pos)
+        add_btn.connection_added.connect(self.hide_tools)
         self.__add_btns.append(add_btn)
 
         self.scene().addItem(add_btn)
