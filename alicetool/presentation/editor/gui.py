@@ -10,13 +10,15 @@ from PySide6.QtWidgets import (
     QWidget,
     QGraphicsView,
 )
-from .data import to_json_string
-from ..infrastructure.qtgui.primitives.sceneitems import Arrow
-from ..infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
-from ..infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
-from ..infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel
-from ..infrastructure.qtgui.states import Editor, StatesModel
-from ..infrastructure.qtgui.main_w import FlowList
+
+from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow
+from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
+from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
+from alicetool.infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsGroupsModel
+from alicetool.infrastructure.qtgui.states import Editor, StatesModel
+from alicetool.infrastructure.qtgui.main_w import FlowList
+
+from ..data import ItemDataSerializer
 
 #from alicetool.presentation
 from .api import EditorAPI
@@ -131,7 +133,7 @@ class StateMachineQtController:
             item.on[CustomDataRole.Text] = states_data[state_id]['content']
             self.__states.prepare_item(item)
             self.__states.insertRow()
-            print(to_json_string(item))
+            print(ItemDataSerializer.to_json_string(item))
             
         self.__scene.setModel(self.__states)
 
@@ -159,7 +161,7 @@ class StateMachineQtController:
             self.__f_model.prepare_item(item)
             self.__f_model.insertRow()
 
-            print(to_json_string(item))
+            print(ItemDataSerializer.to_json_string(item))
 
         flows.setModel(self.__f_model)
 
@@ -188,7 +190,7 @@ class StateMachineQtController:
             self.__g_model.prepare_item(item)
             self.__g_model.insertRow()
 
-            print(to_json_string(item))
+            print(ItemDataSerializer.to_json_string(item))
 
     @Slot(str, str)
     def __on_flow_add_pressed(self, name:str, descr:str):

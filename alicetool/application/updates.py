@@ -3,7 +3,7 @@ from collections.abc import Callable
 from PySide6.QtWidgets import QWidget, QInputDialog
 
 from alicetool.application.projects import ProjectsActionsNotifier, StateMachineNotifier
-from alicetool.presentation.gui import ProjectQtController, StateMachineQtController, Editor
+from alicetool.presentation.editor.gui import ProjectQtController, StateMachineQtController, Editor
 from alicetool.infrastructure.qtgui.synonyms import SynonymsEditor, SynonymsGroupsModel
 from alicetool.infrastructure.qtgui.data import SynonymsSetModel, CustomDataRole, ItemData
 from alicetool.infrastructure.qtgui.main_w import FlowList, Workspaces

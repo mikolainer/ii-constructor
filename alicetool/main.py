@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication, QDialog
 from PySide6.QtGui import QIcon
 
-from alicetool.presentation.api import EditorAPI
+from alicetool.presentation.editor.api import EditorAPI
 from alicetool.application.updates import EditorGuiRefresher
 from alicetool.infrastructure.qtgui.main_w import MainWindow, Workspaces, FlowList, NewProjectDialog, MainToolButton
 
