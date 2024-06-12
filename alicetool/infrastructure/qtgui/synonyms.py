@@ -69,16 +69,14 @@ class SynonymsGroupWidget(QWidget):
     __title: QLabel
     __description: QLabel
 
-    def id(self):
+    def id(self) -> int:
         return self.__id
     
-    def name(self):
+    def name(self) -> str:
         return self.__title.text()
     
-    def description(self):
+    def description(self) -> str:
         return self.__description.text()
-
-    clicked = Signal()
 
     def __init__(self, name:str, id:int, description: str, parent: QWidget = None):
         super().__init__(parent)
@@ -99,12 +97,7 @@ class SynonymsGroupWidget(QWidget):
         main_lay.addWidget(self.__description)
 
         main_lay.setContentsMargins(5,0,5,0)
-
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        self.clicked.emit()
-        event.accept()
-        #return super().mouseReleaseEvent(event)
-        
+    
 class SynonymsGroupsDelegate(QStyledItemDelegate):
     ''' Реализация части MVC фреймворка Qt для групп синонимов '''
     def __init__(self, parent: QObject | None = None) -> None:
@@ -195,6 +188,8 @@ class SynonymsSetView(QListView):
 
 class GroupsList(QStackedWidget):
     ''' Обёртка для набора синонимов в группе'''
+    # TODO: изменить наследование на ассоциацию?
+    
     __indexed: dict[int, SynonymsGroupsView]
     __empty_index:int
     create_value = Signal(SynonymsGroupsModel)
