@@ -104,7 +104,6 @@ class FlowWidget(QWidget):
         main_lay.addWidget(self.__title)
         main_lay.addWidget(self.__description)
         main_lay.addWidget(synonyms_wrapper)
-
 class FlowListWidget(QWidget):
     ''' Обёртка содержания. Уникальная и единственная для проекта. '''
     __view: QWidget
