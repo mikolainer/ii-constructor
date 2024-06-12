@@ -127,9 +127,6 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         ''' Подготовить элемент для вставки в модель '''
         self.__prepared_item = item
 
-    def copy_default_item() -> ItemData:
-        ''' Возвращает копию элемента по умолчанию '''
-
     def parent(self, child: Union[QModelIndex, QPersistentModelIndex]) -> QModelIndex:
         ''' Модель плоская. Возвращается QModelIndex() '''
         return QModelIndex()
