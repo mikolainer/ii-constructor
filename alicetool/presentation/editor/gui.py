@@ -1,14 +1,7 @@
 from io import TextIOWrapper
-from typing import Optional
 
-from PySide6.QtCore import (
-    Slot,
-)
-
-from PySide6.QtWidgets import (
-    QMessageBox,
-    QWidget,
-)
+from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox
+from PySide6.QtCore import Slot, Qt
 
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow
 from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
@@ -39,6 +32,10 @@ class Project:
         self.__scene = scene
         self.__flows_wgt = content
 
+        self.states_model = StatesModel()
+        self.flows_model = FlowsModel()
+        self.vectors_model = SynonymsGroupsModel()
+
     def id(self) -> ScenarioID:
         return self.__id
     
@@ -64,33 +61,74 @@ class Project:
     def choose_state() -> StateID:
         pass
 
-    def __create_synonyms_group(model:SynonymsGroupsModel):
-        pass
+    def __create_synonyms_group(self, model:SynonymsGroupsModel):
+        name:str = ''
+        prev_name = ''
 
-    def __create_synonym(model:SynonymsSetModel):
-        pass
+        while name == '':
+            name, ok = QInputDialog.getText(
+                self.__scene.parent(),
+                'Новый набор синонимов',
+                'Название',
+                text= prev_name
+            )
 
+            if not ok: return
+            if not model.get_item_by(CustomDataRole.Name, name) is None:
+                QMessageBox.warning(self.__scene.parent(), 'Ошибка',
+                    f'Рруппа синонимов с именем "{name}" уже существует!')
+                prev_name = name
+                name = ''
+
+        s_model = SynonymsSetModel()
+        self.__create_synonym(s_model)
+
+        item = ItemData()
+        item.on[CustomDataRole.Name] = name
+        item.on[CustomDataRole.Description] = ""
+        item.on[CustomDataRole.SynonymsSet] = s_model
+        item.on[CustomDataRole.FromState] = None
+        item.on[CustomDataRole.ToState] = None
+
+        model.prepare_item(item)
+        model.insertRow()
+
+    def __create_synonym(self, model:SynonymsSetModel):
+        item = ItemData()
+        item.on[CustomDataRole.Text] = 'значение'
+        model.prepare_item(item)
+        model.insertRow()
 
 class ProjectManager:
     # открытые проекты
-    __projects: dict[Editor, Project]
+    __projects: dict[QGraphicsView, Project]
 
     __main_window: MainWindow
     __workspaces: Workspaces
     __flow_list: FlowList
 
-    def __init__( self, workspaces: Workspaces, main_window: MainWindow, flow_list: FlowList ) -> None:
+    def __init__( self, flow_list: FlowList, workspaces: Workspaces, main_window: MainWindow ) -> None:
         self.__workspaces = workspaces
         self.__main_window = main_window
         self.__flow_list = flow_list
-        self.__workspaces.currentChanged.connect(
-            lambda index:
-            self.set_current(
-                self.__projects[
-                    self.__workspaces.widget(index)
-                ]
-            )
-        )
+
+        self.__projects = {}
+
+        self.__workspaces.currentChanged.connect(self.on_cur_changed)
+
+    @Slot(int)
+    def on_cur_changed(self, index: int):
+        if index == -1:
+            return
+        
+        proj = self.__projects[ self.__workspaces.widget(index) ]
+        self.__flow_list.setWidget(proj.content(), True)
+
+        #self.__flow_list.setCurrentWidget(
+        #    self.__projects[
+        #        self.__workspaces.widget(index)
+        #    ].content()
+        #)
 
     def current(self) -> Project:
         return self.__projects[self.__workspaces.currentWidget()]
@@ -100,29 +138,35 @@ class ProjectManager:
         self.__flow_list.setCurrentWidget(proj.content())
 
     def create_project(self) -> Project:
+        dialog = NewProjectDialog(self.__main_window)
+        if dialog.exec() == QDialog.DialogCode.Rejected:
+            return
+
         # создание содержания (список точек входа)
         content_view = FlowsView(self.__flow_list)
         content = FlowListWidget(content_view)
-        content.create_value.connect('''TODO''')
+        self.__flow_list.setWidget(content, True)
+        #content.create_value.connect('''TODO''')
 
         # создание редактора
-        editor = Editor(self.__main_window)
+        scene = Editor(self.__main_window)
 
         # создание проекта с пустыми моделями
-        proj = Project(editor, content)
+        proj = Project(scene, content)
         content_view.setModel(proj.flows_model)
-        editor.setModel(proj.states_model)
-        self.__workspaces.addTab(editor, editor)
+        scene.setStatesModel(proj.states_model)
 
-        # создание проекта
-        dialog = NewProjectDialog(self.__main_window)
-        dialog.exec()
-        scenario = ScenarioFactory.make_scenario(Name(dialog.name), Description(dialog.descr))
+        editor = QGraphicsView(scene, self.__workspaces)
+        self.__projects[editor] = proj
+        self.__workspaces.addTab(editor, dialog.name())
+
+        # наполнение проекта
+        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
 
         # TODO: log
         print("===== создание Qt моделей проекта =====")
         print("----- СОСТОЯНИЯ -----")
-        for state in scenario.get_states().values():
+        for state in scenario.states().values():
             item = ItemData()
             item.on[CustomDataRole.Id] = state.id().value
             item.on[CustomDataRole.Name] = state.attributes.name.value
@@ -131,8 +175,6 @@ class ProjectManager:
             proj.states_model.insertRow()
             # TODO: log
             print(ItemDataSerializer.to_string(item))
-
-        scenario
 
         # TODO: log
         print("----- ВЕКТОРЫ -----")
@@ -147,7 +189,7 @@ class ProjectManager:
                         s_model.insertRow()
                     
                     item = ItemData()
-                    item.on[CustomDataRole.Name] = step.name
+                    item.on[CustomDataRole.Name] = step.name.value
                     item.on[CustomDataRole.Description] = ""
                     item.on[CustomDataRole.SynonymsSet] = s_model
                     item.on[CustomDataRole.FromState] = None if conn.from_state is None else conn.from_state.id().value
@@ -168,11 +210,12 @@ class ProjectManager:
                 continue
             
             s_model:SynonymsSetModel = vector_data.on[CustomDataRole.SynonymsSet]
-            state = scenario.states([StateID(vector_data.on[CustomDataRole.ToState])])[0]
+            id = StateID(vector_data.on[CustomDataRole.ToState])
+            state = scenario.states([id])[id]
 
             item = ItemData()
-            item.on[CustomDataRole.Name] = state.attributes.name
-            item.on[CustomDataRole.Description] = state.attributes.desrciption
+            item.on[CustomDataRole.Name] = state.attributes.name.value
+            item.on[CustomDataRole.Description] = state.attributes.desrciption.value
             item.on[CustomDataRole.SynonymsSet] = s_model
             item.on[CustomDataRole.EnterStateId] = state.id().value
             item.on[CustomDataRole.SliderVisability] = False
@@ -181,9 +224,6 @@ class ProjectManager:
             proj.flows_model.insertRow()
 
             print(ItemDataSerializer.to_string(item))
-
-        # модель векторов
-        self.__g_model = SynonymsGroupsModel(self.__main_window)
 
     def open_project(self) -> Project:
         pass

@@ -88,7 +88,7 @@ class Scenario:
     host: Optional[str]
     id: Optional[ScenarioID]
 
-    __new_state_id: StateID
+    __new_state_id: int
     __states: dict[StateID, State]
     __connections: dict[str, dict] # ключи: 'from', 'to'; значения: dict[StateID, Connection]
     __input_vectors: PossibleInputs
@@ -99,11 +99,12 @@ class Scenario:
         self.host = host
         self.id = id
         self.__states = states
-        self.__new_state_id = StateID(0)
+        self.__new_state_id = 0
+        self.__connections = {'from':{}, 'to':{}}
 
     def __create_state(self) -> State:
-        new_state = State(self.__new_state_id)
-        self.__new_state_id.value = self.__new_state_id.value + 1
+        new_state = State(StateID(self.__new_state_id))
+        self.__new_state_id = self.__new_state_id + 1
         self.__states[new_state.id()] = new_state
         return new_state
     
@@ -170,8 +171,8 @@ class Scenario:
 
         if isinstance(state, Name):
             state_to.attributes.name = state
-        
-        step_name = Name(f'вход в команду "{state_to.name.value}"')
+
+        step_name = Name(f'вход в "{state_to.attributes.name.value}"')
         step = Step(step_name, input)
 
         if conn is None:
@@ -196,6 +197,8 @@ class Scenario:
         states: dict[StateID, State] = {}
         for id in ids:
             states[id] = self.__states[id]
+        
+        return states
 
     def steps(self, from_state_id:StateID, to_state_id:StateID = None) -> list[Step]:
         conn = self.__find_connection(from_state_id, to_state_id)
@@ -205,8 +208,10 @@ class Scenario:
         return list(self.__connections['to'].values())
     
     def connections(self) -> list[Connection]:
-        all_connections: list[Connection] = list(self.__connections.values['from'].values())
-        all_connections.append(list(self.__connections.values['to'].values()))
+        all_connections = list(self.__connections['from'].values()).copy()
+        for conn in self.__connections['to'].values():
+            all_connections.append(conn)
+
         return all_connections
 
     def inputs(self) -> PossibleInputs:

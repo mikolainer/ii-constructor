@@ -1,4 +1,4 @@
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
 from alicetool.domain.core.primitives import Name, Description, ScenarioID
 from alicetool.domain.core.bot import Scenario
 
@@ -9,18 +9,18 @@ class ScenarioFactory:
         new_project = Scenario(name, description)
 
         state_name = Name('Вход')
-        input_vector = LevenshtainVector(state_name, ['Алиса, запусти навык ...'])
+        input_vector = LevenshtainVector(state_name, [Synonym('Алиса, запусти навык ...')])
         new_project.create_enter(input_vector, state_name)
 
         state_name = Name('Информация')
-        input_vector = LevenshtainVector(state_name, ['Информация', 'Справка', 'Расскажи о себе'])
+        input_vector = LevenshtainVector(state_name, [Synonym('Информация'), Synonym('Справка'), Synonym('Расскажи о себе')])
         new_project.create_enter(input_vector, state_name)
 
         state_name = Name('Помощь')
-        input_vector = LevenshtainVector(state_name, ['Помощь', 'Помоги', 'Как выйти'])
+        input_vector = LevenshtainVector(state_name, [Synonym('Помощь'), Synonym('Помоги'), Synonym('Как выйти')])
         new_project.create_enter(input_vector, state_name)
 
-        for state in new_project.get_states().values():
+        for state in new_project.states().values():
             state.required = True
             state.attributes.output
         

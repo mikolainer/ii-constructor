@@ -70,7 +70,7 @@ class PresentationModelMixinBase():
 
         self.__data.append(item)
         for role in self.__index_roles:
-            self.__index_by[role][item.on[role], item]
+            self.__index_by[role][item.on[role]] = item
 
         return len(self.__data) -1 #self.__data.index(item)
     
@@ -102,6 +102,9 @@ class PresentationModelMixinBase():
             raise ValueError(f"нет индекса по указанной роли ({role})")
         
         # TODO: несколько item'ов с одинаковыми значениями роли?
+        if not value in self.__index_by[role].keys():
+            return None
+
         return self.__index_by[role][value]
     
     def __len__(self) -> int:
@@ -179,7 +182,7 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     
     def removeRow(self, row: int, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
         ''' Удаляет 1 элемент с индексом `row`. Аргумент `parent` игнорируeтся. '''
-        return super().removeRow(row, parent)
+        return super().removeRow(row, QModelIndex())
     
     def removeRows(self, row: int, count: int = None, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
         ''' Удаляет 1 элемент с индексом `row`. Аргументы `count` и `parent` игнорируются. '''
@@ -208,3 +211,8 @@ class SynonymsSetModel(BaseModel):
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
+    def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = CustomDataRole.Text) -> bool:
+        if role == CustomDataRole.Text and isinstance(value, str) and value == '':
+            return self.removeRow(index.row())
+
+        return super().setData(index, value, role)

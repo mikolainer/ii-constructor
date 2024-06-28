@@ -42,14 +42,12 @@ class FlowsModel(BaseModel):
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 class FlowWidget(QWidget):
     ''' Единица содержания проекта. Отображение элемента модели содержания '''
-    __id: int
     __title: QLabel
     __description: QLabel
     __synonyms_name: QLabel
     __synonyms_list: 'FlowSynonymsSetView'
     __slider_btn: QPushButton
 
-    def id(self): return self.__id
     def name(self): return self.__title.text()
 
     slider_visible_changed = Signal(bool)
@@ -66,15 +64,13 @@ class FlowWidget(QWidget):
             self.slider_visible_changed.emit(checked)
 
 
-    def __init__(self, id :int, 
-                 name: str, description :str,
+    def __init__(self, name: str, description :str,
                  synonyms: SynonymsSetModel, 
                  start_state,# :QGraphicsProxyWidget,
                  parent = None
                 ):
         super().__init__(parent)
         self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
-        self.__id = id
         self.__title = QLabel(name, self)
         self.__title.setWordWrap(True)
         self.__description = QLabel(description, self)
@@ -117,7 +113,7 @@ class FlowListWidget(QWidget):
         lay.addWidget(view, 0)
 
         btn = QPushButton("+", self)
-        btn.clicked.connect(self, self.create_value.emit())
+        btn.clicked.connect(lambda: self.create_value.emit())
         lay.addWidget(btn, 1)
 
 class FlowSynonymsSetDelegate(QStyledItemDelegate):
@@ -154,7 +150,6 @@ class FlowsDelegate(QStyledItemDelegate):
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
         editor = FlowWidget(
-            index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
             index.data(CustomDataRole.SynonymsSet),
@@ -180,7 +175,6 @@ class FlowsDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
         wgt = FlowWidget(
-            index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
             index.data(CustomDataRole.SynonymsSet),
@@ -200,7 +194,6 @@ class FlowsDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
         wgt = FlowWidget(
-            index.data(CustomDataRole.Id),
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.Description),
             index.data(CustomDataRole.SynonymsSet),

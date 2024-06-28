@@ -17,11 +17,15 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtGui import (
+    QContextMenuEvent,
     QResizeEvent,
     QMouseEvent,
     QMouseEvent,
     QPainter,
     QFont,
+    QAction,
+    QKeySequence,
+    QShortcut,
 )
 
 from PySide6.QtWidgets import (
@@ -48,6 +52,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QVBoxLayout,
+    QMenu,
 )
 
 from .data import CustomDataRole, BaseModel, SynonymsSetModel, ProxyModelReadOnly
@@ -58,19 +63,21 @@ class SynonymsGroupsModel(BaseModel):
     ''' Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов '''
     def __init__( self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._data_init() # TODO
+        self._data_init(
+            index_roles=[CustomDataRole.Name],
+            required_roles=[
+                CustomDataRole.Name,
+                CustomDataRole.SynonymsSet
+            ]
+        )
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
 class SynonymsGroupWidget(QWidget):
     ''' Единица списка групп синонимов. Отображение элемента модели групп синонимов '''
-    __id: int
     __title: QLabel
     __description: QLabel
-
-    def id(self) -> int:
-        return self.__id
     
     def name(self) -> str:
         return self.__title.text()
@@ -78,9 +85,8 @@ class SynonymsGroupWidget(QWidget):
     def description(self) -> str:
         return self.__description.text()
 
-    def __init__(self, name:str, id:int, description: str, parent: QWidget = None):
+    def __init__(self, name:str, description: str, parent: QWidget = None):
         super().__init__(parent)
-        self.__id = id
 
         self.setStyleSheet('QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}')
         main_lay = QVBoxLayout(self)
@@ -105,7 +111,7 @@ class SynonymsGroupsDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
         data = index.internalPointer()
-        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Id], data.on[CustomDataRole.Description])
+        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Description])
         wgt.resize(option.rect.size())
 
         painter.setClipRect(option.rect)
@@ -118,7 +124,7 @@ class SynonymsGroupsDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
         data = index.internalPointer()
-        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Id], data.on[CustomDataRole.Description])
+        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Description])
         wgt.adjustSize()
         return wgt.size()
 
@@ -132,11 +138,29 @@ class SynonymsGroupsView(QListView):
         self.setItemDelegate(self.__delegate)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
+        shotcut = QShortcut(QKeySequence.StandardKey.Delete, self)
+        shotcut.activated.connect(self.remove_selected_row)
+
     on_selectionChanged = Signal(QItemSelection, QItemSelection)
+
+    def remove_selected_row(self):
+        for index in self.selectedIndexes():
+            self.model().removeRow(index.row())
 
     def selectionChanged(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         self.on_selectionChanged.emit(selected, deselected)
         return super().selectionChanged(selected, deselected)
+    
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        index = self.indexAt(event.pos())
+        if not index.isValid():
+            return
+
+        menu = QMenu(self)
+        menu.addAction('Удалить', lambda: index.model().removeRow(index.row()), QKeySequence(QKeySequence.StandardKey.Delete))
+        menu.move(event.globalPos())
+        menu.show()
+
 
 class SynonymsSetDelegate(QStyledItemDelegate):
     ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
@@ -154,7 +178,7 @@ class SynonymsSetDelegate(QStyledItemDelegate):
         editor.setText(index.data())
     
     def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
-        super().setModelData(editor, model, index)
+        #super().setModelData(editor, model, index)
         model.setData(index, editor.text())
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
