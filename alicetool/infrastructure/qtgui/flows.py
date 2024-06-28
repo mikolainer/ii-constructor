@@ -106,20 +106,7 @@ class FlowWidget(QWidget):
         main_lay.addWidget(synonyms_wrapper)
 class FlowListWidget(QWidget):
     ''' Обёртка содержания. Уникальная и единственная для проекта. '''
-    __view: QWidget
-
-    '''args: name, descr'''
-    create_value = Signal(str, str) 
-
-    @Slot()
-    def __create_flow(self):
-        name, ok = QInputDialog.getText(self, "Имя нового потока", "Имя нового потока:")
-        if not ok: return
-
-        descr, ok = QInputDialog.getText(self, "Описание нового потока", "Описание нового потока:")
-        if not ok: return
-
-        self.create_value.emit(name, descr)
+    create_value = Signal()
 
     def __init__(self, view: QWidget, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -130,7 +117,7 @@ class FlowListWidget(QWidget):
         lay.addWidget(view, 0)
 
         btn = QPushButton("+", self)
-        btn.clicked.connect(self, self.__create_flow)
+        btn.clicked.connect(self, self.create_value.emit())
         lay.addWidget(btn, 1)
 
 class FlowSynonymsSetDelegate(QStyledItemDelegate):

@@ -1,6 +1,7 @@
+from typing import Any
+
 import json
 from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, SynonymsSetModel
-
 
 class ItemDataSerializer():
     @staticmethod
@@ -46,7 +47,7 @@ class ItemDataSerializer():
             return 'UnknownRole'
 
     @staticmethod
-    def to_json_string(obj: ItemData) -> str:
+    def to_string(obj: ItemData) -> str:
         ''' Cериализует данные в json '''
         data = {}
 
@@ -68,12 +69,15 @@ class ItemDataSerializer():
         return json.dumps(data, indent=2, ensure_ascii=False)
 
     @staticmethod
-    def from_json_str(json_str:str) -> ItemData:
+    def from_str(json_str:str) -> ItemData:
         ''' Десериализует данные из json '''
 
-    @staticmethod
-    def update_from(json_str:str) -> None:
-        '''
-        Дополняет данными из другого источника.
-        Например информацией для отображения объектов у конкретного клиента
-        '''
+class BaseSerializer():
+    type = Any
+
+    def to_data(self, obj:type) -> ItemData:
+        raise NotImplementedError('Использование абстрактного класса')
+
+    def from_data(self, data:ItemData)-> type:
+        raise NotImplementedError('Использование абстрактного класса')
+    

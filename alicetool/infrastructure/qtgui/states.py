@@ -6,6 +6,7 @@ from PySide6.QtCore import (
     QPoint,
     QModelIndex,
     QPersistentModelIndex,
+    QRect,
 )
 
 from PySide6.QtGui import (
@@ -40,6 +41,7 @@ class StatesModel(BaseModel):
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 
 class Editor(QGraphicsScene):
+    __START_SIZE = QRect(0, 0, 2000, 2000)
     __START_SPACINS = 30
 
     ''' Сцена состояний и переходов сценария '''
@@ -47,11 +49,12 @@ class Editor(QGraphicsScene):
 
     def __init__(self, parent: Optional[QObject]):
         super().__init__(parent)
+        self.setSceneRect(self.__START_SIZE)
         self.setBackgroundBrush(QColor("#DDDDDD"))
         #self.addNode(QPoint(100, 100), QTextEdit())
         self.__model = None
     
-    def setModel(self, model: StatesModel):
+    def setStatesModel(self, model: StatesModel):
         ''' Устанавливает модель для регистрации и отслеживания изменений состояний и связей. (на сцене и в источнеике данных) '''
         self.__model = model
 
@@ -75,6 +78,9 @@ class Editor(QGraphicsScene):
             node.setWidget(content)
 
             self.__model.setData(self.__model.index(row), node, CustomDataRole.Node)
+
+    def setStepsModel(self, model):
+        pass
 
     def __addNode(self, pos:QPoint, content:QWidget = None) -> SceneNode:
         ''' Добавляет вершину графа на сцену '''

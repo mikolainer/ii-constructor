@@ -30,7 +30,6 @@ from PySide6.QtWidgets import (
     QGraphicsView,
 )
 
-
 import alicetool.resources.rc_icons
 
 class MainToolButton(QPushButton):
@@ -169,62 +168,38 @@ class NewProjectDialog(QDialog):
     __STATE_TEXT_MAX_LEN: int
 
     def __init__(self, parent: QWidget | None = None, STATE_TEXT_MAX_LEN = 1000):
-        super().__init__(parent)
-
-        lay = QVBoxLayout(self)
-
         self.__STATE_TEXT_MAX_LEN = STATE_TEXT_MAX_LEN
-        self.__file_path_editor = QLineEdit(self)
+        
+        super().__init__(parent)
+        self.setWindowTitle("Новый проект")
+        lay = QVBoxLayout(self)
+        
         self.__name_editor = QLineEdit(self)
-        self.__db_name_editor = QLineEdit(self)
-        self.__hello_editor = QTextEdit(self)
-        self.__help_editor = QTextEdit(self)
-        self.__info_editor = QTextEdit(self)
+        self.__description_editor = QTextEdit(self)
         self.__ok_button = QPushButton("Начать", self)
 
-        lay.addWidget(QLabel('Путь к файлу'))
-        lay.addWidget(self.__file_path_editor)
-        lay.addWidget(QLabel('Имя проекта для БД'))
-        lay.addWidget(self.__db_name_editor)
-        lay.addWidget(QLabel('Имя проекта для отображения'))
+        lay.addWidget(QLabel('Название'))
         lay.addWidget(self.__name_editor)
-        lay.addWidget(QLabel('Текст приветственной фразы'))
-        lay.addWidget(self.__hello_editor)
-        lay.addWidget(QLabel('Текст ответа "Помощь"'))
-        lay.addWidget(self.__help_editor)
-        lay.addWidget(QLabel('Текст ответа "Что ты умеешь?"'))
-        lay.addWidget(self.__info_editor)
+        lay.addWidget(QLabel('Описание'))
+        lay.addWidget(self.__description_editor)
+
         lay.addWidget(self.__ok_button)
         self.__ok_button.clicked.connect(lambda: self.accept())
 
-    def get_result(self):
-        ''' возвращает сериализованные данные для создания сценария '''
-        return (
-            f'name={self.__name_editor.text()}; '
-            f'db_name={self.__db_name_editor.text()}; '
-            f'file_path={self.__file_path_editor.text()}; '
-            f'hello={self.__hello_editor.toPlainText()[: self.__STATE_TEXT_MAX_LEN]}; '
-            f'help={self.__help_editor.toPlainText()[: self.__STATE_TEXT_MAX_LEN]}; '
-            f'info={self.__info_editor.toPlainText()[: self.__STATE_TEXT_MAX_LEN]}'
-        )
+    def name(self) -> str:
+        return self.__name_editor.text()
+    
+    def description(self) -> str:
+        return self.__description_editor.toPlainText()
+
     
 class Workspaces(QTabWidget):
     ''' Область графической сцены сценариев и выбора активного проекта (правая часть главного окна) '''
-    activated = Signal(QGraphicsView)
+    #activated = Signal(int)
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.currentChanged.connect(lambda index: self.activated.emit(self.widget(index)))
-
-    def set_active(self, view:QGraphicsView):
-        self.setCurrentWidget(view)
-
-    def open_editor(self, view:QGraphicsView, name:str):
-        self.addTab(view, name)
-        self.set_active(view)
-
-    def close_editor(self, view:QGraphicsView):
-        self.removeTab(self.indexOf(view))
+        #self.currentChanged.connect(lambda index: self.activated.emit(index))
 
 class FlowList(QStackedWidget):
     ''' Содержание активного проекта. (левая часть главного окна) '''

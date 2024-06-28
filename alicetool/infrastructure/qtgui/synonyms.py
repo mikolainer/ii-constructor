@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from typing import Callable
 
 from PySide6.QtCore import (
     Qt,
@@ -386,7 +386,6 @@ class SynonymsEditor(QDialog):
                 CustomDataRole.SynonymsSet
             )
             self.__synonyms_list.set_current(synonyms)
-
 
 class SynonymsGroupWidgetToSelect(QWidget):
     ''' Внутренний виджет для отображения элемента модели в окне выбора существующего набора синонимов '''
