@@ -79,9 +79,10 @@ class PresentationModelMixinBase():
         if not issubclass(type(item), ItemData):
             raise TypeError(item)
         
-        self.__data.remove(item)
         for role in self.__index_roles:
-            self.__index_by[role][item.on[role], item]
+            del self.__index_by[role][item.on[role]]
+            
+        self.__data.remove(item)
     
     def get_item(self, index:int) -> ItemData:
         ''' ищет item по индексу '''
