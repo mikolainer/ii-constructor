@@ -1,0 +1,2 @@
+class ScenarioChangesInterface:
+    pass

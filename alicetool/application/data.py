@@ -2,6 +2,7 @@ from typing import Any
 
 import json
 from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, SynonymsSetModel
+from alicetool.infrastructure.qtgui.states import SceneNode
 
 class ItemDataSerializer():
     @staticmethod
@@ -61,6 +62,18 @@ class ItemDataSerializer():
                     )
 
                 value = synonyms
+
+            elif role == CustomDataRole.Node:
+                node: SceneNode = obj.on[role]
+                rect = node.geometry()
+
+                value = {
+                    'x': rect.x(),
+                    'y': rect.y(),
+                    'width': rect.width(),
+                    'height': rect.height(),
+                }
+            
             else:
                 value = obj.on[role]
 

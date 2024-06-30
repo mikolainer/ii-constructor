@@ -2,6 +2,7 @@ from typing import Optional
 
 from PySide6.QtCore import (
     Qt,
+    Slot,
     QObject,
     QPoint,
     QModelIndex,
@@ -11,7 +12,6 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QColor,
-    
 )
 
 from PySide6.QtWidgets import (
@@ -65,10 +65,10 @@ class Editor(QGraphicsScene):
             # TODO: initStateConnections
             # TODO: initStatePos
             pos = QPoint(
-                        NodeWidget.START_WIDTH * (state_id - 1) +
-                        self.__START_SPACINS * (state_id),
-                        self.__START_SPACINS
-                    )
+                NodeWidget.START_WIDTH * (state_id) +
+                self.__START_SPACINS * (state_id+1),
+                self.__START_SPACINS
+            )
 
             node = self.__addNode(pos)
             node.set_title(state_name)
@@ -79,7 +79,47 @@ class Editor(QGraphicsScene):
 
             self.__model.setData(self.__model.index(row), node, CustomDataRole.Node)
 
-    def setStepsModel(self, model):
+        self.__connect_model_signals()
+
+    def __connect_model_signals(self):
+        if self.__model is None:
+            return
+        
+        self.__model.rowsInserted.connect(self.on_state_added)
+        self.__model.rowsRemoved.connect(self.on_state_removed)
+        self.__model.dataChanged.connect(self.on_state_changed)
+
+    @Slot(QModelIndex,int,int)
+    def on_state_added(self, parent: QModelIndex, first: int, last: int):
+        row = first
+        state_id = self.__model.data(self.__model.index(row), CustomDataRole.Id)
+        state_name = self.__model.data(self.__model.index(row), CustomDataRole.Name)
+        state_text = self.__model.data(self.__model.index(row), CustomDataRole.Text)
+
+        pos = QPoint(
+            NodeWidget.START_WIDTH * (state_id) +
+            self.__START_SPACINS * (state_id+1),
+            self.__START_SPACINS
+        )
+
+        node = self.__addNode(pos)
+        node.set_title(state_name)
+        
+        content = QTextEdit()
+        content.setText(state_text)
+        node.setWidget(content)
+        
+        self.__model.setData(self.__model.index(row), node, CustomDataRole.Node)
+    
+    @Slot(QModelIndex,int,int)
+    def on_state_removed(self, parent: QModelIndex, first: int, last: int):
+        row = first
+        node = self.__model.data(self.__model.index(row), CustomDataRole.Node)
+        # TODO: удалить все стрелочки
+        self.removeItem(node)
+
+    @Slot(QModelIndex,QModelIndex,list)
+    def on_state_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]):
         pass
 
     def __addNode(self, pos:QPoint, content:QWidget = None) -> SceneNode:
@@ -89,7 +129,13 @@ class Editor(QGraphicsScene):
         if not content is None:
             node.setWidget(content)
         
+        x = pos.x()
+        if x < 0: x = 0
+
+        y = pos.y()
+        if y < 0: y = 0
+
         # TODO: по умолчанию под указателем мыши
-        node.setPos(pos.x(), pos.y())
+        node.setPos(x, y)
 
         return node

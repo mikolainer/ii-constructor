@@ -157,6 +157,8 @@ class ProjectManager:
         scene.setStatesModel(proj.states_model)
 
         editor = QGraphicsView(scene, self.__workspaces)
+        editor.centerOn(0, 0)
+
         self.__projects[editor] = proj
         self.__workspaces.addTab(editor, dialog.name())
 

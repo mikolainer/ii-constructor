@@ -81,7 +81,7 @@ class PresentationModelMixinBase():
         
         for role in self.__index_roles:
             del self.__index_by[role][item.on[role]]
-            
+
         self.__data.remove(item)
     
     def get_item(self, index:int) -> ItemData:
@@ -153,9 +153,11 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         ''' Устанавливает значение для роли элемента, с индексом `index.row()` '''
         if role == Qt.ItemDataRole.EditRole and Qt.ItemDataRole.DisplayRole in self.__map_custom_as_qt_role.keys():
             self.get_item(index.row()).on[self.__map_custom_as_qt_role[Qt.ItemDataRole.DisplayRole]] = value
+            self.dataChanged.emit(index,index,role)
             return True
 
         self.get_item(index.row()).on[role] = value
+        self.dataChanged.emit(index,index,role)
         return True # ошибки обрабатываем исключениями
     
     def data(self, index: QModelIndex | QPersistentModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:

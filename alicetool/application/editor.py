@@ -8,7 +8,7 @@ class ScenarioFactory:
         ''' создаёт заготовку сценария для алисы '''
         new_project = Scenario(name, description)
 
-        state_name = Name('Вход')
+        state_name = Name('Старт')
         input_vector = LevenshtainVector(state_name, [Synonym('Алиса, запусти навык ...')])
         new_project.create_enter(input_vector, state_name)
 
