@@ -21,8 +21,25 @@ from PySide6.QtWidgets import (
     QGraphicsSceneMouseEvent,
 )
 
+from alicetool.infrastructure.qtgui.data import ItemData
+
 from .primitives.sceneitems import Arrow, SceneNode, NodeWidget
 from .data import CustomDataRole, BaseModel
+
+class ConnectionsModel(BaseModel):
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+
+        roles: list[CustomDataRole] = [
+            CustomDataRole.FromState,
+            CustomDataRole.ToState,
+            CustomDataRole.SynonymsSet,
+        ]
+
+        self._data_init(required_roles=roles)
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 
 class StatesModel(BaseModel):
     ''' Модель состояний. Для обработки сценой (Editor) '''

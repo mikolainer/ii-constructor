@@ -13,7 +13,7 @@ class Name:
         return _len > self.__MIN_LEN and _len < self.__MAX_LEN
     
     def __eq__(self, value: object) -> bool:
-        return isinstance(value, Name) and value.value() == self.value
+        return isinstance(value, Name) and value.value == self.value
 
 @dataclass(frozen=True)
 class Description:

@@ -101,6 +101,7 @@ class Scenario:
         self.__states = states
         self.__new_state_id = 0
         self.__connections = {'from':{}, 'to':{}}
+        self.__input_vectors = PossibleInputs()
 
     def __create_state(self) -> State:
         new_state = State(StateID(self.__new_state_id))
@@ -172,7 +173,8 @@ class Scenario:
         if isinstance(state, Name):
             state_to.attributes.name = state
 
-        step_name = Name(f'вход в "{state_to.attributes.name.value}"')
+        #step_name = Name(f'вход в "{state_to.attributes.name.value}"')
+        step_name = Name(state_to.attributes.name.value)
         step = Step(step_name, input)
 
         if conn is None:

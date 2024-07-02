@@ -13,10 +13,10 @@ from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.application.data import ItemDataSerializer
 from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
 
 class Project:
-    __id = ScenarioID
+    __scenario = Scenario
     __scene: Editor
     __flows_wgt: FlowListWidget
 
@@ -26,9 +26,11 @@ class Project:
     
     def __init__(
         self,
+        scenario: Scenario,
         scene: Editor,
         content: FlowListWidget
     ):
+        self.__scenario = scenario
         self.__scene = scene
         self.__flows_wgt = content
 
@@ -61,7 +63,7 @@ class Project:
     def choose_state() -> StateID:
         pass
 
-    def __create_synonyms_group(self, model:SynonymsGroupsModel):
+    def __ask_new_vector_name(self, model:SynonymsGroupsModel) -> str:
         name:str = ''
         prev_name = ''
 
@@ -73,15 +75,25 @@ class Project:
                 text= prev_name
             )
 
-            if not ok: return
+            if not ok: raise Warning('ввод отменён')
             if not model.get_item_by(CustomDataRole.Name, name) is None:
                 QMessageBox.warning(self.__scene.parent(), 'Ошибка',
                     f'Рруппа синонимов с именем "{name}" уже существует!')
                 prev_name = name
                 name = ''
+        
+        return name
+        
+
+    def __create_synonyms_group(self, model:SynonymsGroupsModel):
+        name:str
+
+        try:
+            name = self.__ask_new_vector_name(model)
+        except Warning:
+            return
 
         s_model = SynonymsSetModel()
-        self.__create_synonym(s_model)
 
         item = ItemData()
         item.on[CustomDataRole.Name] = name
@@ -89,13 +101,48 @@ class Project:
         item.on[CustomDataRole.SynonymsSet] = s_model
         item.on[CustomDataRole.FromState] = None
         item.on[CustomDataRole.ToState] = None
-
         model.prepare_item(item)
         model.insertRow()
 
+        new_vector = LevenshtainVector(Name(name))
+        self.__scenario.inputs().add(new_vector)
+
+        self.__create_synonym(s_model)
+        
+
+    def __get_vector(self, model:SynonymsSetModel) -> LevenshtainVector:
+        group_name: Name = None
+
+        input_vectors_count = self.vectors_model.rowCount()
+        for vector_model_row in range(input_vectors_count):
+            vector_index = self.vectors_model.index(vector_model_row)
+            if not self.vectors_model.data(vector_index, CustomDataRole.SynonymsSet) is model:
+                continue
+
+            group_name = Name(self.vectors_model.data(vector_index, CustomDataRole.Name))
+            break
+        
+        if group_name is None:
+            raise Warning('по модели набора синонимов группа синонимов не найдена')
+        
+        found = self.__scenario.inputs().get([group_name])
+        if len(found) != 1:
+            raise Warning('ошибка получения вектора перехода')
+        
+        vector: LevenshtainVector = found[0]
+
+        if not isinstance(vector, LevenshtainVector):
+             raise Warning('ошибка получения вектора перехода')
+        
+        return vector
+
     def __create_synonym(self, model:SynonymsSetModel):
+        default_value = 'значение'
+
+        self.__get_vector(model).synonyms.append(Synonym(default_value))
+
         item = ItemData()
-        item.on[CustomDataRole.Text] = 'значение'
+        item.on[CustomDataRole.Text] = default_value
         model.prepare_item(item)
         model.insertRow()
 
@@ -148,11 +195,13 @@ class ProjectManager:
         self.__flow_list.setWidget(content, True)
         #content.create_value.connect('''TODO''')
 
-        # создание редактора
+
+        # создание редактора    
         scene = Editor(self.__main_window)
 
-        # создание проекта с пустыми моделями
-        proj = Project(scene, content)
+        # создание проекта
+        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
+        proj = Project(scenario, scene, content)
         content_view.setModel(proj.flows_model)
         scene.setStatesModel(proj.states_model)
 
@@ -162,9 +211,7 @@ class ProjectManager:
         self.__projects[editor] = proj
         self.__workspaces.addTab(editor, dialog.name())
 
-        # наполнение проекта
-        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
-
+        # наполнение представления
         # TODO: log
         print("===== создание Qt моделей проекта =====")
         print("----- СОСТОЯНИЯ -----")

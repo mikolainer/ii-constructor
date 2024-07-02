@@ -10,14 +10,17 @@ class ScenarioFactory:
 
         state_name = Name('Старт')
         input_vector = LevenshtainVector(state_name, [Synonym('Алиса, запусти навык ...')])
+        new_project.inputs().add(input_vector)
         new_project.create_enter(input_vector, state_name)
 
         state_name = Name('Информация')
         input_vector = LevenshtainVector(state_name, [Synonym('Информация'), Synonym('Справка'), Synonym('Расскажи о себе')])
+        new_project.inputs().add(input_vector)
         new_project.create_enter(input_vector, state_name)
 
         state_name = Name('Помощь')
         input_vector = LevenshtainVector(state_name, [Synonym('Помощь'), Synonym('Помоги'), Synonym('Как выйти')])
+        new_project.inputs().add(input_vector)
         new_project.create_enter(input_vector, state_name)
 
         for state in new_project.states().values():
