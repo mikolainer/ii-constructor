@@ -124,6 +124,9 @@ class FlowSynonymsSetDelegate(QStyledItemDelegate):
     def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
         editor.setText(index.data())
 
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
+        model.setData(index, editor.text())
+
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
         data = index.data(CustomDataRole.Text)
         wgt = SynonymEditorWidget(data)

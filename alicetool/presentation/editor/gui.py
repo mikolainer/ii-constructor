@@ -18,6 +18,7 @@ from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
 
 class Project:
     __synonym_create_callback: Callable
+    __connect_synonym_changes_callback: Callable
     __scene: Editor
     __flows_wgt: FlowListWidget
 
@@ -28,6 +29,7 @@ class Project:
     def __init__(
         self,
         synonym_create_callback: Callable,
+        connect_synonym_changes_callback: Callable,
         scene: Editor,
         content: FlowListWidget
     ):
@@ -35,6 +37,7 @@ class Project:
         self.__flows_wgt = content
 
         self.__synonym_create_callback = synonym_create_callback
+        self.__connect_synonym_changes_callback = connect_synonym_changes_callback
 
         self.states_model = StatesModel()
         self.flows_model = FlowsModel()
@@ -106,7 +109,7 @@ class Project:
         model.prepare_item(item)
         model.insertRow()
 
-#        self.__create_synonym(s_model)
+        self.__connect_synonym_changes_callback(s_model)
 
     def __create_synonym(self, model:SynonymsSetModel):
         default_value = 'значение'
@@ -175,6 +178,7 @@ class ProjectManager:
         scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
         proj = Project(
             lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
+            lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
             scene,
             content
         )
@@ -256,13 +260,32 @@ class ProjectManager:
                 self.__on_vector_created_from_gui(scenario, proj.vectors_model.index(first))
         )
 
+        for index in range(proj.vectors_model.rowCount()):
+            s_model:SynonymsSetModel = proj.vectors_model.get_item(index).on[CustomDataRole.SynonymsSet]
+            self.__connect_synonym_changes_from_gui(proj, scenario, s_model)
+
     def __on_vector_created_from_gui(self, scenario: Scenario, new_vector_item: QModelIndex):
         name = new_vector_item.data(CustomDataRole.Name)
         new_vector = LevenshtainVector(Name(name))
         scenario.inputs().add(new_vector)
 
-    def __on_synonym_created_from_gui(self, proj, scenario: Scenario, model:SynonymsSetModel, data: ItemData):
+    # TODO: staticmethod?
+    def __on_synonym_created_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, data: ItemData):
         self.__get_vector_by_model(proj, scenario, model).synonyms.append(Synonym(data.on[CustomDataRole.Text]))
+
+    # TODO: staticmethod?
+    def __connect_synonym_changes_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel):
+        model.dataChanged.connect(
+            lambda topLeft, bottomRight, roles:
+                self.__on_synonym_changed_from_gui(proj, scenario, topLeft, roles)
+        )
+
+    def __on_synonym_changed_from_gui(self, proj:Project, scenario: Scenario, index: QModelIndex, roles: list[int]):
+        if not CustomDataRole.Text in roles:
+            return
+        
+        vector = self.__get_vector_by_model(proj, scenario, index.model())
+        vector.synonyms[index.row()] = index.data(CustomDataRole.Text)
 
     def __get_vector_by_model(self, proj:Project, scenario:Scenario, model:SynonymsSetModel) -> LevenshtainVector:
         group_name: Name = None
