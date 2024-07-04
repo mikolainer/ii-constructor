@@ -1,7 +1,8 @@
 from io import TextIOWrapper
+from typing import Callable
 
 from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox
-from PySide6.QtCore import Slot, Qt
+from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow
 from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
@@ -16,7 +17,7 @@ from alicetool.domain.core.primitives import Name, Description, ScenarioID, Stat
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
 
 class Project:
-    __scenario = Scenario
+    __synonym_create_callback: Callable
     __scene: Editor
     __flows_wgt: FlowListWidget
 
@@ -26,13 +27,14 @@ class Project:
     
     def __init__(
         self,
-        scenario: Scenario,
+        synonym_create_callback: Callable,
         scene: Editor,
         content: FlowListWidget
     ):
-        self.__scenario = scenario
         self.__scene = scene
         self.__flows_wgt = content
+
+        self.__synonym_create_callback = synonym_create_callback
 
         self.states_model = StatesModel()
         self.flows_model = FlowsModel()
@@ -104,47 +106,17 @@ class Project:
         model.prepare_item(item)
         model.insertRow()
 
-        new_vector = LevenshtainVector(Name(name))
-        self.__scenario.inputs().add(new_vector)
-
-        self.__create_synonym(s_model)
-        
-
-    def __get_vector(self, model:SynonymsSetModel) -> LevenshtainVector:
-        group_name: Name = None
-
-        input_vectors_count = self.vectors_model.rowCount()
-        for vector_model_row in range(input_vectors_count):
-            vector_index = self.vectors_model.index(vector_model_row)
-            if not self.vectors_model.data(vector_index, CustomDataRole.SynonymsSet) is model:
-                continue
-
-            group_name = Name(self.vectors_model.data(vector_index, CustomDataRole.Name))
-            break
-        
-        if group_name is None:
-            raise Warning('по модели набора синонимов группа синонимов не найдена')
-        
-        found = self.__scenario.inputs().get([group_name])
-        if len(found) != 1:
-            raise Warning('ошибка получения вектора перехода')
-        
-        vector: LevenshtainVector = found[0]
-
-        if not isinstance(vector, LevenshtainVector):
-             raise Warning('ошибка получения вектора перехода')
-        
-        return vector
+#        self.__create_synonym(s_model)
 
     def __create_synonym(self, model:SynonymsSetModel):
         default_value = 'значение'
-
-        self.__get_vector(model).synonyms.append(Synonym(default_value))
 
         item = ItemData()
         item.on[CustomDataRole.Text] = default_value
         model.prepare_item(item)
         model.insertRow()
+
+        self.__synonym_create_callback(model, item)
 
 class ProjectManager:
     # открытые проекты
@@ -201,7 +173,11 @@ class ProjectManager:
 
         # создание проекта
         scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
-        proj = Project(scenario, scene, content)
+        proj = Project(
+            lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
+            scene,
+            content
+        )
         content_view.setModel(proj.flows_model)
         scene.setStatesModel(proj.states_model)
 
@@ -273,6 +249,46 @@ class ProjectManager:
             proj.flows_model.insertRow()
 
             print(ItemDataSerializer.to_string(item))
+
+        # TODO: привязать обработчики изменений в моделях для добавления данных в сценарий
+        proj.vectors_model.rowsInserted.connect(
+            lambda parent, first, last:
+                self.__on_vector_created_from_gui(scenario, proj.vectors_model.index(first))
+        )
+
+    def __on_vector_created_from_gui(self, scenario: Scenario, new_vector_item: QModelIndex):
+        name = new_vector_item.data(CustomDataRole.Name)
+        new_vector = LevenshtainVector(Name(name))
+        scenario.inputs().add(new_vector)
+
+    def __on_synonym_created_from_gui(self, proj, scenario: Scenario, model:SynonymsSetModel, data: ItemData):
+        self.__get_vector_by_model(proj, scenario, model).synonyms.append(Synonym(data.on[CustomDataRole.Text]))
+
+    def __get_vector_by_model(self, proj:Project, scenario:Scenario, model:SynonymsSetModel) -> LevenshtainVector:
+        group_name: Name = None
+
+        input_vectors_count = proj.vectors_model.rowCount()
+        for vector_model_row in range(input_vectors_count):
+            vector_index = proj.vectors_model.index(vector_model_row)
+            if not proj.vectors_model.data(vector_index, CustomDataRole.SynonymsSet) is model:
+                continue
+
+            group_name = Name(proj.vectors_model.data(vector_index, CustomDataRole.Name))
+            break
+        
+        if group_name is None:
+            raise Warning('по модели набора синонимов группа синонимов не найдена')
+        
+        found = scenario.inputs().get([group_name])
+        if len(found) != 1:
+            raise Warning('ошибка получения вектора перехода')
+        
+        vector: LevenshtainVector = found[0]
+
+        if not isinstance(vector, LevenshtainVector):
+             raise Warning('ошибка получения вектора перехода')
+        
+        return vector
 
     def open_project(self) -> Project:
         pass
