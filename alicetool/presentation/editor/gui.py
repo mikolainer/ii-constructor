@@ -279,6 +279,10 @@ class ProjectManager:
             lambda topLeft, bottomRight, roles:
                 self.__on_synonym_changed_from_gui(proj, scenario, topLeft, roles)
         )
+        model.rowsRemoved.connect(
+            lambda parent,first,last:
+                self.__on_synonym_deleted_from_gui(proj, scenario, model, first)
+        )
 
     def __on_synonym_changed_from_gui(self, proj:Project, scenario: Scenario, index: QModelIndex, roles: list[int]):
         if not CustomDataRole.Text in roles:
@@ -286,6 +290,10 @@ class ProjectManager:
         
         vector = self.__get_vector_by_model(proj, scenario, index.model())
         vector.synonyms[index.row()] = index.data(CustomDataRole.Text)
+
+    def __on_synonym_deleted_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, index: int):
+        vector = self.__get_vector_by_model(proj, scenario, model)
+        vector.synonyms.pop(index)
 
     def __get_vector_by_model(self, proj:Project, scenario:Scenario, model:SynonymsSetModel) -> LevenshtainVector:
         group_name: Name = None
