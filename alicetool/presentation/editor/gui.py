@@ -1,18 +1,18 @@
 from io import TextIOWrapper
-from typing import Callable
+from typing import Callable, Any
 
 from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox
 from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow
+from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, Editor
 from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelectorView, SynonymsEditor, SynonymsGroupsModel
-from alicetool.infrastructure.qtgui.states import Editor, StatesModel
+from alicetool.infrastructure.qtgui.states import StatesModel, StatesControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog
 from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.application.data import ItemDataSerializer
-from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription
+from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription, Output, Answer
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
 
@@ -22,7 +22,7 @@ class Project:
     __scene: Editor
     __flows_wgt: FlowListWidget
 
-    states_model: StatesModel
+    __states_controll: StatesControll
     flows_model: FlowsModel
     vectors_model: SynonymsGroupsModel
     
@@ -30,18 +30,20 @@ class Project:
         self,
         synonym_create_callback: Callable,
         connect_synonym_changes_callback: Callable,
+        states_controll: StatesControll,
         scene: Editor,
         content: FlowListWidget
     ):
+        self.states_controll = states_controll
+        self.flows_model = FlowsModel()
+        self.vectors_model = SynonymsGroupsModel()
+
         self.__scene = scene
         self.__flows_wgt = content
 
         self.__synonym_create_callback = synonym_create_callback
         self.__connect_synonym_changes_callback = connect_synonym_changes_callback
 
-        self.states_model = StatesModel()
-        self.flows_model = FlowsModel()
-        self.vectors_model = SynonymsGroupsModel()
 
     def id(self) -> ScenarioID:
         return self.__id
@@ -171,19 +173,23 @@ class ProjectManager:
         #content.create_value.connect('''TODO''')
 
 
+        # создание проекта
+        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
+
         # создание редактора    
         scene = Editor(self.__main_window)
 
-        # создание проекта
-        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
+        #states_model = StatesModel(self.__main_window)
+        states_controll = StatesControll(lambda state_id, value, role: self.__on_state_changed_from_gui(scenario, state_id, value, role), StatesModel(self.__main_window))
+        
         proj = Project(
             lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
             lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
+            states_controll,
             scene,
             content
         )
         content_view.setModel(proj.flows_model)
-        scene.setStatesModel(proj.states_model)
 
         editor = QGraphicsView(scene, self.__workspaces)
         editor.centerOn(0, 0)
@@ -200,8 +206,9 @@ class ProjectManager:
             item.on[CustomDataRole.Id] = state.id().value
             item.on[CustomDataRole.Name] = state.attributes.name.value
             item.on[CustomDataRole.Text] = state.attributes.output.value.text
-            proj.states_model.prepare_item(item)
-            proj.states_model.insertRow()
+            states_controll.on_insert_node(scene, item)
+            #proj.states_model.prepare_item(item)
+            #proj.states_model.insertRow()
             # TODO: log
             print(ItemDataSerializer.to_string(item))
 
@@ -268,6 +275,25 @@ class ProjectManager:
         name = new_vector_item.data(CustomDataRole.Name)
         new_vector = LevenshtainVector(Name(name))
         scenario.inputs().add(new_vector)
+
+    def __on_state_changed_from_gui(self, scenario:Scenario, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
+        id = StateID(state_id)
+        success = False
+
+        if role == CustomDataRole.Text:
+            old_value = scenario.states([id])[id].attributes.output.value.text
+            if isinstance(value, str):
+                scenario.set_answer(id, Output(Answer(value)))
+                success = True
+
+        elif role == CustomDataRole.Name:
+            old_value = scenario.states([id])[id].attributes.name.value
+            if isinstance(value, str):
+                success = True
+                scenario.states([id])[id].attributes.name = Name(value)
+
+        return old_value, success
+
 
     # TODO: staticmethod?
     def __on_synonym_created_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, data: ItemData):

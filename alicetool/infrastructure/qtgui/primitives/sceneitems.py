@@ -465,6 +465,9 @@ class SceneNode(QGraphicsProxyWidget):
         wgt: NodeWidget = super().widget()
         wgt.setWidget(widget)
     
+    def wrapper_widget(self) -> 'NodeWidget':
+        return super().widget()
+
     def widget(self) -> QWidget:
         ''' Возвращает виджет из обёртки '''
         wgt: NodeWidget = super().widget()
@@ -560,6 +563,8 @@ class NodeWidget(QWidget):
     __close_btn: EnterDetectionButton
     __content: QScrollArea
     __item_on_scene: SceneNode | None
+
+    title_changed = Signal(str)
     
     def __init__(self, title: str, parent = None):
         super().__init__(parent)
@@ -627,6 +632,7 @@ class NodeWidget(QWidget):
         ''' Устанавливает заголовок. Прямое использование не ожидается (обрабатывается в SceneNode) '''
         self.__title.setText(text)
         self.__title.setToolTip(text)
+        self.title_changed.emit(text)
 
     def setWidget(self, widget: QWidget) -> None:
         ''' Устанавливает содержимое. Прямое использование не ожидается (обрабатывается в SceneNode) '''
@@ -651,3 +657,31 @@ class NodeWidget(QWidget):
     def on_close_btn_mouse_enter(self):
         if not self.__item_on_scene is None:
             self.__item_on_scene.show_tools()
+
+class Editor(QGraphicsScene):
+    __START_SIZE = QRect(0, 0, 2000, 2000)
+    START_SPACINS = 30
+
+    def __init__(self, parent: Optional[QObject]):
+        super().__init__(parent)
+        self.setSceneRect(self.__START_SIZE)
+        self.setBackgroundBrush(QColor("#DDDDDD"))
+        #self.addNode(QPoint(100, 100), QTextEdit())
+
+    def addNode(self, pos:QPoint, content:QWidget = None) -> SceneNode:
+        ''' Добавляет вершину графа на сцену '''
+        node = SceneNode(self)
+        
+        if not content is None:
+            node.setWidget(content)
+        
+        x = pos.x()
+        if x < 0: x = 0
+
+        y = pos.y()
+        if y < 0: y = 0
+
+        # TODO: по умолчанию под указателем мыши
+        node.setPos(x, y)
+
+        return node

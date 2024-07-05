@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable, Any
 
 from PySide6.QtCore import (
     Qt,
@@ -21,10 +21,8 @@ from PySide6.QtWidgets import (
     QGraphicsSceneMouseEvent,
 )
 
-from alicetool.infrastructure.qtgui.data import ItemData
-
-from .primitives.sceneitems import Arrow, SceneNode, NodeWidget
-from .data import CustomDataRole, BaseModel
+from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
+from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel
 
 class ConnectionsModel(BaseModel):
     def __init__(self, parent: QObject | None = None) -> None:
@@ -56,103 +54,101 @@ class StatesModel(BaseModel):
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-
-class Editor(QGraphicsScene):
-    __START_SIZE = QRect(0, 0, 2000, 2000)
-    __START_SPACINS = 30
-
-    ''' Сцена состояний и переходов сценария '''
-    __model: Optional[StatesModel]
-
-    def __init__(self, parent: Optional[QObject]):
-        super().__init__(parent)
-        self.setSceneRect(self.__START_SIZE)
-        self.setBackgroundBrush(QColor("#DDDDDD"))
-        #self.addNode(QPoint(100, 100), QTextEdit())
-        self.__model = None
     
-    def setStatesModel(self, model: StatesModel):
-        ''' Устанавливает модель для регистрации и отслеживания изменений состояний и связей. (на сцене и в источнеике данных) '''
+class StatesControll:
+    # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
+    __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
+
+    __model: StatesModel
+
+    def __init__(self, change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], model:StatesModel) -> None:
+        self.__change_data_callback = change_data_callback
         self.__model = model
 
-        for row in range(model.rowCount()):
-            state_id = self.__model.data(self.__model.index(row), CustomDataRole.Id)
-            state_name = self.__model.data(self.__model.index(row), CustomDataRole.Name)
-            state_text = self.__model.data(self.__model.index(row), CustomDataRole.Text)
-            # TODO: initStateConnections
-            # TODO: initStatePos
-            pos = QPoint(
-                NodeWidget.START_WIDTH * (state_id) +
-                self.__START_SPACINS * (state_id+1),
-                self.__START_SPACINS
-            )
+    def __find_in_model(self, node:SceneNode) -> QModelIndex:
+        for row in range(self.__model.rowCount()):
+            if self.__model.data(self.__model.index(row), CustomDataRole.Node) is node:
+                return self.__model.index(row)
+        
+        return QModelIndex()
 
-            node = self.__addNode(pos)
-            node.set_title(state_name)
-            
-            content = QTextEdit()
-            content.setText(state_text)
-            node.setWidget(content)
-
-            self.__model.setData(self.__model.index(row), node, CustomDataRole.Node)
-
-        self.__connect_model_signals()
-
-    def __connect_model_signals(self):
-        if self.__model is None:
+    def __state_content_changed_handler(self, node:SceneNode):
+        ''' по изменениям на сцене изменить модель '''
+        model_index = self.__find_in_model(node)
+        if not model_index.isValid():
             return
         
-        self.__model.rowsInserted.connect(self.on_state_added)
-        self.__model.rowsRemoved.connect(self.on_state_removed)
-        self.__model.dataChanged.connect(self.on_state_changed)
+        editor: QTextEdit = node.widget()
 
-    @Slot(QModelIndex,int,int)
-    def on_state_added(self, parent: QModelIndex, first: int, last: int):
-        row = first
-        state_id = self.__model.data(self.__model.index(row), CustomDataRole.Id)
-        state_name = self.__model.data(self.__model.index(row), CustomDataRole.Name)
-        state_text = self.__model.data(self.__model.index(row), CustomDataRole.Text)
+        id = model_index.data(CustomDataRole.Id)
+        role = CustomDataRole.Text
+        new_value = editor.toPlainText()
+        success, old_value = self.__change_data_callback(id, new_value, role)
+        self.__model.setData(model_index, new_value if success else old_value, role)
+        if not success: self.__model.setData(model_index, old_value, role)
 
+    def __state_title_changed_handler(self, node:SceneNode, new_title:str):
+        ''' по изменениям на сцене изменить модель '''
+        model_index = self.__find_in_model(node)
+        if not model_index.isValid():
+            return
+        
+        id = model_index.data(CustomDataRole.Id)
+        role = CustomDataRole.Name
+        new_value = new_title
+        success, old_value = self.__change_data_callback(id, new_value, role)
+        self.__model.setData(model_index, new_value if success else old_value, role)
+        if not success: self.__model.setData(model_index, old_value, role)
+
+    def on_set_data(self, node:SceneNode, value:Any, role:int):
+        ''' по изменениям в сценарии изменить модель и сцену '''
+        model_index = self.__find_in_model(node)
+        if not model_index.isValid():
+            return
+        
+        if role == CustomDataRole.Name:
+            node.set_title(value)
+        elif role == CustomDataRole.Text:
+            content: QTextEdit = node.widget()
+            content.setPlainText(value)
+        
+        self.__model.setData(model_index, value, role)
+
+    def on_insert_node(self, scene: Editor, data:ItemData):
+        ''' по изменениям в сценарии изменить модель и добавить элемент сцены '''
+        # должно быть установлено
+        state_id = data.on[CustomDataRole.Id]
+        state_name = data.on[CustomDataRole.Name]
+        state_text = data.on[CustomDataRole.Text]
+
+        # TODO: обрабатывать сохранённый layout
         pos = QPoint(
             NodeWidget.START_WIDTH * (state_id) +
-            self.__START_SPACINS * (state_id+1),
-            self.__START_SPACINS
+            scene.START_SPACINS * (state_id+1),
+            scene.START_SPACINS
         )
-
-        node = self.__addNode(pos)
-        node.set_title(state_name)
         
+        # создаём элемент сцены
         content = QTextEdit()
+        node = scene.addNode(pos, content)
         content.setText(state_text)
-        node.setWidget(content)
+        node.set_title(state_name)
+
+        # связываем элемент сцены с элементом модели
+        data.on[CustomDataRole.Node] = node
+
+        # обновляем модель
+        self.__model.prepare_item(data)
+        self.__model.insertRow()
+
+        content.textChanged.connect(lambda: self.__state_content_changed_handler(node))
+        node.wrapper_widget().title_changed.connect(lambda title: self.__state_title_changed_handler(node, title))
+
+    def on_remove_node(self, scene: Editor, node:SceneNode):
+        ''' по изменениям в сценарии изменить модель и удалить элемент сцены '''
         
-        self.__model.setData(self.__model.index(row), node, CustomDataRole.Node)
-    
-    @Slot(QModelIndex,int,int)
-    def on_state_removed(self, parent: QModelIndex, first: int, last: int):
-        row = first
-        node = self.__model.data(self.__model.index(row), CustomDataRole.Node)
-        # TODO: удалить все стрелочки
-        self.removeItem(node)
+        model_index = self.__find_in_model(node)
+        if model_index.isValid():
+            self.__model.removeRow(model_index.row())
 
-    @Slot(QModelIndex,QModelIndex,list)
-    def on_state_changed(self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: list[int]):
-        pass
-
-    def __addNode(self, pos:QPoint, content:QWidget = None) -> SceneNode:
-        ''' Добавляет вершину графа на сцену '''
-        node = SceneNode(self)
-        
-        if not content is None:
-            node.setWidget(content)
-        
-        x = pos.x()
-        if x < 0: x = 0
-
-        y = pos.y()
-        if y < 0: y = 0
-
-        # TODO: по умолчанию под указателем мыши
-        node.setPos(x, y)
-
-        return node
+        scene.removeItem(node)
