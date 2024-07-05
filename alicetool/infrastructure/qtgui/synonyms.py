@@ -47,6 +47,7 @@ from PySide6.QtWidgets import (
     QListView,
     QTableView,
     QHeaderView,
+    QMessageBox,
     QPushButton,
     QListView,
     QHBoxLayout,
@@ -61,7 +62,12 @@ from .primitives.widgets import SynonymEditorWidget
 
 class SynonymsGroupsModel(BaseModel):
     ''' Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов '''
+
+    __check_can_remove_vector_callback: Callable
+
     def __init__( self, parent: QObject | None = None) -> None:
+        self.__check_can_remove_vector_callback = lambda vector_index: False
+
         super().__init__(parent)
         self._data_init(
             index_roles=[CustomDataRole.Name],
@@ -70,6 +76,16 @@ class SynonymsGroupsModel(BaseModel):
                 CustomDataRole.SynonymsSet
             ]
         )
+
+    def set_check_can_remove_vector_callback(callback: Callable):
+        ''' callback берёт QModelIndex, проверяет используется ли где-то соответствующий вектор и возвращает bool (true = не используется т.е. можно удалять) '''
+        __check_can_remove_vector_callback = callback
+
+    def removeRows(self, row: int, count: int = None, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
+        if not self.__check_can_remove_vector_callback(self.index(row)):
+            return False
+        
+        return super().removeRows(row, count, parent)
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
@@ -145,7 +161,8 @@ class SynonymsGroupsView(QListView):
 
     def remove_selected_row(self):
         for index in self.selectedIndexes():
-            self.model().removeRow(index.row())
+            if not self.model().removeRow(index.row()):
+                QMessageBox.warning(self, 'Невозможно выполнить', 'Невозможно удалить выбранный вектор. Он используется в существующих переходах!')
 
     def selectionChanged(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         self.on_selectionChanged.emit(selected, deselected)
