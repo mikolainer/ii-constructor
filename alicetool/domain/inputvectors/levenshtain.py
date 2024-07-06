@@ -26,11 +26,11 @@ class LevenshtainVectorSerializer(BaseSerializer):
         
         synonyms = SynonymsSetModel()
         for value in obj.synonyms:
-            synonym = ItemData
-            synonym.on[CustomDataRole.Text] = value
-            #synonyms.prepare_item(synonym)
-            #synonyms.insertRow()
-            synonyms.add_item(synonym)
+            synonym = ItemData()
+            synonym.on[CustomDataRole.Text] = value.value
+            synonyms.prepare_item(synonym)
+            synonyms.insertRow()
+            #synonyms.add_item(synonym)
         item.on[CustomDataRole.SynonymsSet] = synonyms
         
         return item

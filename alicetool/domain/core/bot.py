@@ -55,7 +55,6 @@ class State:
 
 @dataclass
 class Step:
-    name: Name
     input: 'InputDescription'
     connection: Optional['Connection'] = None
 
@@ -90,7 +89,7 @@ class Scenario:
 
     __new_state_id: int
     __states: dict[StateID, State]
-    __connections: dict[str, dict] # ключи: 'from', 'to'; значения: dict[StateID, Connection]
+    __connections: dict[str, dict] # ключи: 'from', 'to'; значения: <to> dict[StateID, Connection], <from> dict[StateID, list[Connection]]
     __input_vectors: PossibleInputs
 
     def __init__(self, name:Name, description: Description, host: str = None, id: ScenarioID = None, states: dict[StateID, State] = {}) -> None:
@@ -108,15 +107,6 @@ class Scenario:
         self.__new_state_id = self.__new_state_id + 1
         self.__states[new_state.id()] = new_state
         return new_state
-    
-    def __find_connection(self, from_state_id: Optional[StateID] = None, to_state_id: Optional[StateID] = None) -> Optional[Connection]:
-        if (not to_state_id is None and from_state_id in self.__connections['from']):
-            return self.__connections['from'][from_state_id]
-        
-        elif (not to_state_id is None and from_state_id in self.__connections['to']):
-            return self.__connections['to'][from_state_id]
-        
-        return None
 
     def set_answer(self, state_id:StateID, data:Output):
         self.__states[state_id].attributes.output = data
@@ -127,8 +117,6 @@ class Scenario:
     def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription, input_name:Optional[Name] = None):
         state_from = self.__states[from_state_id]
         state_to:State
-        
-        conn = self.__find_connection(from_state_id=from_state_id)
 
         if isinstance(to_state, StateID):
             state_to = self.__states[to_state]
@@ -137,13 +125,15 @@ class Scenario:
             state_to = self.__create_state()
             state_to.attributes = to_state
 
-        step_name = Name(f'шаг из "{state_from.attributes.name.value}" в "{state_to.name.value}"') if input_name is None else input_name
-        conn.steps.append(Step(step_name, input))
-            
+        conn = Connection(state_from, state_to, [])
+        conn.steps.append(Step(input, conn))
+
+        if from_state_id in self.__connections['from'].keys():
+            self.__connections['from'][from_state_id].append(conn)
+        else:
+            self.__connections['from'][from_state_id] = [conn]
 
     def remove_step(self, from_state_id:StateID, input:InputDescription):
-        conn = self.__find_connection(from_state_id=from_state_id)
-
         '''
         TODO: добавить индексацию Step в Connection
         по ролям InputDescription когда они появятся
@@ -152,36 +142,44 @@ class Scenario:
         в зависимости от типа управляющего сигнала
         (кнопка / голос / текст / строгая команда в стиле CLI и т.д.)
         '''
-        for step in conn.steps:
-            if step.input == input:
-                conn.steps.remove(step)
-                break
 
-        if len(conn.steps) == 0:
-            self.__connections['from'].pop(from_state_id)
+        if not from_state_id in self.__connections['from'].keys():
+            return # возможо стоит бросить исключение
+
+        for conn in self.__connections['from'][from_state_id]:
+            for step in conn.steps:
+                if step.input == input:
+                    conn.steps.remove(step)
+                    
+                    if len(conn.steps) == 0:
+                        self.__connections['from'][from_state_id].pop(conn)
+                    
+                    if len(self.__connections['from'][from_state_id]) == 0:
+                        self.__connections['from'].pop(from_state_id)
+                    
+                    return
 
     def create_enter(self, input:InputDescription, state:Optional[StateID | Name]):
         state_to: State
-
-        conn:Connection = None
         if isinstance(state, StateID):
             state_to = self.__states[state]
-            conn = self.__find_connection(to_state_id=state)
         else:
             state_to = self.__create_state()
-
-        if isinstance(state, Name):
             state_to.attributes.name = state
 
-        #step_name = Name(f'вход в "{state_to.attributes.name.value}"')
-        step_name = Name(state_to.attributes.name.value)
-        step = Step(step_name, input)
-
-        if conn is None:
-            conn = Connection(None, state_to, [step])
-            self.__connections['to'][state_to.id()] = conn
+        conn: Connection
+        state_to_id = state_to.id()
+        if state_to_id in self.__connections['to']:
+            conn = self.__connections['to'][state_to_id]
         else:
-            conn.steps.append(step)
+            conn = Connection(None, state_to, [])
+            self.__connections['to'][state_to_id] = conn
+
+        for step in conn.steps:
+            if step.input == input:
+                return # возможно стоит бросить исключение
+
+        conn.steps.append(Step(input, conn))
 
     def remove_enter(self, state_id:StateID):
         conn = self.__find_connection(to_state_id=state_id)
@@ -201,20 +199,34 @@ class Scenario:
             states[id] = self.__states[id]
         
         return states
-
-    def steps(self, from_state_id:StateID, to_state_id:StateID = None) -> list[Step]:
-        conn = self.__find_connection(from_state_id, to_state_id)
-        return [] if conn is None else conn.steps
     
-    def enters(self) -> list[Connection]:
-        return list(self.__connections['to'].values())
-    
-    def connections(self) -> list[Connection]:
-        all_connections = list(self.__connections['from'].values()).copy()
-        for conn in self.__connections['to'].values():
-            all_connections.append(conn)
+    def __find_connections_to(self, state_id:StateID) -> list[Connection]:
+        result = list[Connection]()
+        for connections in self.__connections['from'].values():
+            for conn in connections:
+                to_state:State = conn.to_state
+                if not to_state is None and to_state.id() == state_id:
+                    result.append(conn)
 
-        return all_connections
+        return result
+
+    def steps(self, state_id:StateID) -> list[Step]:
+        result = list[Step]()
+        
+        if state_id in self.__connections['from'].keys():
+            for conn in self.__connections['from'][state_id]:
+                for step in conn.steps:
+                    result.append(step)
+        
+        if state_id in self.__connections['to'].keys():
+            for step in self.__connections['to'][state_id].steps:
+                result.append(step)
+        
+        for conn in self.__find_connections_to(state_id):
+            for step in conn.steps:
+                result.append(step)
+
+        return list(result)
 
     def inputs(self) -> PossibleInputs:
         return self.__input_vectors

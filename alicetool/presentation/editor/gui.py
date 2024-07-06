@@ -14,7 +14,7 @@ from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.application.data import ItemDataSerializer
 from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription, Output, Answer
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
 
 class Project:
     __synonym_create_callback: Callable
@@ -34,7 +34,7 @@ class Project:
         scene: Editor,
         content: FlowListWidget
     ):
-        self.states_controll = states_controll
+        self.__states_controll = states_controll
         self.flows_model = FlowsModel()
         self.vectors_model = SynonymsGroupsModel()
 
@@ -106,8 +106,6 @@ class Project:
         item.on[CustomDataRole.Name] = name
         item.on[CustomDataRole.Description] = ""
         item.on[CustomDataRole.SynonymsSet] = s_model
-        item.on[CustomDataRole.FromState] = None
-        item.on[CustomDataRole.ToState] = None
         model.prepare_item(item)
         model.insertRow()
 
@@ -122,6 +120,9 @@ class Project:
         model.insertRow()
 
         self.__synonym_create_callback(model, item)
+
+    def scene(self) -> Editor:
+        return self.__scene
 
 class ProjectManager:
     # открытые проекты
@@ -161,115 +162,111 @@ class ProjectManager:
         self.__workspaces.setCurrentWidget(proj.editor())
         self.__flow_list.setCurrentWidget(proj.content())
 
-    def create_project(self) -> Project:
-        dialog = NewProjectDialog(self.__main_window)
-        if dialog.exec() == QDialog.DialogCode.Rejected:
-            return
-
-        # создание содержания (список точек входа)
-        content_view = FlowsView(self.__flow_list)
-        content = FlowListWidget(content_view)
-        self.__flow_list.setWidget(content, True)
-        #content.create_value.connect('''TODO''')
-
-
-        # создание проекта
-        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
-
-        # создание редактора    
-        scene = Editor(self.__main_window)
-
-        #states_model = StatesModel(self.__main_window)
-        states_controll = StatesControll(lambda state_id, value, role: self.__on_state_changed_from_gui(scenario, state_id, value, role), StatesModel(self.__main_window))
+    def __open_project(self, scenario: Scenario):
+        # создание обработчика изменений на сцене
+        states_controll = StatesControll(
+            lambda state_id, value, role:
+                self.__on_state_changed_from_gui(scenario, state_id, value, role),
+            
+            StatesModel(self.__main_window)
+        )
         
+        # создание объекта взаимодействий с проектом
+        content_view = FlowsView(self.__flow_list)
         proj = Project(
             lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
             lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
             states_controll,
-            scene,
-            content
+            Editor(self.__main_window),
+            FlowListWidget(content_view)
         )
+
+        ### прикрепление оторбражений к данным и размещение в главном меню
+        ## содержание
         content_view.setModel(proj.flows_model)
+        self.__flow_list.setWidget(proj.content(), True)
+        #proj.content().create_value.connect('''TODO''')
 
-        editor = QGraphicsView(scene, self.__workspaces)
+        ## редактор
+        editor = QGraphicsView(proj.scene(), self.__workspaces)
         editor.centerOn(0, 0)
+        self.__projects[editor] = proj # вожно добавить перед addTab() для коттектной работы слота "current_changed"
+        self.__workspaces.addTab(editor, scenario.name.value)
 
-        self.__projects[editor] = proj
-        self.__workspaces.addTab(editor, dialog.name())
+        ### векторы переходов
+        ## наполнение представления
+        for vector in scenario.inputs().get():
+            # пока только левенштейн
+            serialiser = LevenshtainVectorSerializer()
 
-        # наполнение представления
-        # TODO: log
-        print("===== создание Qt моделей проекта =====")
-        print("----- СОСТОЯНИЯ -----")
-        for state in scenario.states().values():
-            item = ItemData()
-            item.on[CustomDataRole.Id] = state.id().value
-            item.on[CustomDataRole.Name] = state.attributes.name.value
-            item.on[CustomDataRole.Text] = state.attributes.output.value.text
-            states_controll.on_insert_node(scene, item)
-            #proj.states_model.prepare_item(item)
-            #proj.states_model.insertRow()
-            # TODO: log
-            print(ItemDataSerializer.to_string(item))
+            if isinstance(vector, LevenshtainVector):
+                vector_item = serialiser.to_data(vector)
+                proj.vectors_model.prepare_item(vector_item)
+                proj.vectors_model.insertRow()
 
-        # TODO: log
-        print("----- ВЕКТОРЫ -----")
-        for conn in scenario.connections():
-            for step in conn.steps:
-                if isinstance(step.input, LevenshtainVector):
-                    s_model = SynonymsSetModel(self.__main_window)
-                    for synonym in step.input.synonyms:
-                        item = ItemData()
-                        item.on[CustomDataRole.Text] = synonym.value
-                        s_model.prepare_item(item)
-                        s_model.insertRow()
-                    
-                    item = ItemData()
-                    item.on[CustomDataRole.Name] = step.name.value
-                    item.on[CustomDataRole.Description] = ""
-                    item.on[CustomDataRole.SynonymsSet] = s_model
-                    item.on[CustomDataRole.FromState] = None if conn.from_state is None else conn.from_state.id().value
-                    item.on[CustomDataRole.ToState] = conn.to_state.id().value
-                    
-                    proj.vectors_model.prepare_item(item)
-                    proj.vectors_model.insertRow()
-                    # TODO: log
-                    print(ItemDataSerializer.to_string(item))
-
-        # модель точек входа
-        # TODO: log
-
-        print("----- ПОТОКИ -----")
-        for index in range(proj.vectors_model.rowCount()):
-            vector_data = proj.vectors_model.get_item(index)
-            if not vector_data.on[CustomDataRole.FromState] is None:
-                continue
-            
-            s_model:SynonymsSetModel = vector_data.on[CustomDataRole.SynonymsSet]
-            id = StateID(vector_data.on[CustomDataRole.ToState])
-            state = scenario.states([id])[id]
-
-            item = ItemData()
-            item.on[CustomDataRole.Name] = state.attributes.name.value
-            item.on[CustomDataRole.Description] = state.attributes.desrciption.value
-            item.on[CustomDataRole.SynonymsSet] = s_model
-            item.on[CustomDataRole.EnterStateId] = state.id().value
-            item.on[CustomDataRole.SliderVisability] = False
-
-            proj.flows_model.prepare_item(item)
-            proj.flows_model.insertRow()
-
-            print(ItemDataSerializer.to_string(item))
-
-        # TODO: привязать обработчики изменений в моделях для добавления данных в сценарий
+                synonyms_model:SynonymsSetModel = vector_item.on[CustomDataRole.SynonymsSet]
+                self.__connect_synonym_changes_from_gui(proj, scenario, synonyms_model)
+        
+        ## обработчик изменений
         proj.vectors_model.rowsInserted.connect(
             lambda parent, first, last:
                 self.__on_vector_created_from_gui(scenario, proj.vectors_model.index(first))
         )
 
-        for index in range(proj.vectors_model.rowCount()):
-            s_model:SynonymsSetModel = proj.vectors_model.get_item(index).on[CustomDataRole.SynonymsSet]
-            self.__connect_synonym_changes_from_gui(proj, scenario, s_model)
+        ### сцена (состояния и переходы)
+        ## наполнение представления
+        for state in scenario.states().values():
+            input_item: ItemData = None
+
+            # подготовка шагов для модели состояний
+            steps = list[ItemData]()
+            for step in scenario.steps(state.id()):
+                conn = step.connection
+                if conn is None:
+                    continue # TODO: проверить. вообще-то не норм ситуация
+                step_item = ItemData()
+                step_item.on[CustomDataRole.FromState] = step.connection.to_state
+                step_item.on[CustomDataRole.ToState] = step.connection.from_state
+                vector_data = proj.vectors_model.get_item_by(
+                    CustomDataRole.Name, step.input.name()
+                )
+                s_model = vector_data.on[CustomDataRole.SynonymsSet]
+                step_item.on[CustomDataRole.SynonymsSet] = s_model
+
+                steps.append(step_item)
+
+                if step.connection.from_state is None:
+                    # формирование элемента модели содержания
+                    input_item = ItemData()
+                    input_item.on[CustomDataRole.Name] = state.attributes.name.value
+                    input_item.on[CustomDataRole.Description] = state.attributes.desrciption.value
+                    input_item.on[CustomDataRole.SynonymsSet] = s_model
+                    input_item.on[CustomDataRole.EnterStateId] = state.id().value
+                    input_item.on[CustomDataRole.SliderVisability] = False
+            
+            # формирование элемента модели состояний
+            item = ItemData()
+            item.on[CustomDataRole.Id] = state.id().value
+            item.on[CustomDataRole.Name] = state.attributes.name.value
+            item.on[CustomDataRole.Text] = state.attributes.output.value.text
+            item.on[CustomDataRole.Steps] = steps
+
+            # добавление элемента модели состояний
+            states_controll.on_insert_node(proj.scene(), item)
+
+            # добавление элемента модели содержания
+            if not input_item is None:
+                proj.flows_model.prepare_item(input_item)
+                proj.flows_model.insertRow()
+
+    def create_project(self) -> Project:
+        dialog = NewProjectDialog(self.__main_window)
+        if dialog.exec() == QDialog.DialogCode.Rejected:
+            return
+
+        # создание проекта
+        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
+        self.__open_project(scenario)
 
     def __on_vector_created_from_gui(self, scenario: Scenario, new_vector_item: QModelIndex):
         name = new_vector_item.data(CustomDataRole.Name)

@@ -24,21 +24,6 @@ from PySide6.QtWidgets import (
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
 from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel
 
-class ConnectionsModel(BaseModel):
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-
-        roles: list[CustomDataRole] = [
-            CustomDataRole.FromState,
-            CustomDataRole.ToState,
-            CustomDataRole.SynonymsSet,
-        ]
-
-        self._data_init(required_roles=roles)
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-
 class StatesModel(BaseModel):
     ''' Модель состояний. Для обработки сценой (Editor) '''
     def __init__( self, parent: QObject | None = None) -> None:
@@ -50,7 +35,7 @@ class StatesModel(BaseModel):
             CustomDataRole.Text
         ]
 
-        self._data_init(required_roles=roles)
+        self._data_init(index_roles=roles)
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
