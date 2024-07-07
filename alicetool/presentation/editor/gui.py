@@ -226,8 +226,9 @@ class ProjectManager:
                 if conn is None:
                     continue # вообще-то не норм ситуация. возможно стоит бросать исключение
                 step_item = ItemData()
-                step_item.on[CustomDataRole.FromState] = step.connection.to_state
-                step_item.on[CustomDataRole.ToState] = step.connection.from_state
+
+                step_item.on[CustomDataRole.FromState] = None if step.connection.from_state is None else step.connection.from_state.id().value
+                step_item.on[CustomDataRole.ToState] = step.connection.to_state.id().value
                 vector_data = proj.vectors_model.get_item_by(
                     CustomDataRole.Name, step.input.name().value
                 )
@@ -255,6 +256,8 @@ class ProjectManager:
 
             # добавление элемента модели состояний
             states_controll.on_insert_node(proj.scene(), item, input_items)
+
+        states_controll.init_arrows(proj.scene())
 
     def create_project(self) -> Project:
         dialog = NewProjectDialog(self.__main_window)

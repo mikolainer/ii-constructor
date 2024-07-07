@@ -1,4 +1,5 @@
 from typing import Optional, Callable, Any
+from dataclasses import dataclass
 
 from PySide6.QtCore import (
     Qt,
@@ -22,7 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
-from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel
+from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
 from alicetool.infrastructure.qtgui.flows import FlowsModel
 
 class StatesModel(BaseModel):
@@ -42,16 +43,26 @@ class StatesModel(BaseModel):
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
 class StatesControll:
+    @dataclass
+    class __Connection:
+        arrow: Arrow
+        node_from: SceneNode
+        node_to: SceneNode
+        input: SynonymsSetModel
+
     # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
     __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
 
     __states_model: StatesModel
     __flows_model: FlowsModel
 
+    __arrows: dict[Arrow, list[__Connection]] # values is list[__Connection]
+
     def __init__(self, change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], states_model:StatesModel, flows_model: FlowsModel) -> None:
         self.__change_data_callback = change_data_callback
         self.__states_model = states_model
         self.__flows_model = flows_model
+        self.__arrows = {}
 
     def __find_in_model(self, node:SceneNode) -> QModelIndex:
         for row in range(self.__states_model.rowCount()):
@@ -107,8 +118,7 @@ class StatesControll:
 
         # добавление элемента модели содержания
         for enter in enter_data:
-            self.__flows_model.prepare_item(enter)
-            self.__flows_model.insertRow()
+            self.on_add_enter(enter)
 
         # должно быть установлено
         state_id = data.on[CustomDataRole.Id]
@@ -137,6 +147,62 @@ class StatesControll:
 
         content.textChanged.connect(lambda: self.__state_content_changed_handler(node))
         node.wrapper_widget().title_changed.connect(lambda title: self.__state_title_changed_handler(node, title))
+
+    def init_arrows(self, scene:Editor):
+        for row in range(self.__states_model.rowCount()):
+            state_index = self.__states_model.index(row)
+
+            node_from:SceneNode = state_index.data(CustomDataRole.Node)
+            
+            for step_item in state_index.data(CustomDataRole.Steps):
+                ''' step_item.on[CustomDataRole.<...>]
+                FromState - id состояния (int) или None
+                ToState - id cocтояния (int)
+                SynonymsSet - input (SynonymsSetModel)
+                '''
+                step_input = step_item.on[CustomDataRole.SynonymsSet]
+
+                if step_item.on[CustomDataRole.FromState] != state_index.data(CustomDataRole.Id): continue
+
+                node_to = self.__states_model.get_item_by(
+                    CustomDataRole.Id, step_item.on[CustomDataRole.ToState]
+                ).on[CustomDataRole.Node]
+
+                self.on_add_step(scene, step_input, node_from, node_to)
+
+    def __find_arrow(self, from_node: SceneNode, to_node: SceneNode) -> Optional[Arrow]:
+        ''' ищет связь между элементами сцены '''
+        for connections in self.__arrows.values():
+            for conn in connections:
+                if conn.node_from == from_node and conn.node_to == to_node:
+                    return conn.arrow
+                
+        return None
+
+    def on_add_step(self, scene: Editor, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
+        ''' добавляет связь между объектами сцены и вектором перехода '''
+        arrow = self.__find_arrow(from_node, to_node)
+
+        if arrow is None:
+            arrow = Arrow()
+            scene.addItem(arrow)
+            from_node.arrow_connect_as_start(arrow)
+            to_node.arrow_connect_as_end(arrow)
+
+        self.__arrows[arrow] = [self.__Connection(arrow, from_node, to_node, input)]
+
+    def on_remove_step(self, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
+        ''' удаляет связь между объектами сцены и вектором перехода '''
+        pass
+
+    def on_add_enter(self, enter: ItemData):
+        ''' добавляет элемент содержания '''
+        self.__flows_model.prepare_item(enter)
+        self.__flows_model.insertRow()
+
+    def on_remove_enter(self, node:SceneNode):
+        ''' удаляет элемент содержания связанный с объектом сцены '''
+        pass
 
     def on_remove_node(self, scene: Editor, node:SceneNode):
         ''' по изменениям в сценарии изменить модель и удалить элемент сцены '''
