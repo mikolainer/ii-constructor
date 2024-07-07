@@ -23,7 +23,6 @@ class Project:
     __flows_wgt: FlowListWidget
 
     __states_controll: StatesControll
-    flows_model: FlowsModel
     vectors_model: SynonymsGroupsModel
     
     def __init__(
@@ -35,7 +34,6 @@ class Project:
         content: FlowListWidget
     ):
         self.__states_controll = states_controll
-        self.flows_model = FlowsModel()
         self.vectors_model = SynonymsGroupsModel()
 
         self.__scene = scene
@@ -162,35 +160,37 @@ class ProjectManager:
         self.__workspaces.setCurrentWidget(proj.editor())
         self.__flow_list.setCurrentWidget(proj.content())
 
+
     def __open_project(self, scenario: Scenario):
+        content_view = FlowsView(self.__flow_list)
+        flows_model = FlowsModel(self.__main_window)
+        content_view.setModel(flows_model)
+        content_wgt = FlowListWidget(content_view)
+        self.__flow_list.setWidget(content_wgt, True)
+        #content_wgt.create_value.connect('''TODO''')
+        
         # создание обработчика изменений на сцене
         states_controll = StatesControll(
             lambda state_id, value, role:
                 self.__on_state_changed_from_gui(scenario, state_id, value, role),
             
-            StatesModel(self.__main_window)
+            StatesModel(self.__main_window),
+            flows_model
         )
         
         # создание объекта взаимодействий с проектом
-        content_view = FlowsView(self.__flow_list)
+        
         proj = Project(
             lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
             lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
             states_controll,
             Editor(self.__main_window),
-            FlowListWidget(content_view)
+            content_wgt
         )
 
-        ### прикрепление оторбражений к данным и размещение в главном меню
-        ## содержание
-        content_view.setModel(proj.flows_model)
-        self.__flow_list.setWidget(proj.content(), True)
-        #proj.content().create_value.connect('''TODO''')
-
-        ## редактор
         editor = QGraphicsView(proj.scene(), self.__workspaces)
         editor.centerOn(0, 0)
-        self.__projects[editor] = proj # вожно добавить перед addTab() для коттектной работы слота "current_changed"
+        self.__projects[editor] = proj # важно добавить перед addTab() для коттектной работы слота "current_changed"
         self.__workspaces.addTab(editor, scenario.name.value)
 
         ### векторы переходов
@@ -201,6 +201,7 @@ class ProjectManager:
 
             if isinstance(vector, LevenshtainVector):
                 vector_item = serialiser.to_data(vector)
+                vector_item.on[CustomDataRole.Description] = ''
                 proj.vectors_model.prepare_item(vector_item)
                 proj.vectors_model.insertRow()
 
@@ -216,19 +217,19 @@ class ProjectManager:
         ### сцена (состояния и переходы)
         ## наполнение представления
         for state in scenario.states().values():
-            input_item: ItemData = None
+            input_items = list[ItemData]()
 
             # подготовка шагов для модели состояний
             steps = list[ItemData]()
             for step in scenario.steps(state.id()):
                 conn = step.connection
                 if conn is None:
-                    continue # TODO: проверить. вообще-то не норм ситуация
+                    continue # вообще-то не норм ситуация. возможно стоит бросать исключение
                 step_item = ItemData()
                 step_item.on[CustomDataRole.FromState] = step.connection.to_state
                 step_item.on[CustomDataRole.ToState] = step.connection.from_state
                 vector_data = proj.vectors_model.get_item_by(
-                    CustomDataRole.Name, step.input.name()
+                    CustomDataRole.Name, step.input.name().value
                 )
                 s_model = vector_data.on[CustomDataRole.SynonymsSet]
                 step_item.on[CustomDataRole.SynonymsSet] = s_model
@@ -243,6 +244,7 @@ class ProjectManager:
                     input_item.on[CustomDataRole.SynonymsSet] = s_model
                     input_item.on[CustomDataRole.EnterStateId] = state.id().value
                     input_item.on[CustomDataRole.SliderVisability] = False
+                    input_items.append(input_item)
             
             # формирование элемента модели состояний
             item = ItemData()
@@ -252,12 +254,7 @@ class ProjectManager:
             item.on[CustomDataRole.Steps] = steps
 
             # добавление элемента модели состояний
-            states_controll.on_insert_node(proj.scene(), item)
-
-            # добавление элемента модели содержания
-            if not input_item is None:
-                proj.flows_model.prepare_item(input_item)
-                proj.flows_model.insertRow()
+            states_controll.on_insert_node(proj.scene(), item, input_items)
 
     def create_project(self) -> Project:
         dialog = NewProjectDialog(self.__main_window)

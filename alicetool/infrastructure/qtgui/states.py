@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
 from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel
+from alicetool.infrastructure.qtgui.flows import FlowsModel
 
 class StatesModel(BaseModel):
     ''' Модель состояний. Для обработки сценой (Editor) '''
@@ -44,16 +45,18 @@ class StatesControll:
     # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
     __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
 
-    __model: StatesModel
+    __states_model: StatesModel
+    __flows_model: FlowsModel
 
-    def __init__(self, change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], model:StatesModel) -> None:
+    def __init__(self, change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], states_model:StatesModel, flows_model: FlowsModel) -> None:
         self.__change_data_callback = change_data_callback
-        self.__model = model
+        self.__states_model = states_model
+        self.__flows_model = flows_model
 
     def __find_in_model(self, node:SceneNode) -> QModelIndex:
-        for row in range(self.__model.rowCount()):
-            if self.__model.data(self.__model.index(row), CustomDataRole.Node) is node:
-                return self.__model.index(row)
+        for row in range(self.__states_model.rowCount()):
+            if self.__states_model.data(self.__states_model.index(row), CustomDataRole.Node) is node:
+                return self.__states_model.index(row)
         
         return QModelIndex()
 
@@ -69,8 +72,8 @@ class StatesControll:
         role = CustomDataRole.Text
         new_value = editor.toPlainText()
         success, old_value = self.__change_data_callback(id, new_value, role)
-        self.__model.setData(model_index, new_value if success else old_value, role)
-        if not success: self.__model.setData(model_index, old_value, role)
+        self.__states_model.setData(model_index, new_value if success else old_value, role)
+        if not success: self.__states_model.setData(model_index, old_value, role)
 
     def __state_title_changed_handler(self, node:SceneNode, new_title:str):
         ''' по изменениям на сцене изменить модель '''
@@ -82,8 +85,8 @@ class StatesControll:
         role = CustomDataRole.Name
         new_value = new_title
         success, old_value = self.__change_data_callback(id, new_value, role)
-        self.__model.setData(model_index, new_value if success else old_value, role)
-        if not success: self.__model.setData(model_index, old_value, role)
+        self.__states_model.setData(model_index, new_value if success else old_value, role)
+        if not success: self.__states_model.setData(model_index, old_value, role)
 
     def on_set_data(self, node:SceneNode, value:Any, role:int):
         ''' по изменениям в сценарии изменить модель и сцену '''
@@ -97,10 +100,16 @@ class StatesControll:
             content: QTextEdit = node.widget()
             content.setPlainText(value)
         
-        self.__model.setData(model_index, value, role)
+        self.__states_model.setData(model_index, value, role)
 
-    def on_insert_node(self, scene: Editor, data:ItemData):
+    def on_insert_node(self, scene: Editor, data:ItemData, enter_data:list[ItemData] = []):
         ''' по изменениям в сценарии изменить модель и добавить элемент сцены '''
+
+        # добавление элемента модели содержания
+        for enter in enter_data:
+            self.__flows_model.prepare_item(enter)
+            self.__flows_model.insertRow()
+
         # должно быть установлено
         state_id = data.on[CustomDataRole.Id]
         state_name = data.on[CustomDataRole.Name]
@@ -123,8 +132,8 @@ class StatesControll:
         data.on[CustomDataRole.Node] = node
 
         # обновляем модель
-        self.__model.prepare_item(data)
-        self.__model.insertRow()
+        self.__states_model.prepare_item(data)
+        self.__states_model.insertRow()
 
         content.textChanged.connect(lambda: self.__state_content_changed_handler(node))
         node.wrapper_widget().title_changed.connect(lambda title: self.__state_title_changed_handler(node, title))
@@ -134,6 +143,6 @@ class StatesControll:
         
         model_index = self.__find_in_model(node)
         if model_index.isValid():
-            self.__model.removeRow(model_index.row())
+            self.__states_model.removeRow(model_index.row())
 
         scene.removeItem(node)

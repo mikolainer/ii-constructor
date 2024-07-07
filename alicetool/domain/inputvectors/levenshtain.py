@@ -22,7 +22,7 @@ class LevenshtainVectorSerializer(BaseSerializer):
 
     def to_data(self, obj: LevenshtainVector) -> ItemData:
         item = ItemData()
-        item.on[CustomDataRole.Name] = obj.name()
+        item.on[CustomDataRole.Name] = obj.name().value
         
         synonyms = SynonymsSetModel()
         for value in obj.synonyms:
