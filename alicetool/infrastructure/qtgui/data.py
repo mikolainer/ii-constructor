@@ -200,7 +200,6 @@ class ProxyModelReadOnly(QIdentityProxyModel):
     ''' Модификатор модели только для чтения '''
     def __init__( self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._data_init() # TODO
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return ~Qt.ItemFlag.ItemIsEditable & self.sourceModel().flags(index)

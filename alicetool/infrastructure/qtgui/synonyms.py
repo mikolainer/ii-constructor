@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 from PySide6.QtCore import (
     Qt,
@@ -430,7 +430,7 @@ class SynonymsEditor(QDialog):
 
 class SynonymsGroupWidgetToSelect(QWidget):
     ''' Внутренний виджет для отображения элемента модели в окне выбора существующего набора синонимов '''
-    def __init__(self, name: str, id: int, description: str, synonyms_set_model:SynonymsSetModel, parent: QWidget = None):
+    def __init__(self, name: str, synonyms_set_model:SynonymsSetModel, parent: QWidget = None):
         super().__init__(parent)
         main_lay: QVBoxLayout = QVBoxLayout(self)
 
@@ -458,8 +458,6 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
         return SynonymsGroupWidgetToSelect(
             index.data(CustomDataRole.Name),
-            index.data(CustomDataRole.Id),
-            index.data(CustomDataRole.Description),
             index.data(CustomDataRole.SynonymsSet),
             parent
         )
@@ -477,8 +475,6 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
         data = index.internalPointer()
         wgt = SynonymsGroupWidgetToSelect(
             data.on[CustomDataRole.Name],
-            data.on[CustomDataRole.Id],
-            data.on[CustomDataRole.Description],
             data.on[CustomDataRole.SynonymsSet]
         )
         wgt.resize(option.rect.size())
@@ -495,8 +491,6 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
         data = index.internalPointer()
         wgt = SynonymsGroupWidgetToSelect(
             data.on[CustomDataRole.Name],
-            data.on[CustomDataRole.Id],
-            data.on[CustomDataRole.Description],
             data.on[CustomDataRole.SynonymsSet]
         )
         wgt.setStyleSheet('background-color: #666;')
@@ -505,21 +499,19 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
     
 class SynonymsSelectorView(QListView):
     ''' Реализация части MVC фреймворка Qt для окна выбора существующего набора синонимов '''
-    item_selected = Signal(int)
+    item_selected = Signal(str)
     __selected: bool
 
     def __init__(self, parent: QWidget | None = None) -> None:
         self.__selected = False
         super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.Window, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
         self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
         self.setSelectionMode(QListView.SelectionMode.SingleSelection)
         self.setItemDelegate(SynonymsSelectorDelegate(self))
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
-        self.resize(600, 400)
+        #self.resize(600, 400)
         self.setMouseTracking(True)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
@@ -536,7 +528,7 @@ class SynonymsSelectorView(QListView):
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         item = self.indexAt(event.pos())
         if item.isValid() and not self.__selected:
-            self.item_selected.emit(item.data(CustomDataRole.Id))
+            self.item_selected.emit(item.data(CustomDataRole.Name))
             self.setCursor(Qt.CursorShape.BusyCursor)
             self.__selected = True
 
@@ -549,3 +541,44 @@ class SynonymsSelectorView(QListView):
         self.unsetCursor()
         self.__selected = False
 
+
+class SynonymsSelector(QDialog):
+    __g_model:SynonymsGroupsModel
+    __create_group_handler:Callable[[SynonymsGroupsModel], None]
+
+    __selected_name: str
+
+    create_value = Signal(SynonymsGroupsModel)
+
+    def __init__(self, g_model:SynonymsGroupsModel, create_group_handler:Callable[[SynonymsGroupsModel], None], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        
+        self.__selected_name = None
+        self.__g_model = g_model
+        self.__create_group_handler = create_group_handler
+
+        main_lay = QVBoxLayout(self)
+        view = SynonymsSelectorView(self)
+        view.setModel(self.__g_model)
+        main_lay.addWidget(view, 1)
+
+        create_btn = QPushButton("Новое значение", self)
+        create_btn.clicked.connect(lambda: self.__create_group_handler(view.model()))
+        main_lay.addWidget(create_btn, 1)
+
+        view.item_selected.connect(self.__selected)
+
+        self.resize(600, 400)
+
+    @Slot(str)
+    def __selected(self, name:str):
+        self.__selected_name = name
+        self.accept()
+
+    def selected_item(self) -> Optional[SynonymsSetModel]:
+        g_item = self.__g_model.get_item_by(CustomDataRole.Name, self.__selected_name)
+
+        if g_item is None:
+            return None
+        else:
+            return g_item.on[CustomDataRole.SynonymsSet]

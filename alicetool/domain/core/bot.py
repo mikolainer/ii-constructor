@@ -114,7 +114,7 @@ class Scenario:
     def remove_state(self, state_id:StateID):
         pass
 
-    def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription, input_name:Optional[Name] = None):
+    def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription, input_name:Optional[Name] = None) -> Step:
         state_from = self.__states[from_state_id]
         state_to:State
 
@@ -123,15 +123,20 @@ class Scenario:
 
         elif isinstance(to_state, StateAttributes):
             state_to = self.__create_state()
-            state_to.attributes = to_state
+            state_to.attributes.name = to_state.name
+            state_to.attributes.desrciption = to_state.desrciption
+            state_to.attributes.output = to_state.output
 
         conn = Connection(state_from, state_to, [])
-        conn.steps.append(Step(input, conn))
+        step = Step(input, conn)
+        conn.steps.append(step)
 
         if from_state_id in self.__connections['from'].keys():
             self.__connections['from'][from_state_id].append(conn)
         else:
             self.__connections['from'][from_state_id] = [conn]
+
+        return step
 
     def remove_step(self, from_state_id:StateID, input:InputDescription):
         '''

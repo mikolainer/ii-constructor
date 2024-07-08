@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QTextEdit,
     QGraphicsSceneMouseEvent,
+    QInputDialog,
 )
 
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
@@ -52,14 +53,27 @@ class StatesControll:
 
     # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
     __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
+    __new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
+    __new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]
+    __select_input_callback: Callable[[],Optional[SynonymsSetModel]]
 
     __states_model: StatesModel
     __flows_model: FlowsModel
 
     __arrows: dict[Arrow, list[__Connection]] # values is list[__Connection]
 
-    def __init__(self, change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], states_model:StatesModel, flows_model: FlowsModel) -> None:
+    def __init__(self,
+                 select_input_callback: Callable[[],Optional[SynonymsSetModel]], 
+                 change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], 
+                 new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool], 
+                 new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool], 
+                 states_model:StatesModel, 
+                 flows_model: FlowsModel
+                ) -> None:
+        self.__select_input_callback = select_input_callback
         self.__change_data_callback = change_data_callback
+        self.__new_step_callback = new_step_callback
+        self.__new_state_callback = new_state_callback
         self.__states_model = states_model
         self.__flows_model = flows_model
         self.__arrows = {}
@@ -113,7 +127,7 @@ class StatesControll:
         
         self.__states_model.setData(model_index, value, role)
 
-    def on_insert_node(self, scene: Editor, data:ItemData, enter_data:list[ItemData] = []):
+    def on_insert_node(self, scene: Editor, data:ItemData, enter_data:list[ItemData] = []) -> SceneNode:
         ''' по изменениям в сценарии изменить модель и добавить элемент сцены '''
 
         # добавление элемента модели содержания
@@ -135,6 +149,7 @@ class StatesControll:
         # создаём элемент сцены
         content = QTextEdit()
         node = scene.addNode(pos, content)
+        node.set_handlers(lambda from_node, to_node: self.__new_step_request(from_node, to_node), lambda from_node: self.__new_state_request(from_node))
         content.setText(state_text)
         node.set_title(state_name)
 
@@ -147,6 +162,34 @@ class StatesControll:
 
         content.textChanged.connect(lambda: self.__state_content_changed_handler(node))
         node.wrapper_widget().title_changed.connect(lambda title: self.__state_title_changed_handler(node, title))
+
+        return node
+
+    def __new_step_request(self, from_node:SceneNode, to_node:SceneNode):
+        state_index_from = self.__find_in_model(from_node)
+        state_index_to = self.__find_in_model(to_node)
+        if state_index_from.isValid() and state_index_to.isValid():
+            input = self.__select_input_callback()
+            if input is None:
+                return
+            
+            if self.__new_step_callback(state_index_from, state_index_to, input):
+                self.on_add_step(from_node.scene(), input, from_node, to_node)
+    
+    def __new_state_request(self, from_node:SceneNode):
+        state_index_from = self.__find_in_model(from_node)
+        if state_index_from.isValid():
+            new_state_item = ItemData()
+            name, ok = QInputDialog.getText(None, 'Ввод имени', 'Имя нового состояния')
+            if not ok: return
+            new_state_item.on[CustomDataRole.Name] = name
+
+            input = self.__select_input_callback()
+            if input is None: return
+            
+            if self.__new_state_callback(state_index_from, new_state_item, input):
+                to_node = self.on_insert_node(from_node.scene(), new_state_item)
+                self.on_add_step(from_node.scene(), input, from_node, to_node)
 
     def init_arrows(self, scene:Editor):
         for row in range(self.__states_model.rowCount()):
@@ -190,6 +233,16 @@ class StatesControll:
             to_node.arrow_connect_as_end(arrow)
 
         self.__arrows[arrow] = [self.__Connection(arrow, from_node, to_node, input)]
+
+        state_index_from = self.__find_in_model(from_node)
+        state_index_to = self.__find_in_model(to_node)
+        step_item = ItemData()
+        step_item.on[CustomDataRole.FromState] = state_index_from.data(CustomDataRole.Id)
+        step_item.on[CustomDataRole.ToState] = state_index_to.data(CustomDataRole.Id)
+        step_item.on[CustomDataRole.SynonymsSet] = input
+
+        state_index_from.data(CustomDataRole.Steps).append(step_item)
+        state_index_to.data(CustomDataRole.Steps).append(step_item)
 
     def on_remove_step(self, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
         ''' удаляет связь между объектами сцены и вектором перехода '''

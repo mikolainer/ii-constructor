@@ -1,5 +1,5 @@
 from math import sqrt
-from typing import overload, Union, Optional
+from typing import overload, Union, Optional, Callable
 
 from PySide6.QtCore import (
     Qt,
@@ -20,7 +20,8 @@ from PySide6.QtGui import (
     QPainter,
     QFont,
     QBrush,
-    QPainterPath
+    QPainterPath,
+    QTransform,
 )
 
 from PySide6.QtWidgets import (
@@ -413,6 +414,8 @@ class SceneNode(QGraphicsProxyWidget):
     __Z_VAL = 100
     __WATCHDOG_TIMEOUT = 3000
 
+    __have_callbacks: bool
+
     __add_btns: list[AddConnectionBtn]
     __arrows: dict[str, list[Arrow]]
     
@@ -422,6 +425,7 @@ class SceneNode(QGraphicsProxyWidget):
 
     def __init__(self, scene: QGraphicsScene):
         super().__init__()
+        self.__have_callbacks = False
         self.__watchdog = QTimer()
         self.__watchdog.setInterval(self.__WATCHDOG_TIMEOUT)
         self.__watchdog.setSingleShot(True)
@@ -482,7 +486,6 @@ class SceneNode(QGraphicsProxyWidget):
         wgt: NodeWidget = super().widget()
         wgt.set_title(text)
 
-    @Slot()
     def hide_tools(self):
         ''' Прячет дополнительные органы управления '''
         self.reset_tools()
@@ -511,10 +514,30 @@ class SceneNode(QGraphicsProxyWidget):
         add_btn = AddConnectionBtn(self)
         add_btn.setParentItem(self)
         add_btn.setPos(pos)
-        add_btn.connection_added.connect(self.hide_tools)
+        add_btn.connection_added.connect(lambda: self.__add_connection_request(add_btn))
         self.__add_btns.append(add_btn)
 
         self.scene().addItem(add_btn)
+
+    def set_handlers(self, new_step_handler: Callable[['SceneNode', 'SceneNode'], None], new_state_handler: Callable[['SceneNode'], None]):
+        self.__new_step_callback = new_step_handler
+        self.__new_state_callback = new_state_handler
+        self.__have_callbacks = True
+
+    def __add_connection_request(self, btn:AddConnectionBtn):
+        self.hide_tools()
+        self.scene().removeItem(btn)
+
+        from_node = self
+        to_node = self.scene().itemAt(btn.end_pos, QTransform())
+
+        if self.__have_callbacks:
+            if isinstance(to_node, SceneNode):
+                self.__new_step_callback(from_node, to_node)
+            else:
+                self.__new_state_callback(from_node)
+
+        self.__add_btns.remove(btn)
 
     def arrow_connect_as_start(self, arrow: Arrow):
         ''' Связывает начало ребра с этой вершиной '''
@@ -666,7 +689,6 @@ class Editor(QGraphicsScene):
         super().__init__(parent)
         self.setSceneRect(self.__START_SIZE)
         self.setBackgroundBrush(QColor("#DDDDDD"))
-        #self.addNode(QPoint(100, 100), QTextEdit())
 
     def addNode(self, pos:QPoint, content:QWidget = None) -> SceneNode:
         ''' Добавляет вершину графа на сцену '''
