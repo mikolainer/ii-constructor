@@ -192,6 +192,8 @@ class ProjectManager:
 
         editor = QGraphicsView(proj.scene(), self.__workspaces)
         editor.centerOn(0, 0)
+        editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+
         self.__projects[editor] = proj # важно добавить перед addTab() для коттектной работы слота "current_changed"
         self.__workspaces.addTab(editor, scenario.name.value)
 

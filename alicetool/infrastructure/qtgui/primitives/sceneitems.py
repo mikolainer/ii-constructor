@@ -1,5 +1,5 @@
 from math import sqrt
-from typing import overload, Union, Optional, Callable
+from typing import overload, Union, Optional, Callable, Any
 
 from PySide6.QtCore import (
     Qt,
@@ -16,12 +16,16 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QColor,
+    QFocusEvent,
     QPen,
     QPainter,
     QFont,
     QBrush,
     QPainterPath,
     QTransform,
+    QInputMethodEvent,
+    QKeyEvent,
+    QPolygon,
 )
 
 from PySide6.QtWidgets import (
@@ -39,6 +43,9 @@ from PySide6.QtWidgets import (
     QGraphicsSceneMouseEvent,
     QScrollArea,
     QGraphicsRectItem,
+    QGraphicsSceneMouseEvent,
+    QGraphicsSceneMouseEvent,
+    QInputDialog,
 )
 
 from alicetool.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
@@ -48,7 +55,33 @@ class Arrow(QGraphicsItem):
     __start_point: QPointF
     __end_point: QPointF
     __pen_width: int
+    __pen_color: QColor
     __end_wgt: QGraphicsItem #TODO: SceneNode
+
+    def __init__(self, 
+        start: QPointF = None,
+        end: QPointF = None,
+        parent: QGraphicsItem = None
+    ):
+        super().__init__(parent)
+
+        self.__start_point = QPointF(0.0, 0.0)
+        self.__end_point = QPointF(3.0, 3.0)
+        self.__pen_width = 5
+        self.__end_wgt = None
+        self.__pen_color = QColor('black')
+
+        
+        if not start is None:
+            self.__start_point = start
+        if not end is None:
+            self.__end_point = end
+
+        self.setPos(self.__center())
+        self.setZValue(90)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
 
     def set_end_wgt(self, widget: QGraphicsItem):
         ''' Прикрепляет конец ребра к элементу сцены '''
@@ -67,26 +100,156 @@ class Arrow(QGraphicsItem):
         self.__end_point = point
         self.setPos(self.__center())
 
-    def __init__(self, 
-        start: QPointF = None,
-        end: QPointF = None,
-        parent: QGraphicsItem = None
-    ):
-        super().__init__(parent)
+    def shape(self) -> QPainterPath:
+        path = QPainterPath()
+        path.addPolygon(self.mapFromScene(self.__boundingPolygon()))
+        return path
 
-        self.__start_point = QPointF(0.0, 0.0)
-        self.__end_point = QPointF(3.0, 3.0)
-        self.__pen_width = 5
-        self.__end_wgt = None
+        #return super().shape()
+    
+    def focusInEvent(self, event: QFocusEvent) -> None:
+        return super().focusInEvent(event)
+    
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        is_selected = self.isSelected()
+        #self.setSelected(not is_selected)
         
-        if not start is None:
-            self.__start_point = start
-        if not end is None:
-            self.__end_point = end
+        super().mousePressEvent(event)
 
-        self.setPos(self.__center())
-        self.setZValue(90)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value: Any) -> Any:
+
+        if (change == QGraphicsItem.GraphicsItemChange.ItemSelectedChange):
+            if (value == True):
+                self.__pen_color = QColor('blue')
+            else:
+                self.__pen_color = QColor('black')
+
+        return super().itemChange(change, value)
+
+    def inputMethodEvent(self, event: QInputMethodEvent) -> None:
+        super().inputMethodEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        super().keyPressEvent(event)
+
+    def boundingRect(self) -> QRectF:
+        '''
+        Возвращает область границ объекта на сцене в локальных координатах
+        '''
+        pen_padding = QPointF(
+            float(self.__pen_width),
+            float(self.__pen_width)
+        )
+        arrow_pointer_padding = QPointF(
+            self.__dir_pointer_half().x(),
+            self.__dir_pointer_half().x()
+        )
+        size = self.__delta() + pen_padding*2 + arrow_pointer_padding*2
+
+        x = 0 - size.x() / 2.0
+        y = 0 - size.y() / 2.0
+
+        return QRectF(x, y, size.x(), size.y())
+
+    def paint( self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None ):
+        pen = QPen(self.__pen_color)
+        pen.setWidth(self.__pen_width)
+        painter.setPen(pen)
+
+        #painter.drawRect(self.boundingRect())   # for debug
+        #painter.drawPoint(QPoint(0,0))          # for debug
+
+        k = self.__arrow_directions() # в уравнении прямой 'y=kx' k = tg угла наклона
+        
+        h_ptr = self.__dir_pointer_half() # локальный алиас для короткого обращения к значению
+        r = sqrt(h_ptr.x()**2.0 + h_ptr.y()**2.0) # длина половинки указателя стрелки (гепотинуза)
+        
+        arrow_pos = self.mapFromScene(self.__arrow_ptr_pos())
+
+        ### решения систем уравнений прямой, проходящей через центр координат и окружности в центре координат для обеих половинок указателя стрелки
+        if k['mode'] == 'up':
+            pointer_left_end = QPointF(arrow_pos.x() + self.__dir_pointer_half().x(), arrow_pos.y() + self.__dir_pointer_half().y())
+            pointer_right_end = QPointF(arrow_pos.x() - self.__dir_pointer_half().x(), arrow_pos.y() + self.__dir_pointer_half().y())
+        elif k['mode'] == 'down':
+            pointer_left_end = QPointF(arrow_pos.x() + self.__dir_pointer_half().x(), arrow_pos.y() - self.__dir_pointer_half().y())
+            pointer_right_end = QPointF(arrow_pos.x() - self.__dir_pointer_half().x(), arrow_pos.y() - self.__dir_pointer_half().y())
+
+        elif k['mode'] == 'ctg':
+            y_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
+            pointer_left_end = QPointF(k['left'] * y_left, y_left)
+            
+            y_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
+            pointer_right_end = QPointF(k['right'] * y_right, y_right)
+        else: #if k['mode'] == 'tg'
+            x_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
+            pointer_left_end = QPointF(x_left, k['left'] * x_left)
+            
+            x_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
+            pointer_right_end = QPointF(x_right, k['right'] * x_right)
+
+        # выбор одного из двух возможных решений сиснетмы уравнений
+        if k['mode'] == 'ctg':
+            if self.__start_point.y() > self.__end_point.y():
+                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
+            else:
+                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
+
+        else:
+            if self.__start_point.x() > self.__end_point.x():
+                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
+            else:
+                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
+                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
+
+        
+        end_point = self.__end_point
+        if not self.__end_wgt is None:
+            bounding = self.__end_wgt.boundingRect()
+            wgt_half_size = QPointF(bounding.width(), bounding.height()) / 2.0
+            end_point = self.__end_wgt.scenePos() + wgt_half_size
+
+        painter.drawLine(
+            self.mapFromScene(self.__start_point),
+            self.mapFromScene(end_point)
+        )
+
+        painter.setPen(QColor('red'))
+        painter.drawPolygon(self.mapFromScene(self.__boundingPolygon()))
+
+    def __boundingPolygon(self) -> QPolygon:
+        polygon_points = list[QPoint]()
+
+        start = QPoint(int(self.__start_point.x()), int(self.__start_point.y()))
+
+        # start left
+        xpos = start.x() + 10
+        ypos = start.y()
+        polygon_points.append(QPoint(xpos, ypos))
+
+        # start right
+        xpos = start.x() - 10
+        ypos = start.y()
+        polygon_points.append(QPoint(xpos, ypos))
+
+        # end
+        xpos = int(self.__arrow_ptr_pos().x())
+        ypos = int(self.__arrow_ptr_pos().y())
+        polygon_points.append(QPoint(xpos, ypos))
+
+#        # end left
+#        xpos = 0
+#        ypos = 0
+#        polygon_points.append(QPoint(xpos, ypos))
+
+#        # end right
+#        xpos = 0
+#        ypos = 0
+#        polygon_points.append(QPoint(xpos, ypos))
+
+        return QPolygon(polygon_points)
 
     def __dir_pointer_half(self) -> QPointF:
         ''' 
@@ -152,25 +315,6 @@ class Arrow(QGraphicsItem):
         y = max(self.__start_point.y(), self.__end_point.y())
 
         return QPointF(x, y) - self.__delta() / 2.0
-
-    def boundingRect(self) -> QRectF:
-        '''
-        Возвращает область границ объекта на сцене в локальных координатах
-        '''
-        pen_padding = QPointF(
-            float(self.__pen_width),
-            float(self.__pen_width)
-        )
-        arrow_pointer_padding = QPointF(
-            self.__dir_pointer_half().x(),
-            self.__dir_pointer_half().x()
-        )
-        size = self.__delta() + pen_padding*2 + arrow_pointer_padding*2
-
-        x = 0 - size.x() / 2.0
-        y = 0 - size.y() / 2.0
-
-        return QRectF(x, y, size.x(), size.y())
     
     def __line_len(self) -> float:
         ''' Вычисляет длину ребра '''
@@ -247,75 +391,6 @@ class Arrow(QGraphicsItem):
         return QPointF(
             wgt_center.x() - x,
             wgt_center.y() - y
-        )
-
-    def paint( self,
-        painter: QPainter,
-        option: QStyleOptionGraphicsItem,
-        widget: QWidget = None
-    ):
-        pen = QPen(QColor('black'))
-        pen.setWidth(self.__pen_width)
-        painter.setPen(pen)
-
-        #painter.drawRect(self.boundingRect())   # for debug
-        #painter.drawPoint(QPoint(0,0))          # for debug
-
-        k = self.__arrow_directions() # в уравнении прямой 'y=kx' k = tg угла наклона
-        
-        h_ptr = self.__dir_pointer_half() # локальный алиас для короткого обращения к значению
-        r = sqrt(h_ptr.x()**2.0 + h_ptr.y()**2.0) # длина половинки указателя стрелки (гепотинуза)
-
-        arrow_pos = self.mapFromScene(self.__arrow_ptr_pos())
-
-        ### решения систем уравнений прямой, проходящей через центр координат и окружности в центре координат для обеих половинок указателя стрелки
-        if k['mode'] == 'up':
-            pointer_left_end = QPointF(arrow_pos.x() + self.__dir_pointer_half().x(), arrow_pos.y() + self.__dir_pointer_half().y())
-            pointer_right_end = QPointF(arrow_pos.x() - self.__dir_pointer_half().x(), arrow_pos.y() + self.__dir_pointer_half().y())
-        elif k['mode'] == 'down':
-            pointer_left_end = QPointF(arrow_pos.x() + self.__dir_pointer_half().x(), arrow_pos.y() - self.__dir_pointer_half().y())
-            pointer_right_end = QPointF(arrow_pos.x() - self.__dir_pointer_half().x(), arrow_pos.y() - self.__dir_pointer_half().y())
-
-        elif k['mode'] == 'ctg':
-            y_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
-            pointer_left_end = QPointF(k['left'] * y_left, y_left)
-            
-            y_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
-            pointer_right_end = QPointF(k['right'] * y_right, y_right)
-        else: #if k['mode'] == 'tg'
-            x_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
-            pointer_left_end = QPointF(x_left, k['left'] * x_left)
-            
-            x_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
-            pointer_right_end = QPointF(x_right, k['right'] * x_right)
-
-        # выбор одного из двух возможных решений сиснетмы уравнений
-        if k['mode'] == 'ctg':
-            if self.__start_point.y() > self.__end_point.y():
-                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
-            else:
-                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
-
-        else:
-            if self.__start_point.x() > self.__end_point.x():
-                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
-            else:
-                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
-
-        
-        end_point = self.__end_point
-        if not self.__end_wgt is None:
-            bounding = self.__end_wgt.boundingRect()
-            wgt_half_size = QPointF(bounding.width(), bounding.height()) / 2.0
-            end_point = self.__end_wgt.scenePos() + wgt_half_size
-
-        painter.drawLine(
-            self.mapFromScene(self.__start_point),
-            self.mapFromScene(end_point)
         )
 
 class AddConnectionBtn(QGraphicsPixmapItem, QObject):
