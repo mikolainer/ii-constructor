@@ -127,7 +127,7 @@ class StatesControll:
         
         self.__states_model.setData(model_index, value, role)
 
-    def on_insert_node(self, scene: Editor, data:ItemData, enter_data:list[ItemData] = []) -> SceneNode:
+    def on_insert_node(self, scene: Editor, data:ItemData, enter_data:list[ItemData] = [], pos: Optional[QPoint] = None) -> SceneNode:
         ''' по изменениям в сценарии изменить модель и добавить элемент сцены '''
 
         # добавление элемента модели содержания
@@ -139,17 +139,17 @@ class StatesControll:
         state_name = data.on[CustomDataRole.Name]
         state_text = data.on[CustomDataRole.Text]
 
-        # TODO: обрабатывать сохранённый layout
-        pos = QPoint(
-            NodeWidget.START_WIDTH * (state_id) +
-            scene.START_SPACINS * (state_id+1),
-            scene.START_SPACINS
-        )
+        if pos is None:
+            pos = QPoint(
+                NodeWidget.START_WIDTH * (state_id) +
+                scene.START_SPACINS * (state_id+1),
+                scene.START_SPACINS
+            )
         
         # создаём элемент сцены
         content = QTextEdit()
         node = scene.addNode(pos, content)
-        node.set_handlers(lambda from_node, to_node: self.__new_step_request(from_node, to_node), lambda from_node: self.__new_state_request(from_node))
+        node.set_handlers(lambda from_node, to_node: self.__new_step_request(from_node, to_node), lambda from_node, to_pos: self.__new_state_request(from_node, to_pos))
         content.setText(state_text)
         node.set_title(state_name)
 
@@ -176,7 +176,7 @@ class StatesControll:
             if self.__new_step_callback(state_index_from, state_index_to, input):
                 self.on_add_step(from_node.scene(), input, from_node, to_node)
     
-    def __new_state_request(self, from_node:SceneNode):
+    def __new_state_request(self, from_node:SceneNode, to_pos: Optional[QPoint] = None):
         state_index_from = self.__find_in_model(from_node)
         if state_index_from.isValid():
             new_state_item = ItemData()
@@ -188,7 +188,7 @@ class StatesControll:
             if input is None: return
             
             if self.__new_state_callback(state_index_from, new_state_item, input):
-                to_node = self.on_insert_node(from_node.scene(), new_state_item)
+                to_node = self.on_insert_node(from_node.scene(), new_state_item, [], to_pos)
                 self.on_add_step(from_node.scene(), input, from_node, to_node)
 
     def init_arrows(self, scene:Editor):

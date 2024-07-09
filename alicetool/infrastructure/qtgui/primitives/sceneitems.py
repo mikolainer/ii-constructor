@@ -519,7 +519,7 @@ class SceneNode(QGraphicsProxyWidget):
 
         self.scene().addItem(add_btn)
 
-    def set_handlers(self, new_step_handler: Callable[['SceneNode', 'SceneNode'], None], new_state_handler: Callable[['SceneNode'], None]):
+    def set_handlers(self, new_step_handler: Callable[['SceneNode', 'SceneNode'], None], new_state_handler: Callable[['SceneNode', QPoint], None]):
         self.__new_step_callback = new_step_handler
         self.__new_state_callback = new_state_handler
         self.__have_callbacks = True
@@ -535,7 +535,7 @@ class SceneNode(QGraphicsProxyWidget):
             if isinstance(to_node, SceneNode):
                 self.__new_step_callback(from_node, to_node)
             else:
-                self.__new_state_callback(from_node)
+                self.__new_state_callback(from_node, btn.end_pos)
 
         self.__add_btns.remove(btn)
 
