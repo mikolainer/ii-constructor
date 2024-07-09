@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QGraphicsSceneMouseEvent,
     QInputDialog,
+    QMessageBox,
 )
 
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
@@ -232,13 +233,30 @@ class StatesControll:
             from_node.arrow_connect_as_start(arrow)
             to_node.arrow_connect_as_end(arrow)
 
-        self.__arrows[arrow] = [self.__Connection(arrow, from_node, to_node, input)]
-
         state_index_from = self.__find_in_model(from_node)
         state_index_to = self.__find_in_model(to_node)
+        from_state_id =  state_index_from.data(CustomDataRole.Id)
+        to_state_id = state_index_to.data(CustomDataRole.Id)
+
+        connections: list[self.__Connection]
+        if arrow in self.__arrows.keys():
+            connections = self.__arrows[arrow]
+        else:
+            connections = []
+            self.__arrows[arrow] = connections
+
+        new_conn = self.__Connection(arrow, from_node, to_node, input)
+        for conn in connections:
+            if conn == new_conn:
+                # вообще-то не норм ситуация (должно обрабатываться ядром)
+                QMessageBox.warning(scene.parent(), 'Ошибка', 'Шаг уже существует')
+                return
+
+        connections.append(new_conn)
+        
         step_item = ItemData()
-        step_item.on[CustomDataRole.FromState] = state_index_from.data(CustomDataRole.Id)
-        step_item.on[CustomDataRole.ToState] = state_index_to.data(CustomDataRole.Id)
+        step_item.on[CustomDataRole.FromState] = from_state_id
+        step_item.on[CustomDataRole.ToState] = to_state_id
         step_item.on[CustomDataRole.SynonymsSet] = input
 
         state_index_from.data(CustomDataRole.Steps).append(step_item)
