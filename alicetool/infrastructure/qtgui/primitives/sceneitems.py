@@ -158,10 +158,9 @@ class Arrow(QGraphicsItem):
         painter.setPen(pen)
 
         pointer_left_pos, pointer_pos, pointer_right_pos = self.__get_pointer_pos()
-        painter.drawLine(pointer_pos, pointer_left_pos)
-        painter.drawLine(pointer_pos, pointer_right_pos)
+        painter.drawLine(self.mapFromScene(pointer_pos), self.mapFromScene(pointer_left_pos))
+        painter.drawLine(self.mapFromScene(pointer_pos), self.mapFromScene(pointer_right_pos))
 
-        
         end_point = self.__end_point
         if not self.__end_wgt is None:
             bounding = self.__end_wgt.boundingRect()
@@ -182,7 +181,7 @@ class Arrow(QGraphicsItem):
         h_ptr = self.__dir_pointer_half() # локальный алиас для короткого обращения к значению
         r = sqrt(h_ptr.x()**2.0 + h_ptr.y()**2.0) # длина половинки указателя стрелки (гепотинуза)
         
-        pointer_pos = self.mapFromScene(self.__arrow_ptr_pos())
+        pointer_pos = self.__arrow_ptr_pos()
 
         ### решения систем уравнений прямой, проходящей через центр координат и окружности в центре координат для обеих половинок указателя стрелки
         if k['mode'] == 'up':
@@ -225,34 +224,48 @@ class Arrow(QGraphicsItem):
         return pointer_left_pos, pointer_pos, pointer_right_pos
 
     def __boundingPolygon(self) -> QPolygon:
+        end_left_pos, end_pos, end_right_pos = self.__get_pointer_pos()
+        end_left_pos_ = QPointF(end_left_pos)
+        end_right_pos_ = QPointF(end_right_pos)
+        end_pos_ = QPointF(end_pos)
+
+        end_between_vector = end_right_pos_ - end_left_pos_
+
+        to_center_coef = float(self.__pen_width) / self.__dir_pointer_half().x()
+        end_left_center_pos = end_left_pos_ + (end_between_vector / 2.0 * to_center_coef)
+        end_right_center_pos = end_right_pos_ - (end_between_vector /2.0 * to_center_coef)
+        start_left = self.__start_point - (end_between_vector / 2.0 * to_center_coef)
+        start_right = self.__start_point + (end_between_vector / 2.0 * to_center_coef)
+
         polygon_points = list[QPoint]()
 
-        start = QPoint(int(self.__start_point.x()), int(self.__start_point.y()))
-
-        # start left
-        xpos = start.x() + 10
-        ypos = start.y()
+        xpos = end_left_center_pos.x()
+        ypos = end_left_center_pos.y()
         polygon_points.append(QPoint(xpos, ypos))
 
-        # start right
-        xpos = start.x() - 10
-        ypos = start.y()
+        xpos = end_left_pos_.x()
+        ypos = end_left_pos_.y()
         polygon_points.append(QPoint(xpos, ypos))
 
-        # end
-        xpos = int(self.__arrow_ptr_pos().x())
-        ypos = int(self.__arrow_ptr_pos().y())
+        xpos = end_pos_.x()
+        ypos = end_pos_.y()
         polygon_points.append(QPoint(xpos, ypos))
 
-#        # end left
-#        xpos = 0
-#        ypos = 0
-#        polygon_points.append(QPoint(xpos, ypos))
+        xpos = end_right_pos_.x()
+        ypos = end_right_pos_.y()
+        polygon_points.append(QPoint(xpos, ypos))
 
-#        # end right
-#        xpos = 0
-#        ypos = 0
-#        polygon_points.append(QPoint(xpos, ypos))
+        xpos = end_right_center_pos.x()
+        ypos = end_right_center_pos.y()
+        polygon_points.append(QPoint(xpos, ypos))
+
+        xpos = start_right.x()
+        ypos = start_right.y()
+        polygon_points.append(QPoint(xpos, ypos))
+
+        xpos = start_left.x()
+        ypos = start_left.y()
+        polygon_points.append(QPoint(xpos, ypos))
 
         return QPolygon(polygon_points)
 
