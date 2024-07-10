@@ -101,11 +101,12 @@ class Arrow(QGraphicsItem):
         self.setPos(self.__center())
 
     def shape(self) -> QPainterPath:
+        return super().shape()
+        
         path = QPainterPath()
         path.addPolygon(self.mapFromScene(self.__boundingPolygon()))
         return path
 
-        #return super().shape()
     
     def focusInEvent(self, event: QFocusEvent) -> None:
         return super().focusInEvent(event)
@@ -156,53 +157,9 @@ class Arrow(QGraphicsItem):
         pen.setWidth(self.__pen_width)
         painter.setPen(pen)
 
-        #painter.drawRect(self.boundingRect())   # for debug
-        #painter.drawPoint(QPoint(0,0))          # for debug
-
-        k = self.__arrow_directions() # в уравнении прямой 'y=kx' k = tg угла наклона
-        
-        h_ptr = self.__dir_pointer_half() # локальный алиас для короткого обращения к значению
-        r = sqrt(h_ptr.x()**2.0 + h_ptr.y()**2.0) # длина половинки указателя стрелки (гепотинуза)
-        
-        arrow_pos = self.mapFromScene(self.__arrow_ptr_pos())
-
-        ### решения систем уравнений прямой, проходящей через центр координат и окружности в центре координат для обеих половинок указателя стрелки
-        if k['mode'] == 'up':
-            pointer_left_end = QPointF(arrow_pos.x() + self.__dir_pointer_half().x(), arrow_pos.y() + self.__dir_pointer_half().y())
-            pointer_right_end = QPointF(arrow_pos.x() - self.__dir_pointer_half().x(), arrow_pos.y() + self.__dir_pointer_half().y())
-        elif k['mode'] == 'down':
-            pointer_left_end = QPointF(arrow_pos.x() + self.__dir_pointer_half().x(), arrow_pos.y() - self.__dir_pointer_half().y())
-            pointer_right_end = QPointF(arrow_pos.x() - self.__dir_pointer_half().x(), arrow_pos.y() - self.__dir_pointer_half().y())
-
-        elif k['mode'] == 'ctg':
-            y_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
-            pointer_left_end = QPointF(k['left'] * y_left, y_left)
-            
-            y_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
-            pointer_right_end = QPointF(k['right'] * y_right, y_right)
-        else: #if k['mode'] == 'tg'
-            x_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
-            pointer_left_end = QPointF(x_left, k['left'] * x_left)
-            
-            x_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
-            pointer_right_end = QPointF(x_right, k['right'] * x_right)
-
-        # выбор одного из двух возможных решений сиснетмы уравнений
-        if k['mode'] == 'ctg':
-            if self.__start_point.y() > self.__end_point.y():
-                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
-            else:
-                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
-
-        else:
-            if self.__start_point.x() > self.__end_point.x():
-                painter.drawLine(arrow_pos, arrow_pos + pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos + pointer_right_end)
-            else:
-                painter.drawLine(arrow_pos, arrow_pos - pointer_left_end)
-                painter.drawLine(arrow_pos, arrow_pos - pointer_right_end)
+        pointer_left_pos, pointer_pos, pointer_right_pos = self.__get_pointer_pos()
+        painter.drawLine(pointer_pos, pointer_left_pos)
+        painter.drawLine(pointer_pos, pointer_right_pos)
 
         
         end_point = self.__end_point
@@ -218,6 +175,54 @@ class Arrow(QGraphicsItem):
 
         painter.setPen(QColor('red'))
         painter.drawPolygon(self.mapFromScene(self.__boundingPolygon()))
+
+    def __get_pointer_pos(self) -> tuple[QPoint, QPoint, QPoint]:
+        k = self.__arrow_directions() # в уравнении прямой 'y=kx' k = tg угла наклона
+        
+        h_ptr = self.__dir_pointer_half() # локальный алиас для короткого обращения к значению
+        r = sqrt(h_ptr.x()**2.0 + h_ptr.y()**2.0) # длина половинки указателя стрелки (гепотинуза)
+        
+        pointer_pos = self.mapFromScene(self.__arrow_ptr_pos())
+
+        ### решения систем уравнений прямой, проходящей через центр координат и окружности в центре координат для обеих половинок указателя стрелки
+        if k['mode'] == 'up':
+            pointer_left_pos = QPointF(pointer_pos.x() + self.__dir_pointer_half().x(), pointer_pos.y() + self.__dir_pointer_half().y())
+            pointer_right_pos = QPointF(pointer_pos.x() - self.__dir_pointer_half().x(), pointer_pos.y() + self.__dir_pointer_half().y())
+        elif k['mode'] == 'down':
+            pointer_left_pos = QPointF(pointer_pos.x() + self.__dir_pointer_half().x(), pointer_pos.y() - self.__dir_pointer_half().y())
+            pointer_right_pos = QPointF(pointer_pos.x() - self.__dir_pointer_half().x(), pointer_pos.y() - self.__dir_pointer_half().y())
+
+        elif k['mode'] == 'ctg':
+            y_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
+            pointer_left_pos = QPointF(k['left'] * y_left, y_left)
+            
+            y_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
+            pointer_right_pos = QPointF(k['right'] * y_right, y_right)
+        else: #if k['mode'] == 'tg'
+            x_left = sqrt(r**2.0 / (k['left']**2.0 + 1.0))
+            pointer_left_pos = QPointF(x_left, k['left'] * x_left)
+            
+            x_right = sqrt(r**2.0 / (k['right']**2.0 + 1.0))
+            pointer_right_pos = QPointF(x_right, k['right'] * x_right)
+
+        # выбор одного из двух возможных решений сиснетмы уравнений
+        if k['mode'] == 'ctg':
+            if self.__start_point.y() > self.__end_point.y():
+                pointer_left_pos = pointer_pos + pointer_left_pos
+                pointer_right_pos = pointer_pos + pointer_right_pos
+            else:
+                pointer_left_pos = pointer_pos - pointer_left_pos
+                pointer_right_pos = pointer_pos - pointer_right_pos
+
+        else:
+            if self.__start_point.x() > self.__end_point.x():
+                pointer_left_pos = pointer_pos + pointer_left_pos
+                pointer_right_pos = pointer_pos + pointer_right_pos
+            else:
+                pointer_left_pos = pointer_pos - pointer_left_pos
+                pointer_right_pos = pointer_pos - pointer_right_pos
+
+        return pointer_left_pos, pointer_pos, pointer_right_pos
 
     def __boundingPolygon(self) -> QPolygon:
         polygon_points = list[QPoint]()
