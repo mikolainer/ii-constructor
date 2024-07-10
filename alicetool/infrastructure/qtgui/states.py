@@ -146,6 +146,15 @@ class StatesControll:
                 scene.START_SPACINS * (state_id+1),
                 scene.START_SPACINS
             )
+        else:
+            pos.setX(pos.x() - (NodeWidget.START_WIDTH/2))
+            pos.setY(pos.y() - (NodeWidget.START_WIDTH/2))
+
+        if pos.x() < 0:
+            pos.setX(0)
+
+        if pos.y() < 0:
+            pos.setY(0)
         
         # создаём элемент сцены
         content = QTextEdit()

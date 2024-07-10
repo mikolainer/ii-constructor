@@ -101,7 +101,7 @@ class Arrow(QGraphicsItem):
         self.setPos(self.__center())
 
     def shape(self) -> QPainterPath:
-        return super().shape()
+        #return super().shape()
         
         path = QPainterPath()
         path.addPolygon(self.mapFromScene(self.__boundingPolygon()))
@@ -172,8 +172,9 @@ class Arrow(QGraphicsItem):
             self.mapFromScene(end_point)
         )
 
-        painter.setPen(QColor('red'))
-        painter.drawPolygon(self.mapFromScene(self.__boundingPolygon()))
+        # для дебага
+        #painter.setPen(QColor('red'))
+        #painter.drawPolygon(self.mapFromScene(self.__boundingPolygon()))
 
     def __get_pointer_pos(self) -> tuple[QPoint, QPoint, QPoint]:
         k = self.__arrow_directions() # в уравнении прямой 'y=kx' k = tg угла наклона
@@ -229,8 +230,28 @@ class Arrow(QGraphicsItem):
         end_right_pos_ = QPointF(end_right_pos)
         end_pos_ = QPointF(end_pos)
 
-        end_between_vector = end_right_pos_ - end_left_pos_
+        ## начало магии
+        ptr_left_vector = end_left_pos_ - end_pos_
+        ptr_right_vector = end_right_pos_ - end_pos_
+        ptr_end_vector = self.__end_point - self.__start_point
 
+        half_len = sqrt(self.__dir_pointer_half().x() **2 + self.__dir_pointer_half().y() **2)
+
+        ptr_left_vector_c = self.__pen_width / half_len #half_len / (half_len + self.__pen_width)
+        ptr_right_vector_c = self.__pen_width / half_len #half_len / (half_len + self.__pen_width) / half_len
+        ptr_end_vector_c = (self.__pen_width) / self.__line_len() #self.__line_len() / (self.__line_len() + self.__pen_width)
+
+        end_left_pos_ = end_left_pos_ + (ptr_left_vector * ptr_left_vector_c)
+        end_right_pos_ = end_right_pos_ + (ptr_right_vector * ptr_right_vector_c)
+        end_pos_ = end_pos_ + (ptr_end_vector * ptr_end_vector_c)
+
+        end_between_vector = end_right_pos_ - end_left_pos_
+        to_center_coef = float(self.__pen_width) / self.__dir_pointer_half().x()
+        end_left_pos_ = end_left_pos_ - (end_between_vector / 2.0 * to_center_coef)
+        end_right_pos_ = end_right_pos_ + (end_between_vector /2.0 * to_center_coef)
+        ## конец магии
+
+        end_between_vector = end_right_pos_ - end_left_pos_
         to_center_coef = float(self.__pen_width) / self.__dir_pointer_half().x()
         end_left_center_pos = end_left_pos_ + (end_between_vector / 2.0 * to_center_coef)
         end_right_center_pos = end_right_pos_ - (end_between_vector /2.0 * to_center_coef)
