@@ -40,6 +40,7 @@ class FlowsModel(BaseModel):
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
+
 class FlowWidget(QWidget):
     ''' Единица содержания проекта. Отображение элемента модели содержания '''
     __title: QLabel
@@ -100,6 +101,7 @@ class FlowWidget(QWidget):
         main_lay.addWidget(self.__title)
         main_lay.addWidget(self.__description)
         main_lay.addWidget(synonyms_wrapper)
+
 class FlowListWidget(QWidget):
     ''' Обёртка содержания. Уникальная и единственная для проекта. '''
     create_value = Signal()

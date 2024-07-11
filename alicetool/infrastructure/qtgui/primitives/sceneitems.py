@@ -57,6 +57,7 @@ class Arrow(QGraphicsItem):
     __pen_width: int
     __pen_color: QColor
     __end_wgt: QGraphicsItem #TODO: SceneNode
+    __doubleclick_callback: Callable
 
     def __init__(self, 
         start: QPointF = None,
@@ -71,6 +72,7 @@ class Arrow(QGraphicsItem):
         self.__end_wgt = None
         self.__pen_color = QColor('black')
 
+        self.__doubleclick_callback = lambda: None
         
         if not start is None:
             self.__start_point = start
@@ -82,6 +84,9 @@ class Arrow(QGraphicsItem):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setCursor(Qt.CursorShape.ArrowCursor)
+
+    def set_doubleclick_handler(self, doubleclick_callback: Callable):
+        self.__doubleclick_callback = doubleclick_callback
 
     def set_end_wgt(self, widget: QGraphicsItem):
         ''' Прикрепляет конец ребра к элементу сцены '''
@@ -122,6 +127,7 @@ class Arrow(QGraphicsItem):
         if (change == QGraphicsItem.GraphicsItemChange.ItemSelectedChange):
             if (value == True):
                 self.__pen_color = QColor('blue')
+                self.__doubleclick_callback()
             else:
                 self.__pen_color = QColor('black')
 

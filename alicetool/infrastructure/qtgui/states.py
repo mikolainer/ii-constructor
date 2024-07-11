@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
 from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
 from alicetool.infrastructure.qtgui.flows import FlowsModel
+from alicetool.infrastructure.qtgui.steps import StepModel, StepInputSetView
 
 class StatesModel(BaseModel):
     ''' Модель состояний. Для обработки сценой (Editor) '''
@@ -45,12 +46,12 @@ class StatesModel(BaseModel):
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
 class StatesControll:
-    @dataclass
-    class __Connection:
-        arrow: Arrow
-        node_from: SceneNode
-        node_to: SceneNode
-        input: SynonymsSetModel
+#    @dataclass
+#    class __Connection:
+#        arrow: Arrow
+#        node_from: SceneNode
+#        node_to: SceneNode
+#        input: SynonymsSetModel
 
     # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
     __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
@@ -61,7 +62,7 @@ class StatesControll:
     __states_model: StatesModel
     __flows_model: FlowsModel
 
-    __arrows: dict[Arrow, list[__Connection]] # values is list[__Connection]
+    __arrows: dict[Arrow, StepModel]
 
     def __init__(self,
                  select_input_callback: Callable[[],Optional[SynonymsSetModel]], 
@@ -225,12 +226,16 @@ class StatesControll:
 
     def __find_arrow(self, from_node: SceneNode, to_node: SceneNode) -> Optional[Arrow]:
         ''' ищет связь между элементами сцены '''
-        for connections in self.__arrows.values():
-            for conn in connections:
-                if conn.node_from == from_node and conn.node_to == to_node:
-                    return conn.arrow
+        for step_model in self.__arrows.values():
+            if step_model.node_from() == from_node and step_model.node_to() == to_node:
+                return step_model.arrow()
                 
         return None
+
+    def __arrow_doubleclicked_handler(self, arrow:Arrow, model:StepModel):
+        self.__view = StepInputSetView()
+        self.__view.setModel(model)
+        self.__view.show()
 
     def on_add_step(self, scene: Editor, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
         ''' добавляет связь между объектами сцены и вектором перехода '''
@@ -241,35 +246,39 @@ class StatesControll:
             scene.addItem(arrow)
             from_node.arrow_connect_as_start(arrow)
             to_node.arrow_connect_as_end(arrow)
+            step_model = StepModel(arrow, from_node, to_node, scene)
+            self.__arrows[arrow] = step_model
+            step_model.rowsInserted.connect(lambda parent_index,first,last: self.__step_added_handler(step_model, first))
 
-        state_index_from = self.__find_in_model(from_node)
-        state_index_to = self.__find_in_model(to_node)
+            arrow.set_doubleclick_handler(lambda: self.__arrow_doubleclicked_handler(arrow, step_model))
+
+        else:
+            step_model = self.__arrows[arrow]
+
+        if not step_model.get_item_by(CustomDataRole.SynonymsSet, input) is None:
+            # вообще-то не норм ситуация (должно обрабатываться ядром)
+            QMessageBox.warning(scene.parent(), 'Ошибка', 'Шаг уже существует')
+            return
+
+        step_item = ItemData()
+        step_item.on[CustomDataRole.SynonymsSet] = input
+        step_model.prepare_item(step_item)
+        step_model.insertRow()
+        
+
+    def __step_added_handler(self, model:StepModel, row: int):
+        state_index_from = self.__find_in_model(model.node_from())
+        state_index_to = self.__find_in_model(model.node_to())
         from_state_id =  state_index_from.data(CustomDataRole.Id)
         to_state_id = state_index_to.data(CustomDataRole.Id)
-
-        connections: list[self.__Connection]
-        if arrow in self.__arrows.keys():
-            connections = self.__arrows[arrow]
-        else:
-            connections = []
-            self.__arrows[arrow] = connections
-
-        new_conn = self.__Connection(arrow, from_node, to_node, input)
-        for conn in connections:
-            if conn == new_conn:
-                # вообще-то не норм ситуация (должно обрабатываться ядром)
-                QMessageBox.warning(scene.parent(), 'Ошибка', 'Шаг уже существует')
-                return
-
-        connections.append(new_conn)
         
-        step_item = ItemData()
+        step_item = model.get_item(row)
         step_item.on[CustomDataRole.FromState] = from_state_id
         step_item.on[CustomDataRole.ToState] = to_state_id
-        step_item.on[CustomDataRole.SynonymsSet] = input
 
         state_index_from.data(CustomDataRole.Steps).append(step_item)
         state_index_to.data(CustomDataRole.Steps).append(step_item)
+
 
     def on_remove_step(self, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
         ''' удаляет связь между объектами сцены и вектором перехода '''

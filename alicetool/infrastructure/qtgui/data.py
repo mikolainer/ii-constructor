@@ -96,7 +96,7 @@ class PresentationModelMixinBase():
         
         return self.__data[index]
     
-    def get_item_by(self, role:CustomDataRole, value:Any) -> ItemData:
+    def get_item_by(self, role:CustomDataRole, value:Any) -> Optional[ItemData]:
         ''' ищет item по значению роли '''
         if not issubclass(type(role), CustomDataRole):
             raise TypeError(role)

@@ -178,7 +178,6 @@ class SynonymsGroupsView(QListView):
         menu.move(event.globalPos())
         menu.show()
 
-
 class SynonymsSetDelegate(QStyledItemDelegate):
     ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
     def __init__(self, parent: QObject | None = None) -> None:
