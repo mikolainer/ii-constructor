@@ -1,3 +1,4 @@
+from typing import Callable
 from PySide6.QtCore import (
     Qt,
     Slot,
@@ -40,14 +41,12 @@ class StepModel(BaseModel):
     ''' Модель стрелочки на сцене '''
     def __init__( self, arrow, from_node, to_node, parent: QObject | None = None) -> None:
         super().__init__(parent)
+
         self.__arrow = arrow
         self.__node_from = from_node
         self.__node_to = to_node
 
         self._data_init(index_roles= [ CustomDataRole.SynonymsSet ] )
-
-    def removeRow(self, row: int, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
-        return False
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable

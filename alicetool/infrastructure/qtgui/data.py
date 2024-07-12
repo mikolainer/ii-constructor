@@ -1,5 +1,5 @@
 from enum import IntEnum, verify, UNIQUE
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, Callable
 
 from PySide6.QtCore import (
     Qt,
@@ -118,10 +118,17 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     __prepared_item: Optional[ItemData]
     __map_custom_as_qt_role: dict[Qt.ItemDataRole, CustomDataRole]
 
+    __remove_callback: Callable[[QModelIndex], bool]
+
     def __init__( self, parent: QObject | None = None, prepared_item: Optional[ItemData] = None) -> None:
         super().__init__(parent)
+        self.__remove_callback = lambda vector_index: False
         self.__map_custom_as_qt_role = {}
         self.__prepared_item = prepared_item
+
+    def set_remove_callback(self, callback: Callable[[QModelIndex], bool]):
+        ''' callback обработки изменений из пользовательского интерфейса '''
+        self.__remove_callback = callback
 
     def map_role_as(self, role: CustomDataRole, as_role: Qt.ItemDataRole):
         ''' устанавливает соответствие ролей для получения данных через `data()` '''
@@ -160,7 +167,7 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
 
         self.get_item(index.row()).on[role] = value
         self.dataChanged.emit(index,index,[role])
-        return True # ошибки обрабатываем исключениями
+        return True
     
     def data(self, index: QModelIndex | QPersistentModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         ''' Возвращает значение роли у элемента, с индексом `index.row()` '''
@@ -183,7 +190,7 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         self.add_item(self.__prepared_item)
         self.endInsertRows()
         self.__prepared_item = None
-        return True # ошибки обрабатываем исключениями
+        return True
     
     def removeRow(self, row: int, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
         ''' Удаляет 1 элемент с индексом `row`. Аргумент `parent` игнорируeтся. '''
@@ -191,10 +198,13 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     
     def removeRows(self, row: int, count: int = None, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
         ''' Удаляет 1 элемент с индексом `row`. Аргументы `count` и `parent` игнорируются. '''
+        if not self.__remove_callback(self.index(row)):
+            return False
+
         self.beginRemoveRows(QModelIndex(), row, row)
         self.cut_item(self.get_item(row))
         self.endRemoveRows()
-        return True # ошибки обрабатываем исключениями
+        return True
 
 class ProxyModelReadOnly(QIdentityProxyModel):
     ''' Модификатор модели только для чтения '''
