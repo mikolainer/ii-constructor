@@ -12,5 +12,7 @@
     <file>icons/synonyms_list_hover.svg</file>
     <file>icons/exit_norm.svg</file>
     <file>icons/exit_hover.svg</file>
+    <file>icons/plus_btn.svg</file>
+    <file>icons/delete_btn.svg</file>
 </qresource>
 </RCC>

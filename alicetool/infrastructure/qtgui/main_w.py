@@ -30,8 +30,6 @@ from PySide6.QtWidgets import (
     QGraphicsView,
 )
 
-import alicetool.resources.rc_icons
-
 class MainToolButton(QPushButton):
     ''' Кнопка туллбара главного окна '''
     tool_tip : str

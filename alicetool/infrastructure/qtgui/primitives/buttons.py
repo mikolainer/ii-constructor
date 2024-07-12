@@ -1,15 +1,15 @@
 from typing import Optional, overload
 
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QPushButton, QWidget, QToolButton
 from PySide6.QtGui import QIcon, QPixmap, QEnterEvent, QMouseEvent
 from PySide6.QtCore import QSize, Signal
 
-class EnterDetectionButton(QPushButton):
+class EnterDetectionButton(QToolButton):
     ''' QPushButton c сигналом mouse_enter() '''
     mouse_enter = Signal()
 
-    def __init__(self, text:str, parent = None):
-        super().__init__(text, parent)
+    def __init__(self, parent: Optional[QWidget] = None):
+        super().__init__(parent)
         self.setMouseTracking(True)
 
     def enterEvent(self, event: QEnterEvent) -> None:

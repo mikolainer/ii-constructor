@@ -1,4 +1,5 @@
 from math import sqrt
+from enum import IntEnum, verify, UNIQUE
 from typing import overload, Union, Optional, Callable, Any
 
 from PySide6.QtCore import (
@@ -26,6 +27,7 @@ from PySide6.QtGui import (
     QInputMethodEvent,
     QKeyEvent,
     QPolygon,
+    QPixmap,
 )
 
 from PySide6.QtWidgets import (
@@ -452,7 +454,8 @@ class AddConnectionBtn(QGraphicsPixmapItem, QObject):
             self.is_active = True
             self.__is_hide_disabled = False
 
-            pixmap = QMessageBox.standardIcon(QMessageBox.Icon.Information)
+            #pixmap = QMessageBox.standardIcon(QMessageBox.Icon.Information)
+            pixmap = QPixmap(":/icons/plus_btn.svg")
             QObject.__init__(self)
             super().__init__(pixmap.scaled(20,20))
             
@@ -605,6 +608,8 @@ class SceneNode(QGraphicsProxyWidget):
 
     def hide_tools(self):
         ''' Прячет дополнительные органы управления '''
+        wgt:NodeWidget = super().widget()
+        wgt.set_close_btn_style(NodeWidget.CloseBtnStyle.Add)
         self.reset_tools()
         self.__watchdog.stop()
 
@@ -616,6 +621,9 @@ class SceneNode(QGraphicsProxyWidget):
         ''' Отображает дополнительные органы управления '''
         for btn in self.__add_btns:
             if btn.is_active:
+                wgt:NodeWidget = super().widget()
+                wgt.set_close_btn_style(NodeWidget.CloseBtnStyle.Close)
+                
                 btn.show()
         
         self.__watchdog.start()
@@ -693,11 +701,16 @@ class SceneNode(QGraphicsProxyWidget):
             arrow.set_start_point(self.scenePos() + center)
 
 class NodeWidget(QWidget):
+    @verify(UNIQUE)
+    class CloseBtnStyle(IntEnum):
+        Close = 0
+        Add = 1
+
     ''' Визуальная обёртка над содержимым вершины графа '''
-    BUTTONS_MARGIN = 2
-    BUTTON_SIZE = 15
-    TITLE_HEIGHT = 20
-    START_WIDTH = 150
+    BUTTONS_MARGIN:int = 2
+    BUTTON_SIZE:int = 15
+    TITLE_HEIGHT:int = 20
+    START_WIDTH:int = 150
 
     __title: QLabel
     __close_btn: EnterDetectionButton
@@ -716,33 +729,23 @@ class NodeWidget(QWidget):
         font.setWeight(QFont.Weight.ExtraBold)
         self.__title.setFont(font)
         self.__title.setFixedHeight(self.TITLE_HEIGHT)
-        self.__close_btn = EnterDetectionButton("", self)
-        self.__close_btn.setFlat(True)
-        self.__close_btn.setStyleSheet(
-            "QPushButton"
-            "{"
-            "   background-color: #666666;"
-            "   border: 0px; color: #FFFFFF;"
-            "   border-radius: 7px;"
-            "}"
-        )
-        font = self.__close_btn.font()
-        font.setWeight(QFont.Weight.ExtraBold)
-        self.__close_btn.setFont(font)
+        self.__close_btn = EnterDetectionButton(self)
+#       self.__close_btn.setFlat(True)
         self.__close_btn.setFixedHeight(self.BUTTON_SIZE)
         self.__close_btn.setFixedWidth(self.BUTTON_SIZE)
+        self.set_close_btn_style(self.CloseBtnStyle.Add)
         
         self.__content = QScrollArea(self)
         self.__content.setWidgetResizable(True)
         self.__content.setStyleSheet(
-            "QScrollArea{"
-            "   border: 0px;"
-            "   border-top: 1px solid #59A5FF;"
-            "   border-bottom-right-radius: 10px;"
-            "   border-bottom-left-radius: 10px;"
-            "   background-color: #FFFFFF;"
-            "}"
-        )
+                "QScrollArea{"
+                "   border: 0px;"
+                "   border-top: 1px solid #59A5FF;"
+                "   border-bottom-right-radius: 10px;"
+                "   border-bottom-left-radius: 10px;"
+                "   background-color: #FFFFFF;"
+                "}"
+            )
 
         main_lay = QVBoxLayout(self)
         main_lay.setContentsMargins(0,0,0,0)
@@ -767,6 +770,15 @@ class NodeWidget(QWidget):
         main_lay.addWidget(self.__content)
 
         self.resize(self.START_WIDTH, self.START_WIDTH)
+
+    def set_close_btn_style(self, style: CloseBtnStyle):
+        if style == self.CloseBtnStyle.Add:
+            pixmap = QPixmap(":/icons/plus_btn.svg")
+            
+        elif style == self.CloseBtnStyle.Close:
+            pixmap = QPixmap(":icons/delete_btn.svg")
+
+        self.__close_btn.setIcon(pixmap.scaled(self.BUTTON_SIZE, self.BUTTON_SIZE))
 
     def set_title(self, text:str):
         ''' Устанавливает заголовок. Прямое использование не ожидается (обрабатывается в SceneNode) '''
