@@ -187,7 +187,8 @@ class ProjectManager:
             lambda from_state_index, to_state_item, input: self.__on_step_created_from_gui(scenario, proj, from_state_index, to_state_item, input), 
 
             StatesModel(self.__main_window),
-            flows_model
+            flows_model,
+            self.__main_window
         )
 
         editor = QGraphicsView(proj.scene(), self.__workspaces)

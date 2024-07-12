@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
 from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
 from alicetool.infrastructure.qtgui.flows import FlowsModel
-from alicetool.infrastructure.qtgui.steps import StepModel, StepInputSetView
+from alicetool.infrastructure.qtgui.steps import StepModel, StepEditor
 
 class StatesModel(BaseModel):
     ''' Модель состояний. Для обработки сценой (Editor) '''
@@ -63,6 +63,7 @@ class StatesControll:
     __flows_model: FlowsModel
 
     __arrows: dict[Arrow, StepModel]
+    __main_window: QWidget
 
     def __init__(self,
                  select_input_callback: Callable[[],Optional[SynonymsSetModel]], 
@@ -70,7 +71,8 @@ class StatesControll:
                  new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool], 
                  new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool], 
                  states_model:StatesModel, 
-                 flows_model: FlowsModel
+                 flows_model: FlowsModel,
+                 main_window: QWidget,
                 ) -> None:
         self.__select_input_callback = select_input_callback
         self.__change_data_callback = change_data_callback
@@ -79,6 +81,7 @@ class StatesControll:
         self.__states_model = states_model
         self.__flows_model = flows_model
         self.__arrows = {}
+        self.__main_window = main_window
 
     def __find_in_model(self, node:SceneNode) -> QModelIndex:
         for row in range(self.__states_model.rowCount()):
@@ -232,10 +235,9 @@ class StatesControll:
                 
         return None
 
-    def __arrow_doubleclicked_handler(self, arrow:Arrow, model:StepModel):
-        self.__view = StepInputSetView()
-        self.__view.setModel(model)
-        self.__view.show()
+    def __edit_connection(self, model:StepModel):
+        dialog = StepEditor(model, self.__main_window)
+        dialog.exec()
 
     def on_add_step(self, scene: Editor, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
         ''' добавляет связь между объектами сцены и вектором перехода '''
@@ -250,14 +252,14 @@ class StatesControll:
             self.__arrows[arrow] = step_model
             step_model.rowsInserted.connect(lambda parent_index,first,last: self.__step_added_handler(step_model, first))
 
-            arrow.set_doubleclick_handler(lambda: self.__arrow_doubleclicked_handler(arrow, step_model))
+            arrow.set_edit_connection_handler(lambda: self.__edit_connection(step_model))
 
         else:
             step_model = self.__arrows[arrow]
 
         if not step_model.get_item_by(CustomDataRole.SynonymsSet, input) is None:
             # вообще-то не норм ситуация (должно обрабатываться ядром)
-            QMessageBox.warning(scene.parent(), 'Ошибка', 'Шаг уже существует')
+            QMessageBox.warning(self.__main_window, 'Ошибка', 'Шаг уже существует')
             return
 
         step_item = ItemData()

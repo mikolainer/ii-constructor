@@ -12,15 +12,20 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QPainter,
+    QShortcut,
+    QKeySequence,
 )
 
 from PySide6.QtWidgets import (
     QListView,
+    QTableView,
     QWidget,
     QStyledItemDelegate,
     QStyleOptionViewItem,
     QVBoxLayout,
     QLabel,
+    QDialog,
+    QHeaderView,
 )
 
 from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
@@ -41,6 +46,9 @@ class StepModel(BaseModel):
 
         self._data_init(index_roles= [ CustomDataRole.SynonymsSet ] )
 
+    def removeRow(self, row: int, parent: QModelIndex | QPersistentModelIndex = None) -> bool:
+        return False
+
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
     
@@ -55,9 +63,12 @@ class StepModel(BaseModel):
 
 class StepInputWidget(QWidget):
     __synonyms_set: SynonymsSetView
+    __name_label: QLabel
 
     def __init__(self, synonyms_set_model:SynonymsSetModel, parent: QWidget = None):
         super().__init__(parent)
+
+        self.__name_label = QLabel('Набор синонимов', self)
 
         self.__synonyms_set = SynonymsSetView(self)
         self.__synonyms_set.setModel(synonyms_set_model)
@@ -65,8 +76,13 @@ class StepInputWidget(QWidget):
         main_lay = QVBoxLayout(self)
         main_lay.setContentsMargins(0,0,0,0)
         main_lay.setSpacing(0)
-        main_lay.addWidget(QLabel('Набор синонимов', self))
-        main_lay.addWidget(self.__synonyms_set)
+        main_lay.addWidget(self.__name_label, 1)
+        main_lay.addWidget(self.__synonyms_set, 0)
+
+    def sizeHint(self) -> QSize:
+        size = super().sizeHint()
+        size.setHeight(self.__name_label.height() + self.__synonyms_set.sizeHint().height())
+        return size
 
 class StepInputSetDelegate(QStyledItemDelegate):
     ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
@@ -80,11 +96,10 @@ class StepInputSetDelegate(QStyledItemDelegate):
 
         painter.setClipRect(option.rect)
 
+        super().paint(painter, option, index)
         painter.save()
         painter.drawPixmap(option.rect, wgt.grab())
         painter.restore()
-
-        super().paint(painter, option, index)
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
         data = index.data(CustomDataRole.SynonymsSet)
@@ -92,12 +107,35 @@ class StepInputSetDelegate(QStyledItemDelegate):
         wgt.adjustSize()
         return wgt.size()
 
-class StepInputSetView(QListView):
+class StepInputSetView(QTableView):
     ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
-        self.setSelectionMode(QListView.SelectionMode.SingleSelection)
+        self.setSelectionBehavior(QTableView.SelectionBehavior.SelectItems)
+        self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.__delegate = StepInputSetDelegate(self)
         self.setItemDelegate(self.__delegate)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
+
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().hide()
+
+        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        #self.verticalHeader().hide()
+        
+        shotcut = QShortcut(QKeySequence.StandardKey.Delete, self)
+        shotcut.activated.connect(self.remove_selected_row)
+
+    def remove_selected_row(self):
+        for index in self.selectedIndexes():
+            self.model().removeRow(index.row())
+
+class StepEditor(QDialog):
+    def __init__(self, model:StepModel, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+
+        view = StepInputSetView(self)
+        view.setModel(model)
+
+        main_lay = QVBoxLayout(self)
+        main_lay.addWidget(view)

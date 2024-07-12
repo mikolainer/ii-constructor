@@ -57,7 +57,7 @@ class Arrow(QGraphicsItem):
     __pen_width: int
     __pen_color: QColor
     __end_wgt: QGraphicsItem #TODO: SceneNode
-    __doubleclick_callback: Callable
+    __edit_connection_callback: Callable
 
     def __init__(self, 
         start: QPointF = None,
@@ -81,12 +81,13 @@ class Arrow(QGraphicsItem):
 
         self.setPos(self.__center())
         self.setZValue(90)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
-        self.setCursor(Qt.CursorShape.ArrowCursor)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
 
-    def set_doubleclick_handler(self, doubleclick_callback: Callable):
-        self.__doubleclick_callback = doubleclick_callback
+    def set_edit_connection_handler(self, doubleclick_callback: Callable):
+        self.__edit_connection_callback = doubleclick_callback
 
     def set_end_wgt(self, widget: QGraphicsItem):
         ''' Прикрепляет конец ребра к элементу сцены '''
@@ -115,28 +116,24 @@ class Arrow(QGraphicsItem):
     
     def focusInEvent(self, event: QFocusEvent) -> None:
         return super().focusInEvent(event)
-    
-    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-        is_selected = self.isSelected()
-        #self.setSelected(not is_selected)
-        
-        super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        self.__edit_connection_callback()
+        return super().mouseDoubleClickEvent(event)
 
     def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value: Any) -> Any:
-
         if (change == QGraphicsItem.GraphicsItemChange.ItemSelectedChange):
             if (value == True):
                 self.__pen_color = QColor('blue')
-                self.__doubleclick_callback()
             else:
                 self.__pen_color = QColor('black')
 
         return super().itemChange(change, value)
 
-    def inputMethodEvent(self, event: QInputMethodEvent) -> None:
-        super().inputMethodEvent(event)
-
     def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Delete:
+            self.__edit_connection_callback()
+
         super().keyPressEvent(event)
 
     def boundingRect(self) -> QRectF:

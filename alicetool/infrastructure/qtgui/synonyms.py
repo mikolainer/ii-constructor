@@ -226,6 +226,14 @@ class SynonymsSetView(QListView):
         self.setItemDelegate(self.__delegate)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
+    def sizeHint(self) -> QSize:
+        size = super().sizeHint()
+        temp_w = SynonymEditorWidget('some text')
+        temp_w.adjustSize()
+        item_height = temp_w.height()
+        size.setHeight(self.model().rowCount() * item_height)
+        return size
+
 class GroupsList(QStackedWidget):
     ''' Обёртка для набора синонимов в группе'''
     # TODO: изменить наследование на ассоциацию?
