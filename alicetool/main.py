@@ -1,5 +1,6 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QShortcut
 
 from alicetool.infrastructure.qtgui.main_w import MainWindow, Workspaces, FlowList, MainToolButton
 from alicetool.presentation.editor.gui import ProjectManager, Project
@@ -43,6 +44,13 @@ if __name__ == "__main__":
     flow_list = FlowList()
     workspaces = Workspaces()
     main_win = MainWindow(flow_list, workspaces)
+
+#    esc_sqortcut = QShortcut(main_win)
+#    esc_sqortcut.setKey(Qt.Key.Key_Escape)
+#
+#    esc_sqortcut.activated.connect(lambda:
+#        main_win.set_only_editor_enabled(False)
+#    )
 
     projects = ProjectManager(flow_list, workspaces, main_win)
     __setup_main_toolbar(main_win, projects)

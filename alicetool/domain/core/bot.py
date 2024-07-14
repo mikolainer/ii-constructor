@@ -15,7 +15,7 @@ class PossibleInputs:
     def add(self, input_type:'InputDescription'):
         name = input_type.name()
         if name in self.__inputs.keys():
-            raise RuntimeWarning('Имя занято')
+            raise RuntimeWarning(f'Имя "{input_type.name().value}" занято')
         
         self.__inputs[name] = input_type
         
@@ -164,7 +164,7 @@ class Scenario:
                     
                     return
 
-    def create_enter(self, input:InputDescription, state:Optional[StateID | Name]):
+    def create_enter(self, input:InputDescription, state:Optional[StateID | Name]) -> Step:
         state_to: State
         if isinstance(state, StateID):
             state_to = self.__states[state]
@@ -184,7 +184,9 @@ class Scenario:
             if step.input == input:
                 return # возможно стоит бросить исключение
 
-        conn.steps.append(Step(input, conn))
+        new_step = Step(input, conn)
+        conn.steps.append(new_step)
+        return new_step
 
     def remove_enter(self, state_id:StateID):
         conn = self.__find_connection(to_state_id=state_id)

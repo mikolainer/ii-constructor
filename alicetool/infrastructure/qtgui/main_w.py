@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QTabWidget,
     QGraphicsView,
+    QLayoutItem,
 )
 
 class MainToolButton(QPushButton):
@@ -69,27 +70,47 @@ class MainWindow(QMainWindow):
     ''' Главное окно клиента работы над сценариями '''
     __oldPos: QPoint | None
     __tool_bar: QWidget
+    __flow_list: QWidget
+    __workspaces: QTabWidget
+    __close_btn: MainToolButton
 
-    def __init__(self, flow_list: QWidget, workspaces: QWidget, parent: QWidget = None):
+    def __init__(self, flow_list: QWidget, workspaces: QTabWidget, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
         self.setStyleSheet("MainWindow{background-color: #74869C;}")
 
         self.__oldPos = None
+        self.__flow_list = flow_list
+        self.__workspaces = workspaces
 
         flow_list.setParent(self)
         workspaces.setParent(self)
 
-        self.__setup_ui(flow_list, workspaces)
+        self.__setup_ui()
         self.__setup_toolbar()
 
         self.show()
+
+    def set_only_editor_enabled(self, only_editor: bool):
+        #self.__tool_bar.setEnabled(not only_editor)
+        toolbar_layout: QHBoxLayout = self.__tool_bar.layout()
+        for index in range(toolbar_layout.count()):
+            item: QLayoutItem = toolbar_layout.itemAt(index)
+            btn = item.widget()
+            if isinstance(btn, MainToolButton):
+                btn.setEnabled(not only_editor)
+
+        self.__flow_list.setEnabled(not only_editor)
+        self.__workspaces.tabBar().setEnabled(not only_editor)
+
+        self.__close_btn.setEnabled(True)
+
 
     def insert_button(self, btn: MainToolButton, index: int = 0):
         ''' Добавляет кнопку в туллбар '''
         layout: QHBoxLayout = self.__tool_bar.layout()
         layout.insertWidget(index, btn)
 
-    def __setup_ui(self, flow_list: QWidget, workspaces: QWidget):
+    def __setup_ui(self):
         self.setCentralWidget(QWidget(self))
 
         main_lay = QVBoxLayout(self.centralWidget())
@@ -110,8 +131,8 @@ class MainWindow(QMainWindow):
             self,
             Qt.Orientation.Horizontal
         )
-        main_splitter.addWidget(flow_list)
-        main_splitter.addWidget(workspaces)
+        main_splitter.addWidget(self.__flow_list)
+        main_splitter.addWidget(self.__workspaces)
         main_splitter.setStretchFactor(0,0)
         main_splitter.setStretchFactor(1,1)
         
@@ -130,15 +151,15 @@ class MainWindow(QMainWindow):
             )
         )
 
-        btn = MainToolButton('Выйти', QIcon(":/icons/exit_norm.svg"), self)
-        btn.setStyleSheet("background-color: #FF3131; border: none;")
+        self.__close_btn = MainToolButton('Выйти', QIcon(":/icons/exit_norm.svg"), self)
+        self.__close_btn.setStyleSheet("background-color: #FF3131; border: none;")
         
-        btn.status_tip = 'Закрыть программу'
-        btn.whats_this = 'Кнопка завершения программы'
-        btn.icon_size = btn.icon_size * 0.6
-        btn.apply_options()
-        btn.clicked.connect(lambda: self.close())     
-        layout.addWidget(btn)
+        self.__close_btn.status_tip = 'Закрыть программу'
+        self.__close_btn.whats_this = 'Кнопка завершения программы'
+        self.__close_btn.icon_size = self.__close_btn.icon_size * 0.6
+        self.__close_btn.apply_options()
+        self.__close_btn.clicked.connect(lambda: self.close())     
+        layout.addWidget(self.__close_btn)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

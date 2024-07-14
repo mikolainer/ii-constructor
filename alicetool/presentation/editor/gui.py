@@ -1,10 +1,11 @@
 from io import TextIOWrapper
 from typing import Callable, Any, Optional
 
+from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox
 from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, Editor
+from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, Editor, SceneNode
 from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
@@ -22,7 +23,6 @@ class Project:
     __scene: Editor
     __flows_wgt: FlowListWidget
 
-    __states_controll: StatesControll
     vectors_model: SynonymsGroupsModel
     
     def __init__(
@@ -63,9 +63,6 @@ class Project:
         dialog = SynonymsSelector(self.vectors_model, self.__create_synonyms_group, self.__scene.parent())
         dialog.exec()
         return dialog.selected_item()
-
-    def choose_state() -> StateID:
-        pass
 
     def __ask_new_vector_name(self, model:SynonymsGroupsModel) -> str:
         name:str = ''
@@ -128,6 +125,7 @@ class ProjectManager:
     __main_window: MainWindow
     __workspaces: Workspaces
     __flow_list: FlowList
+    __esc_sqortcut: QShortcut
 
     def __init__( self, flow_list: FlowList, workspaces: Workspaces, main_window: MainWindow ) -> None:
         self.__workspaces = workspaces
@@ -137,6 +135,10 @@ class ProjectManager:
         self.__projects = {}
 
         self.__workspaces.currentChanged.connect(self.on_cur_changed)
+
+        self.__esc_sqortcut = QShortcut(self.__main_window)
+        self.__esc_sqortcut.setKey(Qt.Key.Key_Escape)
+        self.__esc_sqortcut.activated.connect(lambda: self.__reset_enter_create_mode())
 
     @Slot(int)
     def on_cur_changed(self, index: int):
@@ -159,6 +161,28 @@ class ProjectManager:
         self.__workspaces.setCurrentWidget(proj.editor())
         self.__flow_list.setCurrentWidget(proj.content())
 
+    def __create_enter_handler(self, flows_model:FlowsModel, project: Project):
+        self.__set_enter_create_mode()
+
+    def __set_enter_create_mode(self):
+        self.__main_window.set_only_editor_enabled(True)
+
+        scene = proj = self.current().editor()
+        for item in scene.items():
+            if not isinstance(item, SceneNode):
+                continue
+
+            item.set_choose_mode(True)
+
+    def __reset_enter_create_mode(self):
+        self.__main_window.set_only_editor_enabled(False)
+
+        scene = proj = self.current().editor()
+        for item in scene.items():
+            if not isinstance(item, SceneNode):
+                continue
+
+            item.set_choose_mode(False)
 
     def __open_project(self, scenario: Scenario):
         content_view = FlowsView(self.__flow_list)
@@ -166,7 +190,6 @@ class ProjectManager:
         content_view.setModel(flows_model)
         content_wgt = FlowListWidget(content_view)
         self.__flow_list.setWidget(content_wgt, True)
-        #content_wgt.create_value.connect('''TODO''')
         
         # создание объекта взаимодействий с проектом
         proj = Project(
@@ -186,6 +209,8 @@ class ProjectManager:
             lambda from_state_index, to_state_index, input: self.__on_step_to_created_from_gui(scenario, proj, from_state_index, to_state_index, input),
             lambda from_state_index, to_state_item, input: self.__on_step_created_from_gui(scenario, proj, from_state_index, to_state_item, input), 
 
+            lambda state_index: self.__on_enter_created_from_gui(scenario, proj, state_index),
+
             StatesModel(self.__main_window),
             flows_model,
             self.__main_window
@@ -194,6 +219,8 @@ class ProjectManager:
         editor = QGraphicsView(proj.scene(), self.__workspaces)
         editor.centerOn(0, 0)
         editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+
+        content_wgt.create_value.connect(lambda: self.__create_enter_handler(flows_model, proj))
 
         self.__projects[editor] = proj # важно добавить перед addTab() для коттектной работы слота "current_changed"
         self.__workspaces.addTab(editor, scenario.name.value)
@@ -272,6 +299,32 @@ class ProjectManager:
         # создание проекта
         scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
         self.__open_project(scenario)
+
+    def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
+        #s_model = project.choose_input()
+        vector = LevenshtainVector(Name(to_state_index.data(CustomDataRole.Name)))
+
+        # костыль
+        can_add_vector = True
+        try:
+            scenario.inputs().add(vector)
+            scenario.inputs().remove(vector.name())
+        except:
+            can_add_vector = False
+
+        if not can_add_vector:
+            return False, None
+
+        vector_item = LevenshtainVectorSerializer().to_data(vector)
+        vector_item.on[CustomDataRole.Description] = ''
+
+        project.vectors_model.prepare_item(vector_item)
+        project.vectors_model.insertRow()
+        
+        state_id = StateID(to_state_index.data(CustomDataRole.Id))
+        scenario.create_enter(input, state_id)
+
+        return True, vector_item.on[CustomDataRole.SynonymsSet]
 
     def __on_step_created_from_gui(self, scenario: Scenario, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
         # найти state_from

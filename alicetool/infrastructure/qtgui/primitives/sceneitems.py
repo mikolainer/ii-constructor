@@ -584,6 +584,9 @@ class SceneNode(QGraphicsProxyWidget):
         # обратная связь для управления дополнительными элементами
         widget.set_graphics_item_ptr(self)
 
+    def set_choose_mode(self, is_choose_mode: bool):
+        self.wrapper_widget().set_choose_mode(is_choose_mode)
+
     def setWidget(self, widget: QWidget) -> None:
         ''' Устанавливает виджет внутрь обёртки '''
         wgt: NodeWidget = super().widget()
@@ -718,11 +721,15 @@ class NodeWidget(QWidget):
     __item_on_scene: SceneNode | None
 
     title_changed = Signal(str)
+    delete_request = Signal(SceneNode)
+    chosen = Signal(SceneNode)
+    __choose_mode: bool
     
     def __init__(self, title: str, parent = None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
+        self.__choose_mode = False
         self.__item_on_scene = None
         self.__title = QLabel(title, self)
         font = self.__title.font()
@@ -757,7 +764,8 @@ class NodeWidget(QWidget):
             "   border: 0px;"
             "   border-top-right-radius: 10px;"
             "   border-top-left-radius: 10px;"
-            "   background-color: #FFFFFF;"
+            "   background-color: #666666;"
+            "   color: #FFFFFF;"
             "}"
         )
         title_lay = QHBoxLayout(title)
@@ -770,6 +778,10 @@ class NodeWidget(QWidget):
         main_lay.addWidget(self.__content)
 
         self.resize(self.START_WIDTH, self.START_WIDTH)
+
+    def set_choose_mode(self, is_choose_mode: bool):
+        self.__choose_mode = is_choose_mode
+        self.widget().setEnabled(not is_choose_mode)
 
     def set_close_btn_style(self, style: CloseBtnStyle):
         if style == self.CloseBtnStyle.Add:
@@ -804,10 +816,18 @@ class NodeWidget(QWidget):
         ''' Устанавливает обратную связь для управления отображением дополнительных органов управления SceneNode '''
         self.__item_on_scene = item
         self.__close_btn.mouse_enter.connect(self.on_close_btn_mouse_enter)
+        self.__close_btn.clicked.connect(self.on_close_btn_mouse_clicked)
+
+    @Slot()
+    def on_close_btn_mouse_clicked(self):
+        if self.__choose_mode:
+            self.chosen.emit(self.__item_on_scene)
+        else:
+            self.delete_request.emit(self.__item_on_scene)
 
     @Slot()
     def on_close_btn_mouse_enter(self):
-        if not self.__item_on_scene is None:
+        if not self.__item_on_scene is None and not self.__choose_mode:
             self.__item_on_scene.show_tools()
 
 class Editor(QGraphicsScene):
