@@ -23,6 +23,7 @@ def __setup_main_toolbar(main_window: MainWindow, project_manager: ProjectManage
     btn.status_tip = 'Сохранить в файл'
     btn.whats_this = 'Кнопка сохранения проекта в файл'
     btn.apply_options()
+    btn.clicked.connect(lambda: project_manager.current().save_to_file())
     main_window.insert_button(btn)
 
     btn = MainToolButton('Открыть проект', QIcon(":/icons/open_proj_norm.svg"), main_window)
@@ -44,13 +45,6 @@ if __name__ == "__main__":
     flow_list = FlowList()
     workspaces = Workspaces()
     main_win = MainWindow(flow_list, workspaces)
-
-#    esc_sqortcut = QShortcut(main_win)
-#    esc_sqortcut.setKey(Qt.Key.Key_Escape)
-#
-#    esc_sqortcut.activated.connect(lambda:
-#        main_win.set_only_editor_enabled(False)
-#    )
 
     projects = ProjectManager(flow_list, workspaces, main_win)
     __setup_main_toolbar(main_win, projects)

@@ -2,7 +2,7 @@ from io import TextIOWrapper
 from typing import Callable, Any, Optional
 
 from PySide6.QtGui import QShortcut, QKeySequence
-from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox
+from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox, QFileDialog 
 from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
 from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, Editor, SceneNode
@@ -22,6 +22,7 @@ class Project:
     __connect_synonym_changes_callback: Callable
     __scene: Editor
     __flows_wgt: FlowListWidget
+    __save_callback: Callable
 
     vectors_model: SynonymsGroupsModel
     
@@ -30,7 +31,8 @@ class Project:
         synonym_create_callback: Callable,
         connect_synonym_changes_callback: Callable,
         scene: Editor,
-        content: FlowListWidget
+        content: FlowListWidget,
+        save_callback: Callable
     ):
         self.vectors_model = SynonymsGroupsModel()
 
@@ -39,6 +41,7 @@ class Project:
 
         self.__synonym_create_callback = synonym_create_callback
         self.__connect_synonym_changes_callback = connect_synonym_changes_callback
+        self.__save_callback = save_callback
 
 
     def id(self) -> ScenarioID:
@@ -117,6 +120,9 @@ class Project:
 
     def scene(self) -> Editor:
         return self.__scene
+    
+    def save_to_file(self):
+        self.__save_callback()
 
 class ProjectManager:
     # открытые проекты
@@ -184,6 +190,100 @@ class ProjectManager:
 
             item.set_choose_mode(False)
 
+    def __save_scenario_handler(self, scenario: Scenario):
+        path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
+
+        answer = list[str]()
+
+        answer.append(f'Идентификатор: {scenario.id}')
+        answer.append(f'Название: {scenario.name.value}')
+        answer.append(f'Краткое описание: {scenario.description.value}')
+
+        states = list[list[str]]()
+        for state in scenario.states().values():
+            _state = list[str]()
+            _state.append('{')
+            _state.append(f'\tid: {state.id().value}')
+            _state.append(f'\tИмя: {state.attributes.name.value}')
+            _state.append(f'\tОтвет: {state.attributes.output.value.text}')
+            _state.append('}')
+            states.append(_state)
+
+        enters = list[list[str]]()
+        very_bad_thing = scenario._Scenario__connections
+        for enter_state_id in very_bad_thing['to'].keys():
+            enter_conn: Connection = very_bad_thing['to'][enter_state_id]
+            enter = list[str]()
+            enter.append('{')
+            enter.append(f'\tсостояние: {enter_state_id.value}')
+            enter.append(f'\tпереходы:')
+            for step in enter_conn.steps:
+                enter.append(f'\t{"["}')
+                vector:LevenshtainVector = step.input
+                for synonym in vector.synonyms:
+                    enter.append(f'\t\t"{synonym.value}",')
+                enter.append(f'\t{"]"}')
+            enter.append('}')
+            enters.append(enter)
+
+        connections = list[list[str]]()
+        for from_state_id in very_bad_thing['from'].keys():
+            _conn = list[str]()
+            _conn.append('{')
+            _conn.append(f'\tиз состояния: {from_state_id.value}')
+            for conn in very_bad_thing['from'][from_state_id]:
+                conn:Connection = conn # просто аннотирование
+                _conn.append(f'\tпереходы в состояние {conn.to_state.id().value}:')
+                for step in enter_conn.steps:
+                    _conn.append(f'\t{"["}')
+                    vector:LevenshtainVector = step.input
+                    for synonym in vector.synonyms:
+                        _conn.append(f'\t\t"{synonym.value}",')
+                    _conn.append(f'\t{"]"}')
+            _conn.append('}')
+            connections.append(_conn)
+
+        answer.append('')
+        answer.append('[Векторы перехода (Наборы синонимов)]')
+        answer.append('{')
+        for vector in scenario.inputs().get():
+            answer.append(
+                ItemDataSerializer.to_string(
+                    LevenshtainVectorSerializer().to_data(vector)
+                )
+            )
+        answer.append('}')
+
+        answer.append('')
+        answer.append('[Состояния]')
+        answer.append('{')
+        for state in states:
+            for line in state:
+                answer.append(f'\t{line}')
+        answer.append('}')
+
+        answer.append('')
+        answer.append('[Входы]')
+        answer.append('{')
+        for enter in enters:
+            for line in enter:
+                answer.append(f'\t{line}')
+        answer.append('}')
+
+        answer.append('')
+        answer.append('[Переходы]')
+        answer.append('{')
+        for connection in connections:
+            for line in connection:
+                answer.append(f'\t{line}')
+        answer.append('}')
+
+        '\n'.join(answer)
+
+        with open(path, "w") as file:
+            file.write('\n'.join(answer))
+
+
     def __open_project(self, scenario: Scenario):
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
@@ -196,7 +296,8 @@ class ProjectManager:
             lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
             lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
             Editor(self.__main_window),
-            content_wgt
+            content_wgt,
+            lambda: self.__save_scenario_handler(scenario)
         )
 
         # создание обработчика изменений на сцене
@@ -429,7 +530,7 @@ class ProjectManager:
             return
         
         vector = self.__get_vector_by_model(proj, scenario, index.model())
-        vector.synonyms[index.row()] = index.data(CustomDataRole.Text)
+        vector.synonyms[index.row()] = Synonym(index.data(CustomDataRole.Text))
 
     def __on_synonym_deleted_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, index: int):
         vector = self.__get_vector_by_model(proj, scenario, model)
