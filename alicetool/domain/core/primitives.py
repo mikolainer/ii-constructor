@@ -26,7 +26,7 @@ class Description:
         _len:int = len(self.value)
         return _len > self.__MIN_LEN and _len < self.__MAX_LEN
 
-@dataclass(frozen=True)
+@dataclass#(frozen=True)
 class Input:
     value:str
 

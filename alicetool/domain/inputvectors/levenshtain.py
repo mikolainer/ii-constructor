@@ -13,7 +13,7 @@ class Synonym:
 class LevenshtainVector(InputDescription):
     synonyms: list[Synonym]
 
-    def __init__(self, name: Name, synonyms: list[Synonym] = []) -> None:
+    def __init__(self, name: Name, synonyms: list[Synonym]) -> None:
         super().__init__(name)
         self.synonyms = synonyms
 
@@ -37,7 +37,7 @@ class LevenshtainVectorSerializer(BaseSerializer):
     
     def from_data(self, data: ItemData) -> LevenshtainVector:
         name = Name(data.on[CustomDataRole.Name])
-        vector = LevenshtainVector(name)
+        vector = LevenshtainVector(name, [])
 
         synonyms_set = list[Synonym]()
         model:SynonymsSetModel = data.on[CustomDataRole.SynonymsSet]

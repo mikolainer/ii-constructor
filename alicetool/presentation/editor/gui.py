@@ -192,96 +192,8 @@ class ProjectManager:
 
     def __save_scenario_handler(self, scenario: Scenario):
         path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
-
-        answer = list[str]()
-
-        answer.append(f'Идентификатор: {scenario.id}')
-        answer.append(f'Название: {scenario.name.value}')
-        answer.append(f'Краткое описание: {scenario.description.value}')
-
-        states = list[list[str]]()
-        for state in scenario.states().values():
-            _state = list[str]()
-            _state.append('{')
-            _state.append(f'\tid: {state.id().value}')
-            _state.append(f'\tИмя: {state.attributes.name.value}')
-            _state.append(f'\tОтвет: {state.attributes.output.value.text}')
-            _state.append('}')
-            states.append(_state)
-
-        enters = list[list[str]]()
-        very_bad_thing = scenario._Scenario__connections
-        for enter_state_id in very_bad_thing['to'].keys():
-            enter_conn: Connection = very_bad_thing['to'][enter_state_id]
-            enter = list[str]()
-            enter.append('{')
-            enter.append(f'\tсостояние: {enter_state_id.value}')
-            enter.append(f'\tпереходы:')
-            for step in enter_conn.steps:
-                enter.append(f'\t{"["}')
-                vector:LevenshtainVector = step.input
-                for synonym in vector.synonyms:
-                    enter.append(f'\t\t"{synonym.value}",')
-                enter.append(f'\t{"]"}')
-            enter.append('}')
-            enters.append(enter)
-
-        connections = list[list[str]]()
-        for from_state_id in very_bad_thing['from'].keys():
-            _conn = list[str]()
-            _conn.append('{')
-            _conn.append(f'\tиз состояния: {from_state_id.value}')
-            for conn in very_bad_thing['from'][from_state_id]:
-                conn:Connection = conn # просто аннотирование
-                _conn.append(f'\tпереходы в состояние {conn.to_state.id().value}:')
-                for step in enter_conn.steps:
-                    _conn.append(f'\t{"["}')
-                    vector:LevenshtainVector = step.input
-                    for synonym in vector.synonyms:
-                        _conn.append(f'\t\t"{synonym.value}",')
-                    _conn.append(f'\t{"]"}')
-            _conn.append('}')
-            connections.append(_conn)
-
-        answer.append('')
-        answer.append('[Векторы перехода (Наборы синонимов)]')
-        answer.append('{')
-        for vector in scenario.inputs().get():
-            answer.append(
-                ItemDataSerializer.to_string(
-                    LevenshtainVectorSerializer().to_data(vector)
-                )
-            )
-        answer.append('}')
-
-        answer.append('')
-        answer.append('[Состояния]')
-        answer.append('{')
-        for state in states:
-            for line in state:
-                answer.append(f'\t{line}')
-        answer.append('}')
-
-        answer.append('')
-        answer.append('[Входы]')
-        answer.append('{')
-        for enter in enters:
-            for line in enter:
-                answer.append(f'\t{line}')
-        answer.append('}')
-
-        answer.append('')
-        answer.append('[Переходы]')
-        answer.append('{')
-        for connection in connections:
-            for line in connection:
-                answer.append(f'\t{line}')
-        answer.append('}')
-
-        '\n'.join(answer)
-
         with open(path, "w") as file:
-            file.write('\n'.join(answer))
+            file.write(SourceControll.serialize(scenario))
 
 
     def __open_project(self, scenario: Scenario):
@@ -403,7 +315,7 @@ class ProjectManager:
 
     def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
         #s_model = project.choose_input()
-        vector = LevenshtainVector(Name(to_state_index.data(CustomDataRole.Name)))
+        vector = LevenshtainVector(Name(to_state_index.data(CustomDataRole.Name)), [])
 
         # костыль
         can_add_vector = True
@@ -423,9 +335,12 @@ class ProjectManager:
         project.vectors_model.insertRow()
         
         state_id = StateID(to_state_index.data(CustomDataRole.Id))
-        scenario.create_enter(input, state_id)
+        scenario.create_enter(vector, state_id)
 
-        return True, vector_item.on[CustomDataRole.SynonymsSet]
+        s_model = vector_item.on[CustomDataRole.SynonymsSet]
+        self.__connect_synonym_changes_from_gui(project, scenario, s_model)
+
+        return True, s_model
 
     def __on_step_created_from_gui(self, scenario: Scenario, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
         # найти state_from
@@ -489,7 +404,7 @@ class ProjectManager:
 
     def __on_vector_created_from_gui(self, scenario: Scenario, new_vector_item: QModelIndex):
         name = new_vector_item.data(CustomDataRole.Name)
-        new_vector = LevenshtainVector(Name(name))
+        new_vector = LevenshtainVector(Name(name), [])
         scenario.inputs().add(new_vector)
 
     def __on_state_changed_from_gui(self, scenario:Scenario, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
