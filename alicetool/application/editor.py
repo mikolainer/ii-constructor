@@ -1,4 +1,4 @@
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID
 from alicetool.domain.core.bot import Scenario, Connection
 
@@ -9,17 +9,17 @@ class ScenarioFactory:
         new_project = Scenario(name, description)
 
         state_name = Name('Старт')
-        input_vector = LevenshtainVector(state_name, [Synonym('Алиса, запусти навык ...')])
+        input_vector = LevenshtainVector(state_name, SynonymsGroup([Synonym('Алиса, запусти навык ...')]))
         new_project.inputs().add(input_vector)
         new_project.create_enter(input_vector, state_name)
 
         state_name = Name('Информация')
-        input_vector = LevenshtainVector(state_name, [Synonym('Информация'), Synonym('Справка'), Synonym('Расскажи о себе')])
+        input_vector = LevenshtainVector(state_name, SynonymsGroup([Synonym('Информация'), Synonym('Справка'), Synonym('Расскажи о себе')]))
         new_project.inputs().add(input_vector)
         new_project.create_enter(input_vector, state_name)
 
         state_name = Name('Помощь')
-        input_vector = LevenshtainVector(state_name, [Synonym('Помощь'), Synonym('Помоги'), Synonym('Как выйти')])
+        input_vector = LevenshtainVector(state_name, SynonymsGroup([Synonym('Помощь'), Synonym('Помоги'), Synonym('Как выйти')]))
         new_project.inputs().add(input_vector)
         new_project.create_enter(input_vector, state_name)
 
@@ -31,7 +31,7 @@ class ScenarioFactory:
 
 class SourceControll:
     @staticmethod
-    def serialize(scenario:Scenario) -> str:
+    def serialize(scenario: Scenario) -> str:
         ''' сформировать строку для сохранения в файл '''
         answer = list[str]()
 
@@ -45,7 +45,7 @@ class SourceControll:
             _vector.append('{')
             _vector.append(f'\tназвание: "{vector.name().value}"')
             _vector.append(f'\t{"["}')
-            for synonym in vector.synonyms:
+            for synonym in vector.synonyms.synonyms:
                 _vector.append(f'\t\t"{synonym.value}",')
             _vector.append(f'\t{"]"}')
             _vector.append('}')
@@ -74,7 +74,7 @@ class SourceControll:
             for step in enter_conn.steps:
                 vector:LevenshtainVector = step.input
                 enter.append(f'\t\t{"["}')
-                for synonym in vector.synonyms:
+                for synonym in vector.synonyms.synonyms:
                     enter.append(f'\t\t\t"{synonym.value}",')
                 enter.append(f'\t\t{"]"}')
             enter.append(f'\t{"]"}')
@@ -90,10 +90,10 @@ class SourceControll:
                 conn:Connection = conn # просто аннотирование
                 _conn.append(f'\tпереходы в состояние {conn.to_state.id().value}:')
                 _conn.append(f'\t{"["}')
-                for step in enter_conn.steps:
+                for step in conn.steps:
                     vector:LevenshtainVector = step.input
                     _conn.append(f'\t\t{"["}')
-                    for synonym in vector.synonyms:
+                    for synonym in vector.synonyms.synonyms:
                         _conn.append(f'\t\t\t"{synonym.value}",')
                     _conn.append(f'\t\t{"]"}')
                 _conn.append(f'\t{"]"}')

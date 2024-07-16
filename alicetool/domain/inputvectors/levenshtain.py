@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional, Union
 
 from alicetool.infrastructure.qtgui.data import SynonymsSetModel, ItemData, CustomDataRole
 from alicetool.domain.core.primitives import Input, Name, StateID
@@ -10,10 +10,24 @@ from alicetool.application.data import BaseSerializer
 class Synonym:
     value:str
 
-class LevenshtainVector(InputDescription):
+class SynonymsGroup:
     synonyms: list[Synonym]
+    
+    def __init__(self, other:Optional[Union['SynonymsGroup' , list[Synonym]]] = None):
+        if isinstance(other, SynonymsGroup):
+            self.synonyms = other.synonyms
+        elif isinstance(other, list):
+            for synonym in other:
+                if not isinstance(synonym, Synonym):
+                    raise TypeError(other)
+            self.synonyms = other
+        else:
+            self.synonyms = []
 
-    def __init__(self, name: Name, synonyms: list[Synonym]) -> None:
+class LevenshtainVector(InputDescription):
+    synonyms: SynonymsGroup
+
+    def __init__(self, name: Name, synonyms: SynonymsGroup) -> None:
         super().__init__(name)
         self.synonyms = synonyms
 
@@ -25,7 +39,7 @@ class LevenshtainVectorSerializer(BaseSerializer):
         item.on[CustomDataRole.Name] = obj.name().value
         
         synonyms = SynonymsSetModel()
-        for value in obj.synonyms:
+        for value in obj.synonyms.synonyms:
             synonym = ItemData()
             synonym.on[CustomDataRole.Text] = value.value
             synonyms.prepare_item(synonym)
@@ -37,7 +51,7 @@ class LevenshtainVectorSerializer(BaseSerializer):
     
     def from_data(self, data: ItemData) -> LevenshtainVector:
         name = Name(data.on[CustomDataRole.Name])
-        vector = LevenshtainVector(name, [])
+        vector = LevenshtainVector(name, SynonymsGroup())
 
         synonyms_set = list[Synonym]()
         model:SynonymsSetModel = data.on[CustomDataRole.SynonymsSet]
@@ -45,7 +59,7 @@ class LevenshtainVectorSerializer(BaseSerializer):
         for index in range(val_cnt):
             synonyms_set.append(Synonym(model.get_item(index).on[CustomDataRole.Text]))
 
-        vector.synonyms = synonyms_set
+        vector.synonyms.synonyms = synonyms_set
 
         return vector
     

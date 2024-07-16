@@ -15,7 +15,7 @@ from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.application.data import ItemDataSerializer
 from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription, Output, Answer
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer, SynonymsGroup
 
 class Project:
     __synonym_create_callback: Callable
@@ -315,7 +315,7 @@ class ProjectManager:
 
     def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
         #s_model = project.choose_input()
-        vector = LevenshtainVector(Name(to_state_index.data(CustomDataRole.Name)), [])
+        vector = LevenshtainVector(Name(to_state_index.data(CustomDataRole.Name)), SynonymsGroup())
 
         # костыль
         can_add_vector = True
@@ -404,7 +404,7 @@ class ProjectManager:
 
     def __on_vector_created_from_gui(self, scenario: Scenario, new_vector_item: QModelIndex):
         name = new_vector_item.data(CustomDataRole.Name)
-        new_vector = LevenshtainVector(Name(name), [])
+        new_vector = LevenshtainVector(Name(name), SynonymsGroup())
         scenario.inputs().add(new_vector)
 
     def __on_state_changed_from_gui(self, scenario:Scenario, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
@@ -427,7 +427,7 @@ class ProjectManager:
 
     # TODO: staticmethod?
     def __on_synonym_created_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, data: ItemData):
-        self.__get_vector_by_model(proj, scenario, model).synonyms.append(Synonym(data.on[CustomDataRole.Text]))
+        self.__get_vector_by_model(proj, scenario, model).synonyms.synonyms.append(Synonym(data.on[CustomDataRole.Text]))
 
     # TODO: staticmethod?
     def __connect_synonym_changes_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel):
@@ -445,11 +445,11 @@ class ProjectManager:
             return
         
         vector = self.__get_vector_by_model(proj, scenario, index.model())
-        vector.synonyms[index.row()] = Synonym(index.data(CustomDataRole.Text))
+        vector.synonyms.synonyms[index.row()] = Synonym(index.data(CustomDataRole.Text))
 
     def __on_synonym_deleted_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, index: int):
         vector = self.__get_vector_by_model(proj, scenario, model)
-        vector.synonyms.pop(index)
+        vector.synonyms.synonyms.pop(index)
 
     def __get_vector_by_model(self, proj:Project, scenario:Scenario, model:SynonymsSetModel) -> LevenshtainVector:
         group_name: Name = None
