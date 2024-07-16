@@ -314,28 +314,29 @@ class ProjectManager:
         self.__open_project(scenario)
 
     def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
-        #s_model = project.choose_input()
-        vector = LevenshtainVector(Name(to_state_index.data(CustomDataRole.Name)), SynonymsGroup())
+        vector_name = Name(to_state_index.data(CustomDataRole.Name))
+        vector_item: ItemData
 
         # костыль
         can_add_vector = True
         try:
+            vector = LevenshtainVector(vector_name, SynonymsGroup())
             scenario.inputs().add(vector)
-            scenario.inputs().remove(vector.name())
+            scenario.inputs().remove(vector_name)
+            vector_item = LevenshtainVectorSerializer().to_data(vector)
+            vector_item.on[CustomDataRole.Description] = ''
         except:
             can_add_vector = False
 
         if not can_add_vector:
             return False, None
 
-        vector_item = LevenshtainVectorSerializer().to_data(vector)
-        vector_item.on[CustomDataRole.Description] = ''
-
         project.vectors_model.prepare_item(vector_item)
         project.vectors_model.insertRow()
         
         state_id = StateID(to_state_index.data(CustomDataRole.Id))
-        scenario.create_enter(vector, state_id)
+        
+        scenario.create_enter(scenario.inputs().get([vector_name])[0], state_id)
 
         s_model = vector_item.on[CustomDataRole.SynonymsSet]
         self.__connect_synonym_changes_from_gui(project, scenario, s_model)
