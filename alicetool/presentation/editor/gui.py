@@ -340,17 +340,28 @@ class ProjectManager:
         except:
             can_add_vector = False
 
-        if not can_add_vector:
-            return False, None
-
-        project.vectors_model.prepare_item(vector_item)
-        project.vectors_model.insertRow()
-        
         state_id = StateID(to_state_index.data(CustomDataRole.Id))
-        
-        scenario.create_enter(scenario.inputs().get([vector_name])[0], state_id)
 
-        s_model = vector_item.on[CustomDataRole.SynonymsSet]
+        if can_add_vector:
+            project.vectors_model.prepare_item(vector_item)
+            project.vectors_model.insertRow()
+            scenario.create_enter(scenario.inputs().get([vector_name])[0], state_id)
+            s_model = vector_item.on[CustomDataRole.SynonymsSet]
+
+        else:# вектор уже существует
+
+            if scenario.is_enter(scenario.states([state_id])[state_id]): # состояние уже является входом
+                return False, None
+
+            found_states = scenario.get_states_by_name(vector_name)# имя вектора входа соответствует имени состояния входа
+            for state in found_states:
+                if scenario.is_enter(state):# точка входа уже существует
+                    return False, None
+
+            # существующий вектор не является входом и выбранное состояние не является входом
+            scenario.create_enter(scenario.inputs().get([vector_name])[0], state_id)
+            s_model = project.vectors_model.get_item_by(CustomDataRole.Name, vector_name.value).on[CustomDataRole.SynonymsSet]
+        
         self.__connect_synonym_changes_from_gui(project, scenario, s_model)
 
         return True, s_model

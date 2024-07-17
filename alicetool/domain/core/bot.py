@@ -191,6 +191,17 @@ class Scenario:
     def remove_enter(self, state_id:StateID):
         self.__connections['to'].pop(state_id)
 
+    def get_states_by_name(self, name: Name) -> list[State]:
+        result = list[State]()
+        for state in self.__states.values():
+            if state.attributes.name == name:
+                result.append(state)
+
+        return result
+    
+    def is_enter(self, state:State) -> bool:
+        return state.id() in self.__connections['to'].keys()
+
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
         if ids is None:
             return self.__states.copy()
