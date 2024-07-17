@@ -202,6 +202,7 @@ class ProjectManager:
         content_view.setModel(flows_model)
         content_wgt = FlowListWidget(content_view)
         self.__flow_list.setWidget(content_wgt, True)
+
         
         # создание объекта взаимодействий с проектом
         proj = Project(
@@ -211,6 +212,7 @@ class ProjectManager:
             content_wgt,
             lambda: self.__save_scenario_handler(scenario)
         )
+        flows_model.set_remove_callback(lambda index: self.__on_flow_remove_from_gui(scenario, index))
 
         # создание обработчика изменений на сцене
         states_controll = StatesControll(
@@ -312,6 +314,16 @@ class ProjectManager:
         # создание проекта
         scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
         self.__open_project(scenario)
+
+    def __on_flow_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
+        _state_id:int = index.data(CustomDataRole.EnterStateId)
+        state_id = StateID(_state_id)
+        enter_state = scenario.states([state_id])[state_id]
+        if enter_state.required:
+            return False
+        
+        scenario.remove_enter(state_id)
+        return True
 
     def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
         vector_name = Name(to_state_index.data(CustomDataRole.Name))

@@ -189,12 +189,6 @@ class Scenario:
         return new_step
 
     def remove_enter(self, state_id:StateID):
-        conn = self.__find_connection(to_state_id=state_id)
-
-        if not conn.from_state is None:
-            ''' TODO: возможно стоит бросить исключение '''
-            return
-        
         self.__connections['to'].pop(state_id)
 
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
