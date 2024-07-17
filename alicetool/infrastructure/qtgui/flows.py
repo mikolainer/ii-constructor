@@ -11,6 +11,7 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtGui import (
+    QContextMenuEvent,
     QMouseEvent,
     QPainter,
 )
@@ -27,6 +28,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QVBoxLayout,
     QInputDialog,
+    QMenu,
+    QMessageBox,
 )
 
 from .data import CustomDataRole, BaseModel, SynonymsSetModel
@@ -236,3 +239,21 @@ class FlowsView(QTableView):
             self.openPersistentEditor(item)
 
         return super().mouseMoveEvent(event)
+    
+    def __remove_row(self, index:QModelIndex):
+        if not self.model().removeRow(index.row()):
+            QMessageBox.warning(self, 'Невозможно выполнить', 'Невозможно удалить точку входа. Эта команда должна быть реализована для яндекс диалогов!')
+    
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        index = self.indexAt(event.pos())
+
+        if not index.isValid():
+            return super().contextMenuEvent(event)
+        
+        menu = QMenu(self)
+
+        menu.addAction('Удалить', lambda: self.__remove_row(index))
+        menu.move(event.globalPos())
+        menu.show()
+
+        event.accept()

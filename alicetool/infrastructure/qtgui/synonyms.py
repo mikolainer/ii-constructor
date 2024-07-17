@@ -146,8 +146,11 @@ class SynonymsGroupsView(QListView):
 
     def remove_selected_row(self):
         for index in self.selectedIndexes():
-            if not self.model().removeRow(index.row()):
-                QMessageBox.warning(self, 'Невозможно выполнить', 'Невозможно удалить выбранный вектор. Он используется в существующих переходах!')
+            self.__remove_row(index)
+
+    def __remove_row(self, index:QModelIndex):
+        if not self.model().removeRow(index.row()):
+            QMessageBox.warning(self, 'Невозможно выполнить', 'Невозможно удалить выбранный вектор. Он используется в существующих переходах!')
 
     def selectionChanged(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         self.on_selectionChanged.emit(selected, deselected)
@@ -159,7 +162,7 @@ class SynonymsGroupsView(QListView):
             return
 
         menu = QMenu(self)
-        menu.addAction('Удалить', lambda: index.model().removeRow(index.row()), QKeySequence(QKeySequence.StandardKey.Delete))
+        menu.addAction('Удалить', lambda: self.__remove_row(index), QKeySequence(QKeySequence.StandardKey.Delete))
         menu.move(event.globalPos())
         menu.show()
 
