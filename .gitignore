@@ -5,3 +5,6 @@ alicetool.egg-info/*
 venv/
 env/
 .env
+build/*
+dist/*
+main.spec
