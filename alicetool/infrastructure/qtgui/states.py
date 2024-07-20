@@ -40,21 +40,13 @@ class StatesModel(BaseModel):
             CustomDataRole.Text
         ]
 
-        self._data_init(index_roles=roles)
+        self._data_init(index_roles=roles, required_roles=[CustomDataRole.Steps])
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
 class StatesControll:
-#    @dataclass
-#    class __Connection:
-#        arrow: Arrow
-#        node_from: SceneNode
-#        node_to: SceneNode
-#        input: SynonymsSetModel
-
-    # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
-    __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
+    __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]] # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
     __new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
     __new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]
     __select_input_callback: Callable[[],Optional[SynonymsSetModel]]
@@ -330,18 +322,18 @@ class StatesControll:
         self.__flows_model.prepare_item(enter)
         self.__flows_model.insertRow()
 
-    def on_remove_enter(self, node:SceneNode):
-        ''' удаляет элемент содержания связанный с объектом сцены '''
-        pass
-
     def on_remove_node(self, node:SceneNode):
         ''' по изменениям в сценарии изменить модель и удалить элемент сцены '''
-#        scene = node.scene()
-#        model_index = self.__find_in_model(node)
-#        if model_index.isValid():
-#            self.__states_model.removeRow(model_index.row())
-#
-#        scene.removeItem(node)
+        scene = node.scene()
+        state_index = self.__find_in_model(node)
+        if not state_index.isValid():
+            return # вообще-то не норм ситуация
+
+        if not self.__states_model.removeRow(state_index.row()):
+            QMessageBox.warning(self.__main_window, 'Невозможно выполнить', 'Невозможно удалить состояние. Есть переходы связанные с ним!')
+            return
+        
+        scene.removeItem(node)
 
     def on_node_chosen(self, node:SceneNode):
         state_item_index = self.__find_in_model(node)

@@ -112,7 +112,7 @@ class Scenario:
         self.__states[state_id].attributes.output = data
 
     def remove_state(self, state_id:StateID):
-        pass
+        self.__states.pop(state_id)
 
     def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription, input_name:Optional[Name] = None) -> Step:
         state_from = self.__states[from_state_id]

@@ -215,6 +215,9 @@ class ProjectManager:
         flows_model.set_remove_callback(lambda index: self.__on_flow_remove_from_gui(scenario, index))
         proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(scenario, index))
 
+        states_model = StatesModel(self.__main_window)
+        states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(scenario, index))
+
         # создание обработчика изменений на сцене
         states_controll = StatesControll(
             lambda: proj.choose_input(),
@@ -233,7 +236,7 @@ class ProjectManager:
 
             lambda state_index: self.__on_enter_created_from_gui(scenario, proj, state_index),
 
-            StatesModel(self.__main_window),
+            states_model,
             flows_model,
             self.__main_window
         )
@@ -347,6 +350,16 @@ class ProjectManager:
             return False
         
         scenario.remove_enter(state_id)
+        return True
+    
+    def __on_state_removed_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
+        state_id = StateID(index.data(CustomDataRole.Id))
+        
+        steps = scenario.steps(state_id)
+        if len(steps) > 0:
+            return False
+
+        scenario.remove_state(state_id)
         return True
 
     def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
