@@ -221,8 +221,14 @@ class ProjectManager:
             lambda state_id, value, role:
                 self.__on_state_changed_from_gui(scenario, state_id, value, role),
             
-            lambda from_state_index, to_state_index, input: self.__on_step_to_created_from_gui(scenario, proj, from_state_index, to_state_index, input),
-            lambda from_state_index, to_state_item, input: self.__on_step_created_from_gui(scenario, proj, from_state_index, to_state_item, input), 
+            lambda from_state_index, to_state_index, input: 
+                self.__on_step_to_created_from_gui(scenario, proj, from_state_index, to_state_index, input),
+
+            lambda state_from, state_to, input:
+                self.__on_step_removed_from_gui(scenario, proj, state_from, state_to, input),
+
+            lambda from_state_index, to_state_item, input: 
+                self.__on_step_created_from_gui(scenario, proj, from_state_index, to_state_item, input), 
 
             lambda state_index: self.__on_enter_created_from_gui(scenario, proj, state_index),
 
@@ -400,7 +406,15 @@ class ProjectManager:
         to_state_item.on[CustomDataRole.Steps] = [step_item]
 
         return True
+    
+    def __on_step_removed_from_gui(self, scenario: Scenario, project:Project, state_from: QModelIndex, state_to: QModelIndex, input: SynonymsSetModel):
+        from_state_id:int = state_from.data(CustomDataRole.Id)
 
+        input_vector = self.__get_vector_by_model(project, scenario, input)
+        scenario.remove_step(StateID(from_state_id), input_vector)
+
+        return True
+        
     def __on_step_to_created_from_gui(self, scenario: Scenario, project:Project, from_state_index: QModelIndex, to_state_index: QModelIndex, input: SynonymsSetModel) -> bool:
         from_state_id = StateID(from_state_index.data(CustomDataRole.Id))
         to_state_id = StateID(to_state_index.data(CustomDataRole.Id))

@@ -59,6 +59,7 @@ class StatesControll:
     __new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]
     __select_input_callback: Callable[[],Optional[SynonymsSetModel]]
     __add_enter_callback: Callable[[QModelIndex], tuple[bool, Optional[SynonymsSetModel]]]
+    __step_remove_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool] # state_from, state_to, input -> ok
 
     __states_model: StatesModel
     __flows_model: FlowsModel
@@ -70,6 +71,7 @@ class StatesControll:
                  select_input_callback: Callable[[],Optional[SynonymsSetModel]], 
                  change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], 
                  new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool], 
+                 step_remove_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool],
                  new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool],
                  add_enter_callback: Callable[[QModelIndex], tuple[bool, Optional[SynonymsSetModel]]],
                  states_model:StatesModel, 
@@ -79,6 +81,7 @@ class StatesControll:
         self.__select_input_callback = select_input_callback
         self.__change_data_callback = change_data_callback
         self.__new_step_callback = new_step_callback
+        self.__step_remove_callback = step_remove_callback
         self.__new_state_callback = new_state_callback
         self.__add_enter_callback = add_enter_callback
 
@@ -258,6 +261,7 @@ class StatesControll:
             self.__arrows[arrow] = step_model
             step_model.rowsInserted.connect(lambda parent_index,first,last: self.__step_added_handler(step_model, first))
 
+            step_model.set_remove_callback(lambda index: self.on_remove_step(index))
             arrow.set_edit_connection_handler(lambda: self.__edit_connection(step_model))
 
         else:
@@ -288,9 +292,38 @@ class StatesControll:
         state_index_to.data(CustomDataRole.Steps).append(step_item)
 
 
-    def on_remove_step(self, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
+    def on_remove_step(self, step_index: QModelIndex):
         ''' удаляет связь между объектами сцены и вектором перехода '''
-        pass
+        model:StepModel = step_index.model()
+        step_index.data(CustomDataRole.SynonymsSet)
+        self.__find_in_model(model.node_from())
+        if not self.__step_remove_callback(
+                    self.__find_in_model(model.node_from()),
+                    self.__find_in_model(model.node_to()),
+                    step_index.data(CustomDataRole.SynonymsSet)
+                ):
+            return False
+
+        if model.rowCount() == 1:
+            self.__remove_arrow(model)
+            
+        return True
+    
+    def __remove_arrow(self, model:StepModel):
+        ''' удаляет все упоминания стрелки '''
+
+        arrow = model.arrow()
+
+        # в связанных элементах сцены
+        model.node_from().arrow_disconnect(arrow)
+        model.node_to().arrow_disconnect(arrow)
+
+        # на сцене
+        editor = arrow.scene()
+        editor.removeItem(arrow)
+
+        # в индексе
+        self.__arrows.pop(arrow)
 
     def on_add_enter(self, enter: ItemData):
         ''' добавляет элемент содержания '''

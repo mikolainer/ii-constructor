@@ -130,11 +130,20 @@ class StepInputSetView(QTableView):
             self.model().removeRow(index.row())
 
 class StepEditor(QDialog):
+    __model: StepModel
     def __init__(self, model:StepModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
+        self.__model = model
+
         view = StepInputSetView(self)
-        view.setModel(model)
+        view.setModel(self.__model)
 
         main_lay = QVBoxLayout(self)
         main_lay.addWidget(view)
+
+        self.__model.rowsRemoved.connect(lambda parent_idx, first, last: self.__auto_close())
+
+    def __auto_close(self):
+        if len(self.__model) == 0:
+            self.close()

@@ -127,16 +127,36 @@ class Scenario:
             state_to.attributes.desrciption = to_state.desrciption
             state_to.attributes.output = to_state.output
 
-        conn = Connection(state_from, state_to, [])
-        step = Step(input, conn)
-        conn.steps.append(step)
+        new_conn = Connection(state_from, state_to, [])
 
-        if from_state_id in self.__connections['from'].keys():
-            self.__connections['from'][from_state_id].append(conn)
+        # если это первый переход из этого состояния
+        if not from_state_id in self.__connections['from'].keys():
+            self.__connections['from'][from_state_id] = [new_conn]
+            conn = new_conn
+
         else:
-            self.__connections['from'][from_state_id] = [conn]
+            found:Connection = None
+            for _conn in self.__connections['from'][from_state_id]:
+                _conn:Connection = _conn
+                if _conn.to_state == state_to:
+                    found = _conn
+                    break
 
-        return step
+            if found is None:
+                # это первый переход из state_from в state_to
+                self.__connections['from'][from_state_id] = [new_conn]
+                conn = new_conn
+            else:
+                conn = found
+
+        for step in conn.steps:
+            if step.input == input:
+                raise RuntimeError('переход уже существует')
+
+        new_step = Step(input, conn)
+        conn.steps.append(new_step)
+        
+        return new_step
 
     def remove_step(self, from_state_id:StateID, input:InputDescription):
         '''
@@ -157,7 +177,7 @@ class Scenario:
                     conn.steps.remove(step)
                     
                     if len(conn.steps) == 0:
-                        self.__connections['from'][from_state_id].pop(conn)
+                        self.__connections['from'][from_state_id].remove(conn)
                     
                     if len(self.__connections['from'][from_state_id]) == 0:
                         self.__connections['from'].pop(from_state_id)
