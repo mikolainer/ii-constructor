@@ -213,6 +213,7 @@ class ProjectManager:
             lambda: self.__save_scenario_handler(scenario)
         )
         flows_model.set_remove_callback(lambda index: self.__on_flow_remove_from_gui(scenario, index))
+        proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(scenario, index))
 
         # создание обработчика изменений на сцене
         states_controll = StatesControll(
@@ -320,6 +321,23 @@ class ProjectManager:
         # создание проекта
         scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
         self.__open_project(scenario)
+
+    def __on_vector_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
+        input_name = Name(index.data(CustomDataRole.Name))
+        found_inputs = input = scenario.inputs().get([input_name])
+        found_len = len(found_inputs)
+        if found_len == 0:
+            return True
+        elif found_len > 1:
+            return False # может стоит бросить исключение. (вообще-то не норм ситуация)
+        input = found_inputs[0]
+
+        found_connections = scenario.input_usage(input)
+        if len(found_connections) > 0:
+            return False
+        
+        scenario.inputs().remove(input_name)
+        return True
 
     def __on_flow_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
         _state_id:int = index.data(CustomDataRole.EnterStateId)

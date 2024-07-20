@@ -262,3 +262,23 @@ class Scenario:
 
     def inputs(self) -> PossibleInputs:
         return self.__input_vectors
+    
+    def input_usage(self, input: InputDescription) -> list[Connection]:
+        result = list[Connection]()
+        
+        for conn in self.__connections['to'].values():
+            conn: Connection = conn
+            for step in conn.steps:
+                if step.input == input:
+                    result.append(conn)
+                    break
+        
+        for conn_list in self.__connections['from'].values():
+            for conn in conn_list:
+                conn: Connection = conn
+                for step in conn.steps:
+                    if step.input == input:
+                        result.append(conn)
+                        break
+        
+        return result
