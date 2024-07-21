@@ -252,7 +252,7 @@ class ProjectManager:
 
         ### векторы переходов
         ## наполнение представления
-        for vector in scenario.inputs().get():
+        for vector in scenario.inputs().select():
             # пока только левенштейн
             serialiser = LevenshtainVectorSerializer()
 
@@ -327,16 +327,11 @@ class ProjectManager:
 
     def __on_vector_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
         input_name = Name(index.data(CustomDataRole.Name))
-        found_inputs = input = scenario.inputs().get([input_name])
-        found_len = len(found_inputs)
-        if found_len == 0:
+        if not scenario.inputs().exists(input_name):
             return True
-        elif found_len > 1:
-            return False # может стоит бросить исключение. (вообще-то не норм ситуация)
-        input = found_inputs[0]
-
-        found_connections = scenario.input_usage(input)
-        if len(found_connections) > 0:
+        
+        input = scenario.inputs().get(input_name)
+        if len(scenario.input_usage(input)) > 0:
             return False
         
         scenario.inputs().remove(input_name)
@@ -382,7 +377,7 @@ class ProjectManager:
         if can_add_vector:
             project.vectors_model.prepare_item(vector_item)
             project.vectors_model.insertRow()
-            scenario.create_enter(scenario.inputs().get([vector_name])[0], state_id)
+            scenario.create_enter(scenario.inputs().get(vector_name), state_id)
             s_model = vector_item.on[CustomDataRole.SynonymsSet]
 
         else:# вектор уже существует
@@ -396,7 +391,7 @@ class ProjectManager:
                     return False, None
 
             # существующий вектор не является входом и выбранное состояние не является входом
-            scenario.create_enter(scenario.inputs().get([vector_name])[0], state_id)
+            scenario.create_enter(scenario.inputs().get(vector_name), state_id)
             s_model = project.vectors_model.get_item_by(CustomDataRole.Name, vector_name.value).on[CustomDataRole.SynonymsSet]
         
         self.__connect_synonym_changes_from_gui(project, scenario, s_model)
@@ -408,16 +403,14 @@ class ProjectManager:
         from_state_id = StateID(from_state_index.data(CustomDataRole.Id))
         state_from = scenario.states([from_state_id])[from_state_id]
         # найти input_vector
-        input_name = None
+        _input_name = None
         for index in range(project.vectors_model.rowCount()):
             model_item = project.vectors_model.get_item(index)
             if model_item.on[CustomDataRole.SynonymsSet] is input:
-                input_name = model_item.on[CustomDataRole.Name]
-        if input_name is None: return False
+                _input_name = model_item.on[CustomDataRole.Name]
+        if _input_name is None: return False
 
-        vectors = scenario.inputs().get([Name(input_name)])
-        if len(vectors) != 1: return False
-        input_vector = vectors[0]
+        input_vector = scenario.inputs().get(Name(_input_name))
         
         # сформировать аттрибуты нового состояния
         temp_state = State(StateID(-1), Name(to_state_item.on[CustomDataRole.Name]))
@@ -456,16 +449,14 @@ class ProjectManager:
         state_from = states[to_state_id]
         
         # найти input_vector
-        input_name = None
+        _input_name = None
         for index in range(project.vectors_model.rowCount()):
             model_item = project.vectors_model.get_item(index)
             if model_item.on[CustomDataRole.SynonymsSet] is input:
-                input_name = model_item.on[CustomDataRole.Name]
-        if input_name is None: return False
+                _input_name = model_item.on[CustomDataRole.Name]
+        if _input_name is None: return False
 
-        vectors = scenario.inputs().get([Name(input_name)])
-        if len(vectors) != 1: return False
-        input_vector = vectors[0]
+        input_vector = scenario.inputs().get(Name(_input_name))
 
         # создать переход
         scenario.create_step(from_state_id, to_state_id, input_vector)
@@ -535,11 +526,7 @@ class ProjectManager:
         if group_name is None:
             raise Warning('по модели набора синонимов группа синонимов не найдена')
         
-        found = scenario.inputs().get([group_name])
-        if len(found) != 1:
-            raise Warning('ошибка получения вектора перехода')
-        
-        vector: LevenshtainVector = found[0]
+        vector: LevenshtainVector = scenario.inputs().get(group_name)
 
         if not isinstance(vector, LevenshtainVector):
              raise Warning('ошибка получения вектора перехода')
