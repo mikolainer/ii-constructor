@@ -495,9 +495,10 @@ class ProjectManager:
             lambda topLeft, bottomRight, roles:
                 self.__on_synonym_changed_from_gui(proj, scenario, topLeft, roles)
         )
-        model.rowsRemoved.connect(
-            lambda parent,first,last:
-                self.__on_synonym_deleted_from_gui(proj, scenario, model, first)
+
+        model.set_remove_callback(
+            lambda index:
+                self.__on_synonym_deleted_from_gui(proj, scenario, index.model(), index.row())
         )
 
     def __on_synonym_changed_from_gui(self, proj:Project, scenario: Scenario, index: QModelIndex, roles: list[int]):
@@ -507,9 +508,10 @@ class ProjectManager:
         vector = self.__get_vector_by_model(proj, scenario, index.model())
         vector.synonyms.synonyms[index.row()] = Synonym(index.data(CustomDataRole.Text))
 
-    def __on_synonym_deleted_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, index: int):
+    def __on_synonym_deleted_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, index: int) -> bool:
         vector = self.__get_vector_by_model(proj, scenario, model)
         vector.synonyms.synonyms.pop(index)
+        return True
 
     def __get_vector_by_model(self, proj:Project, scenario:Scenario, model:SynonymsSetModel) -> LevenshtainVector:
         group_name: Name = None
