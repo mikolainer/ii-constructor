@@ -8,20 +8,37 @@ class ScenarioFactory:
         ''' создаёт заготовку сценария для алисы '''
         new_project = Scenario(name, description)
 
-        state_name = Name('Старт')
-        input_vector = LevenshtainVector(state_name, SynonymsGroup([Synonym('Алиса, запусти навык ...')]))
-        new_project.inputs().add(input_vector)
-        new_project.create_enter(input_vector, state_name)
+        
+        new_project.create_enter_state(
+            LevenshtainVector(
+                Name('Старт'),
+                SynonymsGroup([
+                    Synonym('Алиса, запусти навык ...'),
+                ])
+            )
+        )
 
-        state_name = Name('Информация')
-        input_vector = LevenshtainVector(state_name, SynonymsGroup([Synonym('Информация'), Synonym('Справка'), Synonym('Расскажи о себе')]))
-        new_project.inputs().add(input_vector)
-        new_project.create_enter(input_vector, state_name)
+        new_project.create_enter_state(
+            LevenshtainVector(
+                Name('Информация'), 
+                SynonymsGroup([
+                    Synonym('Информация'), 
+                    Synonym('Справка'), 
+                    Synonym('Расскажи о себе'),
+                ])
+            )
+        )
 
-        state_name = Name('Помощь')
-        input_vector = LevenshtainVector(state_name, SynonymsGroup([Synonym('Помощь'), Synonym('Помоги'), Synonym('Как выйти')]))
-        new_project.inputs().add(input_vector)
-        new_project.create_enter(input_vector, state_name)
+        new_project.create_enter_state(
+            LevenshtainVector(
+                Name('Помощь'), 
+                SynonymsGroup([
+                    Synonym('Помощь'), 
+                    Synonym('Помоги'), 
+                    Synonym('Как выйти'),
+                ])
+            )
+        )
 
         for state in new_project.states().values():
             state.required = True

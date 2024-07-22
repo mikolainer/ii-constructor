@@ -109,7 +109,7 @@ class State:
 
     def __init__(self, id: StateID, name:Name = None) -> None:
         self.__id = id
-        _name = Name(str(id.value)) if name is None else name
+        _name = Name(str(id.value)) if name is None or name.value == '' else name
         self.attributes = StateAttributes(Output(Answer('текст ответа')), _name, Description(''))
         self.required = False
 
@@ -193,6 +193,19 @@ class Scenario:
         new_step = Step(input, conn)
         conn.steps.append(new_step)
         return new_step
+    
+    def create_enter_state(self, input:InputDescription):
+        ''' добавляет вектор и новое состояние-вход с таким-же именем '''
+
+        # создаём вектор
+        self.__input_vectors.add(input)
+
+        # создаём состояние
+        state_to = self.__create_state()
+        state_to.attributes.name = input.name()
+
+        # делаем состояние точкой входа
+        self.make_enter(state_to.id())
 
     def create_enter_vector(self, input:InputDescription, state_id: StateID):
         ''' Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем '''
@@ -204,6 +217,7 @@ class Scenario:
         self.__input_vectors.add(input)
     
     def make_enter(self, state_id: StateID):
+        ''' привязывает к состоянию существующий вектор с соответствующим именем как команду входа '''
         # получаем состояние
         state_to = self.states([state_id])[state_id]
 
