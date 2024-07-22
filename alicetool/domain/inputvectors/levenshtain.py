@@ -27,9 +27,9 @@ class SynonymsGroup:
 class LevenshtainVector(InputDescription):
     synonyms: SynonymsGroup
 
-    def __init__(self, name: Name, synonyms: SynonymsGroup) -> None:
+    def __init__(self, name: Name, synonyms: SynonymsGroup = None) -> None:
         super().__init__(name)
-        self.synonyms = synonyms
+        self.synonyms = SynonymsGroup() if synonyms is None else synonyms
 
 class LevenshtainVectorSerializer(BaseSerializer):
     type = LevenshtainVector
@@ -46,6 +46,7 @@ class LevenshtainVectorSerializer(BaseSerializer):
             synonyms.insertRow()
             #synonyms.add_item(synonym)
         item.on[CustomDataRole.SynonymsSet] = synonyms
+        item.on[CustomDataRole.Description] = ''
         
         return item
     

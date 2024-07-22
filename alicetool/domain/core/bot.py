@@ -30,9 +30,6 @@ class _Exists(Exists):
     def __init__(self, obj:Any):
         super().__init__(obj, get_type_name(obj))
 
-class _NotExists(NotExists):
-    def __init__(self, obj:Any):
-        super().__init__(obj, get_type_name(obj))
 class PossibleInputs:
     ''' Классификатор векторов управляющих воздействий '''
 
@@ -197,28 +194,27 @@ class Scenario:
         conn.steps.append(new_step)
         return new_step
 
-    def create_enter_step(self, input:InputDescription, state_id: StateID):
-        ''' Делает состояние точкой входа. Создаёт вектор с соответствующим именем и привязывает к состоянию '''
-
-        # получаем состояние
-        if not state_id in self.__states.keys:
-            raise NotExists(self.__states[state_id], f'Состояние "{state_id.value}"')
-        state_to = self.__states[state_id]
-
-        # проверяем является ли входом
-        if self.is_enter(state_to):
-            raise Exists(state_to, f'Точка входа с именем "{state_to.attributes.name.value}"')
-
+    def create_enter_vector(self, input:InputDescription, state_id: StateID):
+        ''' Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем '''
         # проверяем существование вектора
-        vector_name = state_to.attributes.name
+        vector_name = state_to = self.states([state_id])[state_id].attributes.name
         if self.__input_vectors.exists(vector_name):
             raise Exists(self.__input_vectors.get(vector_name), f'Вектор с именем "{vector_name.value}"')
         
         self.__input_vectors.add(input)
-        self.__create_enter(state_id)
     
-    def __create_enter(self, input:InputDescription, state_id: StateID):
-        conn = Connection(None, self.__states[state_id], [Step(input, conn)])
+    def make_enter(self, state_id: StateID):
+        # получаем состояние
+        state_to = self.states([state_id])[state_id]
+
+        # проверяем является ли входом
+        if self.is_enter(state_to):
+            raise Exists(state_to, f'Точка входа в состояние "{state_to.id().value}"')
+        
+        input_name = state_to.attributes.name
+        conn = Connection(None, self.__states[state_id], [])
+        new_step = Step(self.__input_vectors.get(input_name), conn)
+        conn.steps.append(new_step)
         self.__connections['to'][state_id] = conn
 
     def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription, input_name:Optional[Name] = None) -> Step:
@@ -315,6 +311,8 @@ class Scenario:
         
         states: dict[StateID, State] = {}
         for id in ids:
+            if not id in self.__states.keys():
+                raise NotExists(id, f'Нет состояния с id "{id.value}"')
             states[id] = self.__states[id]
         
         return states

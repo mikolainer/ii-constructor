@@ -15,10 +15,12 @@ from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.application.data import ItemDataSerializer
 from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription, Output, Answer
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes
+from alicetool.domain.core.exceptions import *
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer, SynonymsGroup
 
 class Project:
     __synonym_create_callback: Callable
+    __synonyms_group_create_callback: Callable
     __connect_synonym_changes_callback: Callable
     __scene: Editor
     __flows_wgt: FlowListWidget
@@ -29,6 +31,7 @@ class Project:
     def __init__(
         self,
         synonym_create_callback: Callable,
+        synonyms_group_create_callback: Callable,
         connect_synonym_changes_callback: Callable,
         scene: Editor,
         content: FlowListWidget,
@@ -40,6 +43,7 @@ class Project:
         self.__flows_wgt = content
 
         self.__synonym_create_callback = synonym_create_callback
+        self.__synonyms_group_create_callback = synonyms_group_create_callback
         self.__connect_synonym_changes_callback = connect_synonym_changes_callback
         self.__save_callback = save_callback
 
@@ -97,16 +101,18 @@ class Project:
         except Warning:
             return
 
-        s_model = SynonymsSetModel()
+        item = self.__synonyms_group_create_callback(name)
 
-        item = ItemData()
-        item.on[CustomDataRole.Name] = name
-        item.on[CustomDataRole.Description] = ""
-        item.on[CustomDataRole.SynonymsSet] = s_model
+        #s_model = SynonymsSetModel()
+        #item = ItemData()
+        #item.on[CustomDataRole.Name] = name
+        #item.on[CustomDataRole.Description] = ""
+        #item.on[CustomDataRole.SynonymsSet] = s_model
+
         model.prepare_item(item)
         model.insertRow()
 
-        self.__connect_synonym_changes_callback(s_model)
+        self.__connect_synonym_changes_callback(item.on[CustomDataRole.SynonymsSet])
 
     def __create_synonym(self, model:SynonymsSetModel):
         default_value = 'значение'
@@ -207,6 +213,7 @@ class ProjectManager:
         # создание объекта взаимодействий с проектом
         proj = Project(
             lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
+            lambda name: self.__on_vector_created_from_gui(scenario, name),
             lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
             Editor(self.__main_window),
             content_wgt,
@@ -266,10 +273,11 @@ class ProjectManager:
                 self.__connect_synonym_changes_from_gui(proj, scenario, synonyms_model)
         
         ## обработчик изменений
-        proj.vectors_model.rowsInserted.connect(
-            lambda parent, first, last:
-                self.__on_vector_created_from_gui(scenario, proj.vectors_model.index(first))
-        )
+
+#        proj.vectors_model.rowsInserted.connect(
+#            lambda parent, first, last:
+#                self.__on_vector_created_from_gui(scenario, proj.vectors_model.index(first))
+#        )
 
         ### сцена (состояния и переходы)
         ## наполнение представления
@@ -359,43 +367,48 @@ class ProjectManager:
 
     def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
         vector_name = Name(to_state_index.data(CustomDataRole.Name))
-        vector_item: ItemData
-
-        # костыль
-        can_add_vector = True
-        try:
-            vector = LevenshtainVector(vector_name, SynonymsGroup())
-            scenario.inputs().add(vector)
-            scenario.inputs().remove(vector_name)
-            vector_item = LevenshtainVectorSerializer().to_data(vector)
-            vector_item.on[CustomDataRole.Description] = ''
-        except:
-            can_add_vector = False
-
         state_id = StateID(to_state_index.data(CustomDataRole.Id))
+        s_model: SynonymsSetModel
 
-        if can_add_vector:
+        try: # создаём новый вектор
+            vector = LevenshtainVector(vector_name)
+            scenario.create_enter_vector(vector, state_id)
+            vector_item = LevenshtainVectorSerializer().to_data(vector)
             project.vectors_model.prepare_item(vector_item)
             project.vectors_model.insertRow()
-            scenario.create_enter(scenario.inputs().get(vector_name), state_id)
             s_model = vector_item.on[CustomDataRole.SynonymsSet]
+            self.__connect_synonym_changes_from_gui(project, scenario, s_model)
+            
+        except Exists as err:
+            # если вектор уже существует - спрашиваем продолжать ли с ним
+            ask_result = QMessageBox.information(
+                self.__main_window,
+                'Подтверждение',
+                f'{err.ui_text} Продолжить с существующим вектором?',
+                QMessageBox.StandardButton.Apply,
+                QMessageBox.StandardButton.Abort
+            )
 
-        else:# вектор уже существует
-
-            if scenario.is_enter(scenario.states([state_id])[state_id]): # состояние уже является входом
+            # если пользователь отказался - завершаем операцию
+            if ask_result == QMessageBox.StandardButton.Abort:
                 return False, None
-
-            found_states = scenario.get_states_by_name(vector_name)# имя вектора входа соответствует имени состояния входа
-            for state in found_states:
-                if scenario.is_enter(state):# точка входа уже существует
-                    return False, None
-
-            # существующий вектор не является входом и выбранное состояние не является входом
-            scenario.create_enter(scenario.inputs().get(vector_name), state_id)
+            
+            # берём набор синонимов из "кэша"
             s_model = project.vectors_model.get_item_by(CustomDataRole.Name, vector_name.value).on[CustomDataRole.SynonymsSet]
         
-        self.__connect_synonym_changes_from_gui(project, scenario, s_model)
+        try:
+            scenario.make_enter(state_id)
 
+        except Exists as err:
+            QMessageBox.warning(
+                self.__main_window,
+                'Невозможно выполнить',
+                err.ui_text,
+                QMessageBox.StandardButton.Apply,
+                QMessageBox.StandardButton.Abort
+            )
+            return False, None
+        
         return True, s_model
 
     def __on_step_created_from_gui(self, scenario: Scenario, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
@@ -462,10 +475,12 @@ class ProjectManager:
         scenario.create_step(from_state_id, to_state_id, input_vector)
         return True
 
-    def __on_vector_created_from_gui(self, scenario: Scenario, new_vector_item: QModelIndex):
-        name = new_vector_item.data(CustomDataRole.Name)
-        new_vector = LevenshtainVector(Name(name), SynonymsGroup())
+    def __on_vector_created_from_gui(self, scenario: Scenario, name: str) -> ItemData:
+        #name = new_vector_item.data(CustomDataRole.Name)
+        new_vector = LevenshtainVector(Name(name))
         scenario.inputs().add(new_vector)
+        item = LevenshtainVectorSerializer().to_data(new_vector)
+        return item
 
     def __on_state_changed_from_gui(self, scenario:Scenario, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
         id = StateID(state_id)
