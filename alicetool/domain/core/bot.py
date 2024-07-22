@@ -168,32 +168,6 @@ class Scenario:
         self.__input_vectors = PossibleInputs()
 
     # создание сущностей
-
-    def create_enter(self, input:InputDescription, state:Optional[StateID | Name]) -> Step:
-        ''' !!! DEPRECATED !!! '''
-        state_to: State
-        if isinstance(state, StateID):
-            state_to = self.__states[state]
-        else:
-            state_to = self.__create_state()
-            state_to.attributes.name = state
-
-        conn: Connection
-        state_to_id = state_to.id()
-        if state_to_id in self.__connections['to']:
-            conn = self.__connections['to'][state_to_id]
-        else:
-            conn = Connection(None, state_to, [])
-            self.__connections['to'][state_to_id] = conn
-
-        for step in conn.steps:
-            if step.input == input:
-                return # возможно стоит бросить исключение
-
-        new_step = Step(input, conn)
-        conn.steps.append(new_step)
-        return new_step
-    
     def create_enter_state(self, input:InputDescription):
         ''' добавляет вектор и новое состояние-вход с таким-же именем '''
 
