@@ -45,7 +45,7 @@ class StatesModel(BaseModel):
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
-class StatesControll:
+class SceneControll:
     __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]] # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
     __new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
     __new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]

@@ -9,7 +9,7 @@ from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, Editor, 
 from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
-from alicetool.infrastructure.qtgui.states import StatesModel, StatesControll
+from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog
 from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.application.data import ItemDataSerializer
@@ -226,7 +226,7 @@ class ProjectManager:
         states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(scenario, index))
 
         # создание обработчика изменений на сцене
-        states_controll = StatesControll(
+        states_controll = SceneControll(
             lambda: proj.choose_input(),
 
             lambda state_id, value, role:
