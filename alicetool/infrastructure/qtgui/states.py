@@ -82,54 +82,27 @@ class StatesControll:
         self.__arrows = {}
         self.__main_window = main_window
 
-    def __find_in_model(self, node:SceneNode) -> QModelIndex:
+    def init_arrows(self, scene:Editor):
         for row in range(self.__states_model.rowCount()):
-            if self.__states_model.data(self.__states_model.index(row), CustomDataRole.Node) is node:
-                return self.__states_model.index(row)
-        
-        return QModelIndex()
+            state_index = self.__states_model.index(row)
 
-    def __state_content_changed_handler(self, node:SceneNode):
-        ''' по изменениям на сцене изменить модель '''
-        model_index = self.__find_in_model(node)
-        if not model_index.isValid():
-            return
-        
-        editor: QTextEdit = node.widget()
+            node_from:SceneNode = state_index.data(CustomDataRole.Node)
+            
+            for step_item in state_index.data(CustomDataRole.Steps):
+                ''' step_item.on[CustomDataRole.<...>]
+                FromState - id состояния (int) или None
+                ToState - id cocтояния (int)
+                SynonymsSet - input (SynonymsSetModel)
+                '''
+                step_input = step_item.on[CustomDataRole.SynonymsSet]
 
-        id = model_index.data(CustomDataRole.Id)
-        role = CustomDataRole.Text
-        new_value = editor.toPlainText()
-        success, old_value = self.__change_data_callback(id, new_value, role)
-        self.__states_model.setData(model_index, new_value if success else old_value, role)
-        if not success: self.__states_model.setData(model_index, old_value, role)
+                if step_item.on[CustomDataRole.FromState] != state_index.data(CustomDataRole.Id): continue
 
-    def __state_title_changed_handler(self, node:SceneNode, new_title:str):
-        ''' по изменениям на сцене изменить модель '''
-        model_index = self.__find_in_model(node)
-        if not model_index.isValid():
-            return
-        
-        id = model_index.data(CustomDataRole.Id)
-        role = CustomDataRole.Name
-        new_value = new_title
-        success, old_value = self.__change_data_callback(id, new_value, role)
-        self.__states_model.setData(model_index, new_value if success else old_value, role)
-        if not success: self.__states_model.setData(model_index, old_value, role)
+                node_to = self.__states_model.get_item_by(
+                    CustomDataRole.Id, step_item.on[CustomDataRole.ToState]
+                ).on[CustomDataRole.Node]
 
-    def on_set_data(self, node:SceneNode, value:Any, role:int):
-        ''' по изменениям в сценарии изменить модель и сцену '''
-        model_index = self.__find_in_model(node)
-        if not model_index.isValid():
-            return
-        
-        if role == CustomDataRole.Name:
-            node.set_title(value)
-        elif role == CustomDataRole.Text:
-            content: QTextEdit = node.widget()
-            content.setPlainText(value)
-        
-        self.__states_model.setData(model_index, value, role)
+                self.on_add_step(scene, step_input, node_from, node_to)
 
     def on_insert_node(self, scene: Editor, data:ItemData, enter_data:list[ItemData] = [], pos: Optional[QPoint] = None) -> SceneNode:
         ''' по изменениям в сценарии изменить модель и добавить элемент сцены '''
@@ -179,67 +152,7 @@ class StatesControll:
         node.wrapper_widget().title_changed.connect(lambda title: self.__state_title_changed_handler(node, title))
 
         return node
-
-    def __new_step_request(self, from_node:SceneNode, to_node:SceneNode):
-        state_index_from = self.__find_in_model(from_node)
-        state_index_to = self.__find_in_model(to_node)
-        if state_index_from.isValid() and state_index_to.isValid():
-            input = self.__select_input_callback()
-            if input is None:
-                return
-            
-            if self.__new_step_callback(state_index_from, state_index_to, input):
-                self.on_add_step(from_node.scene(), input, from_node, to_node)
     
-    def __new_state_request(self, from_node:SceneNode, to_pos: Optional[QPoint] = None):
-        state_index_from = self.__find_in_model(from_node)
-        if state_index_from.isValid():
-            new_state_item = ItemData()
-            name, ok = QInputDialog.getText(None, 'Ввод имени', 'Имя нового состояния')
-            if not ok: return
-            new_state_item.on[CustomDataRole.Name] = name
-
-            input = self.__select_input_callback()
-            if input is None: return
-            
-            if self.__new_state_callback(state_index_from, new_state_item, input):
-                to_node = self.on_insert_node(from_node.scene(), new_state_item, [], to_pos)
-                self.on_add_step(from_node.scene(), input, from_node, to_node)
-
-    def init_arrows(self, scene:Editor):
-        for row in range(self.__states_model.rowCount()):
-            state_index = self.__states_model.index(row)
-
-            node_from:SceneNode = state_index.data(CustomDataRole.Node)
-            
-            for step_item in state_index.data(CustomDataRole.Steps):
-                ''' step_item.on[CustomDataRole.<...>]
-                FromState - id состояния (int) или None
-                ToState - id cocтояния (int)
-                SynonymsSet - input (SynonymsSetModel)
-                '''
-                step_input = step_item.on[CustomDataRole.SynonymsSet]
-
-                if step_item.on[CustomDataRole.FromState] != state_index.data(CustomDataRole.Id): continue
-
-                node_to = self.__states_model.get_item_by(
-                    CustomDataRole.Id, step_item.on[CustomDataRole.ToState]
-                ).on[CustomDataRole.Node]
-
-                self.on_add_step(scene, step_input, node_from, node_to)
-
-    def __find_arrow(self, from_node: SceneNode, to_node: SceneNode) -> Optional[Arrow]:
-        ''' ищет связь между элементами сцены '''
-        for step_model in self.__arrows.values():
-            if step_model.node_from() == from_node and step_model.node_to() == to_node:
-                return step_model.arrow()
-                
-        return None
-
-    def __edit_connection(self, model:StepModel):
-        dialog = StepEditor(model, self.__main_window)
-        dialog.exec()
-
     def on_add_step(self, scene: Editor, input: SynonymsSetModel, from_node: SceneNode, to_node: SceneNode):
         ''' добавляет связь между объектами сцены и вектором перехода '''
         arrow = self.__find_arrow(from_node, to_node)
@@ -268,54 +181,6 @@ class StatesControll:
         step_item.on[CustomDataRole.SynonymsSet] = input
         step_model.prepare_item(step_item)
         step_model.insertRow()
-        
-
-    def __step_added_handler(self, model:StepModel, row: int):
-        state_index_from = self.__find_in_model(model.node_from())
-        state_index_to = self.__find_in_model(model.node_to())
-        from_state_id =  state_index_from.data(CustomDataRole.Id)
-        to_state_id = state_index_to.data(CustomDataRole.Id)
-        
-        step_item = model.get_item(row)
-        step_item.on[CustomDataRole.FromState] = from_state_id
-        step_item.on[CustomDataRole.ToState] = to_state_id
-
-        state_index_from.data(CustomDataRole.Steps).append(step_item)
-        state_index_to.data(CustomDataRole.Steps).append(step_item)
-
-
-    def on_remove_step(self, step_index: QModelIndex):
-        ''' удаляет связь между объектами сцены и вектором перехода '''
-        model:StepModel = step_index.model()
-        step_index.data(CustomDataRole.SynonymsSet)
-        self.__find_in_model(model.node_from())
-        if not self.__step_remove_callback(
-                    self.__find_in_model(model.node_from()),
-                    self.__find_in_model(model.node_to()),
-                    step_index.data(CustomDataRole.SynonymsSet)
-                ):
-            return False
-
-        if model.rowCount() == 1:
-            self.__remove_arrow(model)
-            
-        return True
-    
-    def __remove_arrow(self, model:StepModel):
-        ''' удаляет все упоминания стрелки '''
-
-        arrow = model.arrow()
-
-        # в связанных элементах сцены
-        model.node_from().arrow_disconnect(arrow)
-        model.node_to().arrow_disconnect(arrow)
-
-        # на сцене
-        editor = arrow.scene()
-        editor.removeItem(arrow)
-
-        # в индексе
-        self.__arrows.pop(arrow)
 
     def on_add_enter(self, enter: ItemData):
         ''' добавляет элемент содержания '''
@@ -335,6 +200,32 @@ class StatesControll:
         
         scene.removeItem(node)
 
+    def on_remove_step(self, step_index: QModelIndex):
+        ''' удаляет связь между объектами сцены и вектором перехода '''
+        model:StepModel = step_index.model()
+        step_index.data(CustomDataRole.SynonymsSet)
+        self.__find_in_model(model.node_from())
+        if not self.__step_remove_callback(
+                    self.__find_in_model(model.node_from()),
+                    self.__find_in_model(model.node_to()),
+                    step_index.data(CustomDataRole.SynonymsSet)
+                ):
+            return False
+
+    def on_set_data(self, node:SceneNode, value:Any, role:int):
+        ''' по изменениям в сценарии изменить модель и сцену '''
+        model_index = self.__find_in_model(node)
+        if not model_index.isValid():
+            return
+        
+        if role == CustomDataRole.Name:
+            node.set_title(value)
+        elif role == CustomDataRole.Text:
+            content: QTextEdit = node.widget()
+            content.setPlainText(value)
+        
+        self.__states_model.setData(model_index, value, role)
+
     def on_node_chosen(self, node:SceneNode):
         state_item_index = self.__find_in_model(node)
 
@@ -349,3 +240,111 @@ class StatesControll:
         input_item.on[CustomDataRole.SliderVisability] = False
 
         self.on_add_enter(input_item)
+
+    def __find_arrow(self, from_node: SceneNode, to_node: SceneNode) -> Optional[Arrow]:
+        ''' ищет связь между элементами сцены '''
+        for step_model in self.__arrows.values():
+            if step_model.node_from() == from_node and step_model.node_to() == to_node:
+                return step_model.arrow()
+                
+        return None
+
+    def __find_in_model(self, node:SceneNode) -> QModelIndex:
+        for row in range(self.__states_model.rowCount()):
+            if self.__states_model.data(self.__states_model.index(row), CustomDataRole.Node) is node:
+                return self.__states_model.index(row)
+        
+        return QModelIndex()
+
+    def __step_added_handler(self, model:StepModel, row: int):
+        state_index_from = self.__find_in_model(model.node_from())
+        state_index_to = self.__find_in_model(model.node_to())
+        from_state_id =  state_index_from.data(CustomDataRole.Id)
+        to_state_id = state_index_to.data(CustomDataRole.Id)
+        
+        step_item = model.get_item(row)
+        step_item.on[CustomDataRole.FromState] = from_state_id
+        step_item.on[CustomDataRole.ToState] = to_state_id
+
+        state_index_from.data(CustomDataRole.Steps).append(step_item)
+        state_index_to.data(CustomDataRole.Steps).append(step_item)
+
+        if model.rowCount() == 1:
+            self.__remove_arrow(model)
+            
+        return True
+
+    def __state_content_changed_handler(self, node:SceneNode):
+        ''' по изменениям на сцене изменить модель '''
+        model_index = self.__find_in_model(node)
+        if not model_index.isValid():
+            return
+        
+        editor: QTextEdit = node.widget()
+
+        id = model_index.data(CustomDataRole.Id)
+        role = CustomDataRole.Text
+        new_value = editor.toPlainText()
+        success, old_value = self.__change_data_callback(id, new_value, role)
+        self.__states_model.setData(model_index, new_value if success else old_value, role)
+        if not success: self.__states_model.setData(model_index, old_value, role)
+
+    def __state_title_changed_handler(self, node:SceneNode, new_title:str):
+        ''' по изменениям на сцене изменить модель '''
+        model_index = self.__find_in_model(node)
+        if not model_index.isValid():
+            return
+        
+        id = model_index.data(CustomDataRole.Id)
+        role = CustomDataRole.Name
+        new_value = new_title
+        success, old_value = self.__change_data_callback(id, new_value, role)
+        self.__states_model.setData(model_index, new_value if success else old_value, role)
+        if not success: self.__states_model.setData(model_index, old_value, role)
+
+    def __new_step_request(self, from_node:SceneNode, to_node:SceneNode):
+        state_index_from = self.__find_in_model(from_node)
+        state_index_to = self.__find_in_model(to_node)
+        if state_index_from.isValid() and state_index_to.isValid():
+            input = self.__select_input_callback()
+            if input is None:
+                return
+            
+            if self.__new_step_callback(state_index_from, state_index_to, input):
+                self.on_add_step(from_node.scene(), input, from_node, to_node)
+    
+    def __new_state_request(self, from_node:SceneNode, to_pos: Optional[QPoint] = None):
+        state_index_from = self.__find_in_model(from_node)
+        if state_index_from.isValid():
+            new_state_item = ItemData()
+            name, ok = QInputDialog.getText(None, 'Ввод имени', 'Имя нового состояния')
+            if not ok: return
+            new_state_item.on[CustomDataRole.Name] = name
+
+            input = self.__select_input_callback()
+            if input is None: return
+            
+            if self.__new_state_callback(state_index_from, new_state_item, input):
+                to_node = self.on_insert_node(from_node.scene(), new_state_item, [], to_pos)
+                self.on_add_step(from_node.scene(), input, from_node, to_node)
+
+    def __remove_arrow(self, model:StepModel):
+        ''' удаляет все упоминания стрелки '''
+
+        arrow = model.arrow()
+
+        # в связанных элементах сцены
+        model.node_from().arrow_disconnect(arrow)
+        model.node_to().arrow_disconnect(arrow)
+
+        # на сцене
+        editor = arrow.scene()
+        editor.removeItem(arrow)
+
+        # в индексе
+        self.__arrows.pop(arrow)
+
+    def __edit_connection(self, model:StepModel):
+        dialog = StepEditor(model, self.__main_window)
+        dialog.exec()
+    
