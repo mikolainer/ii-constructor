@@ -205,7 +205,13 @@ class Scenario:
         conn.steps.append(new_step)
         self.__connections['to'][state_id] = conn
 
-    def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription, input_name:Optional[Name] = None) -> Step:
+    def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription) -> Step:
+        '''
+        Создаёт переход из from_state в to_state по переходу input
+        @from_state_id: id состояния для обработки управляющего воздействия input
+        @to_state: id состояния в которое будет добавлен переход или аттрибуты для создания такого состояния
+        @input: управляющее воздействие
+        '''
         state_from = self.__states[from_state_id]
         state_to:State
 
@@ -252,12 +258,24 @@ class Scenario:
     # удаление сущностей
 
     def remove_state(self, state_id:StateID):
+        ''' удаляет состояние '''
+
+        # TODO: проверить существование состояния
+        # TODO: проверить существование переходов в и из состояние
+
         self.__states.pop(state_id)
 
     def remove_enter(self, state_id:StateID):
+        ''' удаляет связь с командой входа в состояние '''
         self.__connections['to'].pop(state_id)
 
     def remove_step(self, from_state_id:StateID, input:InputDescription):
+        '''
+        удаляет связь между состояниями
+        @from_state_id: состояние - обработчик управляющих воздействий
+        @input: управляющее воздействие
+        '''
+
         '''
         TODO: добавить индексацию Step в Connection
         по ролям InputDescription когда они появятся
@@ -286,6 +304,7 @@ class Scenario:
     # геттеры
 
     def get_states_by_name(self, name: Name) -> list[State]:
+        ''' получить все состояния с данным именем '''
         result = list[State]()
         for state in self.__states.values():
             if state.attributes.name == name:
@@ -294,8 +313,9 @@ class Scenario:
         return result
     
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
+        ''' получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния'''
         if ids is None:
-            return self.__states.copy()
+            return self.__states
         
         states: dict[StateID, State] = {}
         for id in ids:
