@@ -22,7 +22,7 @@ class Project:
     __synonym_create_callback: Callable
     __synonyms_group_create_callback: Callable
     __connect_synonym_changes_callback: Callable
-    __scene: Editor
+    __editor: QGraphicsView
     __flows_wgt: FlowListWidget
     __save_callback: Callable
 
@@ -33,13 +33,13 @@ class Project:
         synonym_create_callback: Callable,
         synonyms_group_create_callback: Callable,
         connect_synonym_changes_callback: Callable,
-        scene: Editor,
+        editor: QGraphicsView,
         content: FlowListWidget,
         save_callback: Callable
     ):
         self.vectors_model = SynonymsGroupsModel()
 
-        self.__scene = scene
+        self.__editor = editor
         self.__flows_wgt = content
 
         self.__synonym_create_callback = synonym_create_callback
@@ -51,8 +51,8 @@ class Project:
     def id(self) -> ScenarioID:
         return self.__id
     
-    def editor(self) -> Editor:
-        return self.__scene
+    def editor(self) -> QGraphicsView:
+        return self.__editor
     
     def content(self) -> FlowListWidget:
         return self.__flows_wgt
@@ -62,12 +62,12 @@ class Project:
             self.vectors_model,
             self.__create_synonyms_group,
             self.__create_synonym,
-            self.__scene.parent()
+            self.__editor.parent()
         )
         editor.show()
 
     def choose_input(self) -> Optional[SynonymsSetModel]:
-        dialog = SynonymsSelector(self.vectors_model, self.__create_synonyms_group, self.__scene.parent())
+        dialog = SynonymsSelector(self.vectors_model, self.__create_synonyms_group, self.__editor.parent())
         dialog.exec()
         return dialog.selected_item()
 
@@ -77,7 +77,7 @@ class Project:
 
         while name == '':
             name, ok = QInputDialog.getText(
-                self.__scene.parent(),
+                self.__editor.parent(),
                 'Новый набор синонимов',
                 'Название',
                 text= prev_name
@@ -85,7 +85,7 @@ class Project:
 
             if not ok: raise Warning('ввод отменён')
             if not model.get_item_by(CustomDataRole.Name, name) is None:
-                QMessageBox.warning(self.__scene.parent(), 'Ошибка',
+                QMessageBox.warning(self.__editor.parent(), 'Ошибка',
                     f'Рруппа синонимов с именем "{name}" уже существует!')
                 prev_name = name
                 name = ''
@@ -125,7 +125,7 @@ class Project:
         self.__synonym_create_callback(model, item)
 
     def scene(self) -> Editor:
-        return self.__scene
+        return self.__editor.scene()
     
     def save_to_file(self):
         self.__save_callback()
@@ -179,7 +179,7 @@ class ProjectManager:
     def __set_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(True)
 
-        scene = proj = self.current().editor()
+        scene = proj = self.current().scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
@@ -189,7 +189,7 @@ class ProjectManager:
     def __reset_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(False)
 
-        scene = proj = self.current().editor()
+        scene = proj = self.current().scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
@@ -209,13 +209,16 @@ class ProjectManager:
         content_wgt = FlowListWidget(content_view)
         self.__flow_list.setWidget(content_wgt, True)
 
+        editor = QGraphicsView(Editor(self.__main_window), self.__workspaces)
+        editor.centerOn(0, 0)
+        editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         
         # создание объекта взаимодействий с проектом
         proj = Project(
             lambda model, data: self.__on_synonym_created_from_gui(proj, scenario, model, data),
             lambda name: self.__on_vector_created_from_gui(scenario, name),
             lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
-            Editor(self.__main_window),
+            editor,
             content_wgt,
             lambda: self.__save_scenario_handler(scenario)
         )
@@ -247,10 +250,6 @@ class ProjectManager:
             flows_model,
             self.__main_window
         )
-
-        editor = QGraphicsView(proj.scene(), self.__workspaces)
-        editor.centerOn(0, 0)
-        editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
         content_wgt.create_value.connect(lambda: self.__create_enter_handler(flows_model, proj))
 
