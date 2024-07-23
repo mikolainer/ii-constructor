@@ -220,7 +220,9 @@ class Scenario:
 
         elif isinstance(to_state, StateAttributes):
             state_to = self.__create_state()
-            state_to.attributes.name = to_state.name
+
+            if to_state.name.value != '':
+                state_to.attributes.name = to_state.name
             state_to.attributes.desrciption = to_state.desrciption
             state_to.attributes.output = to_state.output
 
@@ -326,6 +328,7 @@ class Scenario:
         return states
     
     def steps(self, state_id:StateID) -> list[Step]:
+        ''' получить все переходы, связанные с состоянием по его идентификатору '''
         result = list[Step]()
         
         if state_id in self.__connections['from'].keys():

@@ -414,7 +414,7 @@ class ProjectManager:
     def __on_step_created_from_gui(self, scenario: Scenario, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
         # найти state_from
         from_state_id = StateID(from_state_index.data(CustomDataRole.Id))
-        state_from = scenario.states([from_state_id])[from_state_id]
+        #state_from = scenario.states([from_state_id])[from_state_id]
         # найти input_vector
         _input_name = None
         for index in range(project.vectors_model.rowCount()):
@@ -426,10 +426,14 @@ class ProjectManager:
         input_vector = scenario.inputs().get(Name(_input_name))
         
         # сформировать аттрибуты нового состояния
-        temp_state = State(StateID(-1), Name(to_state_item.on[CustomDataRole.Name]))
+        new_state_attr = StateAttributes(
+            Output(Answer('текст ответа')),
+            Name(to_state_item.on[CustomDataRole.Name]),
+            Description('')
+        )
 
         # создать переход
-        new_step = scenario.create_step(from_state_id, temp_state.attributes, input_vector)
+        new_step = scenario.create_step(from_state_id, new_state_attr, input_vector)
         step_item = ItemData()
         step_item.on[CustomDataRole.FromState] = new_step.connection.from_state.id().value
         step_item.on[CustomDataRole.ToState] = new_step.connection.to_state.id().value
