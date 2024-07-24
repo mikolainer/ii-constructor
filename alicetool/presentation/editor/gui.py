@@ -191,10 +191,6 @@ class ProjectManager:
     def __current(self) -> Project:
         return self.__projects[self.__workspaces.currentWidget()]
 
-    def set_current(self, proj:Project):
-        self.__workspaces.setCurrentWidget(proj.editor())
-        self.__flow_list.setCurrentWidget(proj.content())
-
     def __create_enter_handler(self, flows_model:FlowsModel, project: Project):
         self.__set_enter_create_mode()
 
@@ -251,25 +247,37 @@ class ProjectManager:
         states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(scenario, index))
 
         # создание обработчика изменений на сцене
+        
         states_controll = SceneControll(
+            # select_input_callback: Callable[[],Optional[SynonymsSetModel]]
             lambda: proj.choose_input(),
 
+            # change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
             lambda state_id, value, role:
                 self.__on_state_changed_from_gui(scenario, state_id, value, role),
             
+            # new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
             lambda from_state_index, to_state_index, input: 
                 self.__on_step_to_created_from_gui(scenario, proj, from_state_index, to_state_index, input),
 
+            # step_remove_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
             lambda state_from, state_to, input:
                 self.__on_step_removed_from_gui(scenario, proj, state_from, state_to, input),
 
+            # new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]
             lambda from_state_index, to_state_item, input: 
                 self.__on_step_created_from_gui(scenario, proj, from_state_index, to_state_item, input), 
 
+            # add_enter_callback: Callable[[QModelIndex], tuple[bool, Optional[SynonymsSetModel]]]
             lambda state_index: self.__on_enter_created_from_gui(scenario, proj, state_index),
 
+            # states_model:StatesModel
             states_model,
+
+            # flows_model: FlowsModel
             flows_model,
+
+            # main_window: QWidget
             self.__main_window
         )
 
