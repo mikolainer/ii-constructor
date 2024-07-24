@@ -14,7 +14,7 @@ from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspac
 from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.domain.core.bot import Scenario, Output, Answer
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes
-from alicetool.domain.core.exceptions import *
+from alicetool.domain.core.exceptions import Exists
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
 
 class Project:
@@ -151,7 +151,7 @@ class ProjectManager:
         btn.status_tip = 'Открыть редактор синонимов'
         btn.whats_this = 'Кнопка открытия редактора синонимов'
         btn.apply_options()
-        btn.clicked.connect(lambda: self.current().edit_inputs())
+        btn.clicked.connect(lambda: self.__current().edit_inputs())
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton('Опубликовать проект', QIcon(":/icons/export_proj_norm.svg"), self.__main_window)
@@ -164,7 +164,7 @@ class ProjectManager:
         btn.status_tip = 'Сохранить в файл'
         btn.whats_this = 'Кнопка сохранения проекта в файл'
         btn.apply_options()
-        btn.clicked.connect(lambda: self.current().save_to_file())
+        btn.clicked.connect(lambda: self.__current().save_to_file())
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton('Открыть проект', QIcon(":/icons/open_proj_norm.svg"), self.__main_window)
@@ -188,13 +188,7 @@ class ProjectManager:
         proj = self.__projects[ self.__workspaces.widget(index) ]
         self.__flow_list.setWidget(proj.content(), True)
 
-        #self.__flow_list.setCurrentWidget(
-        #    self.__projects[
-        #        self.__workspaces.widget(index)
-        #    ].content()
-        #)
-
-    def current(self) -> Project:
+    def __current(self) -> Project:
         return self.__projects[self.__workspaces.currentWidget()]
 
     def set_current(self, proj:Project):
@@ -207,7 +201,7 @@ class ProjectManager:
     def __set_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(True)
 
-        scene = proj = self.current().scene()
+        scene = proj = self.__current().scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
@@ -217,7 +211,7 @@ class ProjectManager:
     def __reset_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(False)
 
-        scene = proj = self.current().scene()
+        scene = proj = self.__current().scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
