@@ -1,7 +1,7 @@
 from io import TextIOWrapper
 from typing import Callable, Any, Optional
 
-from PySide6.QtGui import QShortcut, QKeySequence, QIcon, QShortcut
+from PySide6.QtGui import QShortcut, QIcon, QShortcut
 from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox, QFileDialog 
 from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
@@ -12,11 +12,10 @@ from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEd
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
 from alicetool.application.editor import ScenarioFactory, SourceControll
-from alicetool.application.data import ItemDataSerializer
-from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription, Output, Answer
+from alicetool.domain.core.bot import Scenario, Output, Answer
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes
 from alicetool.domain.core.exceptions import *
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer, SynonymsGroup
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
 
 class Project:
     __synonym_create_callback: Callable
