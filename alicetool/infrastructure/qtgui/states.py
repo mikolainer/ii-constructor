@@ -83,6 +83,7 @@ class SceneControll:
         self.__main_window = main_window
 
     def init_arrows(self, scene:Editor):
+        ''' создать стрелки переходов в соответствии с моделью '''
         for row in range(self.__states_model.rowCount()):
             state_index = self.__states_model.index(row)
 

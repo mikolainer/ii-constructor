@@ -1,7 +1,7 @@
 from io import TextIOWrapper
 from typing import Callable, Any, Optional
 
-from PySide6.QtGui import QShortcut, QKeySequence
+from PySide6.QtGui import QShortcut, QKeySequence, QIcon, QShortcut
 from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox, QFileDialog 
 from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
@@ -10,7 +10,7 @@ from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, Synony
 from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
-from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog
+from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
 from alicetool.application.editor import ScenarioFactory, SourceControll
 from alicetool.application.data import ItemDataSerializer
 from alicetool.domain.core.bot import Scenario, State, PossibleInputs, Connection, Step, InputDescription, Output, Answer
@@ -103,12 +103,6 @@ class Project:
 
         item = self.__synonyms_group_create_callback(name)
 
-        #s_model = SynonymsSetModel()
-        #item = ItemData()
-        #item.on[CustomDataRole.Name] = name
-        #item.on[CustomDataRole.Description] = ""
-        #item.on[CustomDataRole.SynonymsSet] = s_model
-
         model.prepare_item(item)
         model.insertRow()
 
@@ -139,10 +133,11 @@ class ProjectManager:
     __flow_list: FlowList
     __esc_sqortcut: QShortcut
 
-    def __init__( self, flow_list: FlowList, workspaces: Workspaces, main_window: MainWindow ) -> None:
-        self.__workspaces = workspaces
-        self.__main_window = main_window
-        self.__flow_list = flow_list
+    def __init__(self) -> None:
+        self.__workspaces = Workspaces()
+        self.__flow_list = FlowList()
+        self.__main_window = MainWindow(self.__flow_list, self.__workspaces)
+        self.__setup_main_toolbar()
 
         self.__projects = {}
 
@@ -151,6 +146,40 @@ class ProjectManager:
         self.__esc_sqortcut = QShortcut(self.__main_window)
         self.__esc_sqortcut.setKey(Qt.Key.Key_Escape)
         self.__esc_sqortcut.activated.connect(lambda: self.__reset_enter_create_mode())
+
+    def __setup_main_toolbar(self):
+        btn = MainToolButton('Список синонимов', QIcon(":/icons/synonyms_list_norm.svg"), self.__main_window)
+        btn.status_tip = 'Открыть редактор синонимов'
+        btn.whats_this = 'Кнопка открытия редактора синонимов'
+        btn.apply_options()
+        btn.clicked.connect(lambda: self.current().edit_inputs())
+        self.__main_window.insert_button(btn)
+
+        btn = MainToolButton('Опубликовать проект', QIcon(":/icons/export_proj_norm.svg"), self.__main_window)
+        btn.status_tip = 'Разместить проект в БД '
+        btn.whats_this = 'Кнопка экспорта проекта в базу данных'
+        btn.apply_options()
+        self.__main_window.insert_button(btn)
+
+        btn = MainToolButton('Сохранить проект', QIcon(":/icons/save_proj_norm.svg"), self.__main_window)
+        btn.status_tip = 'Сохранить в файл'
+        btn.whats_this = 'Кнопка сохранения проекта в файл'
+        btn.apply_options()
+        btn.clicked.connect(lambda: self.current().save_to_file())
+        self.__main_window.insert_button(btn)
+
+        btn = MainToolButton('Открыть проект', QIcon(":/icons/open_proj_norm.svg"), self.__main_window)
+        btn.status_tip = 'Открыть файл проекта'
+        btn.whats_this = 'Кнопка открытия проекта из файла'
+        btn.apply_options()
+        self.__main_window.insert_button(btn)
+
+        btn = MainToolButton('Новый проект', QIcon(":/icons/new_proj_norm.svg"), self.__main_window)
+        btn.status_tip = 'Создать новый проект'
+        btn.whats_this = 'Кнопка создания нового проекта'
+        btn.apply_options()
+        btn.clicked.connect(lambda: self.create_project())
+        self.__main_window.insert_button(btn)
 
     @Slot(int)
     def on_cur_changed(self, index: int):
