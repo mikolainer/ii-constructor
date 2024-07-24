@@ -247,7 +247,6 @@ class ProjectManager:
         states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(scenario, index))
 
         # создание обработчика изменений на сцене
-        
         states_controll = SceneControll(
             # select_input_callback: Callable[[],Optional[SynonymsSetModel]]
             lambda: proj.choose_input(),
