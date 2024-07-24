@@ -65,7 +65,6 @@ class PossibleInputs:
         
         del self.__inputs[name]
 
-
     def get(self, name:Name) -> Optional['InputDescription']:
         '''
         Возвращает вектор управляющих воздействий по имени
@@ -139,15 +138,14 @@ class InputDescription:
     def __eq__(self, value: object) -> bool:
         return isinstance(value, InputDescription) and value.name() == self.__name
 
-class StepVectorBaseClassificator:
-    @staticmethod
-    def get_next_state(cmd:Input, cur_state:StateID) -> State:
-        raise NotImplementedError('Использование абстрактного класса')
+#class StepVectorBaseClassificator:
+#    @staticmethod
+#    def get_next_state(cmd:Input, cur_state:StateID) -> State:
+#        raise NotImplementedError('Использование абстрактного класса')
 
 class Scenario:
     name: Name
     description: Description
-    host: Optional[str]
     id: Optional[ScenarioID]
 
     __new_state_id: int
@@ -157,10 +155,9 @@ class Scenario:
 
 # Scenario public
 
-    def __init__(self, name:Name, description: Description, host: str = None, id: ScenarioID = None, states: dict[StateID, State] = {}) -> None:
+    def __init__(self, name:Name, description: Description, id: ScenarioID = None, states: dict[StateID, State] = {}) -> None:
         self.name = name
         self.description = description
-        self.host = host
         self.id = id
         self.__states = states
         self.__new_state_id = 0

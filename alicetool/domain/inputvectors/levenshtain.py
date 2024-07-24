@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 
 from alicetool.infrastructure.qtgui.data import SynonymsSetModel, ItemData, CustomDataRole
 from alicetool.domain.core.primitives import Input, Name, StateID
-from alicetool.domain.core.bot import InputDescription, StepVectorBaseClassificator
+from alicetool.domain.core.bot import InputDescription
 from alicetool.application.data import BaseSerializer
 
 @dataclass
