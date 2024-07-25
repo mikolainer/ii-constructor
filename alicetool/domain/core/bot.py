@@ -342,9 +342,6 @@ class Scenario:
                 result.append(step)
 
         return list(result)
-
-    def inputs(self) -> PossibleInputs:
-        return self.__input_vectors
     
     # сеттеры
 
@@ -373,6 +370,27 @@ class Scenario:
 
     def is_enter(self, state:State) -> bool:
         return state.id() in self.__connections['to'].keys()
+
+    # векторы
+
+    def select_vectors(self, names:Optional[list[Name]] = None) -> list['InputDescription']:
+        return self.__input_vectors.select(names)
+    
+    def get_vector(self, name:Name) -> Optional['InputDescription']:
+        return self.__input_vectors.get(name)
+
+    def add_vector(self, input: InputDescription):
+        return self.__input_vectors.add(input)
+
+    def remove_vector(self, name:Name):
+        return self.__input_vectors.remove(name)
+
+    def check_vector_exists(self, name:Name) -> bool:
+        return self.__input_vectors.exists(name)
+
+    def inputs(self) -> PossibleInputs:
+        ''' !!! DEPRECATED !!! '''
+        return self.__input_vectors
 
 # Scenario private
 

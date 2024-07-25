@@ -287,7 +287,7 @@ class ProjectManager:
 
         ### векторы переходов
         ## наполнение представления
-        for vector in scenario.inputs().select():
+        for vector in scenario.select_vectors():
             # пока только левенштейн
             serialiser = LevenshtainVectorSerializer()
 
@@ -363,14 +363,14 @@ class ProjectManager:
 
     def __on_vector_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
         input_name = Name(index.data(CustomDataRole.Name))
-        if not scenario.inputs().exists(input_name):
+        if not scenario.check_vector_exists(input_name):
             return True
         
-        input = scenario.inputs().get(input_name)
+        input = scenario.get_vector(input_name)
         if len(scenario.input_usage(input)) > 0:
             return False
         
-        scenario.inputs().remove(input_name)
+        scenario.remove_vector(input_name)
         return True
 
     def __on_flow_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
@@ -451,7 +451,7 @@ class ProjectManager:
                 _input_name = model_item.on[CustomDataRole.Name]
         if _input_name is None: return False
 
-        input_vector = scenario.inputs().get(Name(_input_name))
+        input_vector = scenario.get_vector(Name(_input_name))
         
         # сформировать аттрибуты нового состояния
         new_state_attr = StateAttributes(
@@ -501,7 +501,7 @@ class ProjectManager:
                 _input_name = model_item.on[CustomDataRole.Name]
         if _input_name is None: return False
 
-        input_vector = scenario.inputs().get(Name(_input_name))
+        input_vector = scenario.get_vector(Name(_input_name))
 
         # создать переход
         scenario.create_step(from_state_id, to_state_id, input_vector)
@@ -510,7 +510,7 @@ class ProjectManager:
     def __on_vector_created_from_gui(self, scenario: Scenario, name: str) -> ItemData:
         #name = new_vector_item.data(CustomDataRole.Name)
         new_vector = LevenshtainVector(Name(name))
-        scenario.inputs().add(new_vector)
+        scenario.add_vector(new_vector)
         item = LevenshtainVectorSerializer().to_data(new_vector)
         return item
 
@@ -575,7 +575,7 @@ class ProjectManager:
         if group_name is None:
             raise Warning('по модели набора синонимов группа синонимов не найдена')
         
-        vector: LevenshtainVector = scenario.inputs().get(group_name)
+        vector: LevenshtainVector = scenario.get_vector(group_name)
 
         if not isinstance(vector, LevenshtainVector):
              raise Warning('ошибка получения вектора перехода')

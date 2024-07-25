@@ -57,7 +57,7 @@ class SourceControll:
         answer.append(f'Краткое описание: {scenario.description.value}')
 
         vectors = list[list[str]]()
-        for vector in scenario.inputs().select():
+        for vector in scenario.select_vectors():
             _vector = list[str]()
             _vector.append('{')
             _vector.append(f'\tназвание: "{vector.name().value}"')
