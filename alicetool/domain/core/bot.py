@@ -346,9 +346,11 @@ class Scenario:
     # сеттеры
 
     def set_answer(self, state_id:StateID, data:Output):
+        ''' Изменить ответ состояния '''
         self.__states[state_id].attributes.output = data
 
     def input_usage(self, input: InputDescription) -> list[Connection]:
+        ''' Получить связи, в которых используется вектор '''
         result = list[Connection]()
         
         for conn in self.__connections['to'].values():
@@ -369,28 +371,45 @@ class Scenario:
         return result
 
     def is_enter(self, state:State) -> bool:
+        ''' Проверить является ли состояние входом '''
         return state.id() in self.__connections['to'].keys()
 
     # векторы
 
     def select_vectors(self, names:Optional[list[Name]] = None) -> list['InputDescription']:
+        '''
+        Возвращает список векторов управляющих воздействий по указанным именам
+        @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
+        '''
         return self.__input_vectors.select(names)
     
     def get_vector(self, name:Name) -> Optional['InputDescription']:
+        '''
+        Возвращает вектор управляющих воздействий по имени
+        @names - имя вектора (идентификатор)
+        '''
         return self.__input_vectors.get(name)
 
     def add_vector(self, input: InputDescription):
+        '''
+        Сохраняет новый вектор для обработки управляющих воздействий
+        @input_type - новый вектор
+        '''
         return self.__input_vectors.add(input)
 
     def remove_vector(self, name:Name):
+        '''
+        Удаляет вектор управляющих воздействий
+        @name - имя вектора для удаления (идентификатор)
+        '''
         return self.__input_vectors.remove(name)
 
     def check_vector_exists(self, name:Name) -> bool:
+        '''
+        Проверяет существование вектора
+        @name - имя вектора для проверки (идентификатор)
+        '''
         return self.__input_vectors.exists(name)
-
-    def inputs(self) -> PossibleInputs:
-        ''' !!! DEPRECATED !!! '''
-        return self.__input_vectors
 
 # Scenario private
 
