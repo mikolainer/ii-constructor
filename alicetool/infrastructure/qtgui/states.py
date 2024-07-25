@@ -212,6 +212,11 @@ class SceneControll:
                     step_index.data(CustomDataRole.SynonymsSet)
                 ):
             return False
+        
+        if model.rowCount() == 1:
+            self.__remove_arrow(model)
+            
+        return True
 
     def on_set_data(self, node:SceneNode, value:Any, role:int):
         ''' по изменениям в сценарии изменить модель и сцену '''
@@ -269,11 +274,6 @@ class SceneControll:
 
         state_index_from.data(CustomDataRole.Steps).append(step_item)
         state_index_to.data(CustomDataRole.Steps).append(step_item)
-
-        if model.rowCount() == 1:
-            self.__remove_arrow(model)
-            
-        return True
 
     def __state_content_changed_handler(self, node:SceneNode):
         ''' по изменениям на сцене изменить модель '''
