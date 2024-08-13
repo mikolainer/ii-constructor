@@ -11,11 +11,12 @@ from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, Flow
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
-from alicetool.application.editor import ScenarioFactory, SourceControll
+from alicetool.application.editor import HostingManipulator, SourceControll
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes, Output, Answer, SourceInfo
 from alicetool.domain.core.exceptions import Exists
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
 from alicetool.domain.core.porst import ScenarioInterface
+from alicetool.domain.core.bot import Hosting, Source
 
 class Project:
     __synonym_create_callback: Callable
@@ -132,7 +133,10 @@ class ProjectManager:
     __flow_list: FlowList
     __esc_sqortcut: QShortcut
 
+    __inmem_hosting: Hosting
+
     def __init__(self) -> None:
+        self.__inmem_hosting = Hosting()
         self.__workspaces = Workspaces()
         self.__flow_list = FlowList()
         self.__main_window = MainWindow(self.__flow_list, self.__workspaces)
@@ -220,7 +224,9 @@ class ProjectManager:
             file.write(SourceControll.serialize(scenario))
 
 
-    def __open_project(self, scenario: ScenarioInterface):
+    def __open_project(self, source: Source):
+        scenario:ScenarioInterface = source.interface
+
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
         content_view.setModel(flows_model)
@@ -283,7 +289,7 @@ class ProjectManager:
         content_wgt.create_value.connect(lambda: self.__create_enter_handler(flows_model, proj))
 
         self.__projects[editor] = proj # важно добавить перед addTab() для коттектной работы слота "current_changed"
-        self.__workspaces.addTab(editor, "")#scenario.name.value) TODO: доставать имя из манипулятора
+        self.__workspaces.addTab(editor, source.info.name.value)
 
         ### векторы переходов
         ## наполнение представления
@@ -360,8 +366,8 @@ class ProjectManager:
         info = SourceInfo(Name(dialog.name()), Description(dialog.description()))
 
         # создание проекта
-        scenario = ScenarioFactory.make_scenario(info)
-        self.__open_project(scenario)
+        src = HostingManipulator.make_scenario(self.__inmem_hosting, info)
+        self.__open_project(src)
 
     def __on_vector_remove_from_gui(self, scenario: ScenarioInterface, index: QModelIndex) -> bool:
         input_name = Name(index.data(CustomDataRole.Name))

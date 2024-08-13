@@ -1,13 +1,14 @@
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo
-from alicetool.domain.core.bot import Scenario, Connection, Hosting
+from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source
 from alicetool.domain.core.porst import ScenarioInterface
 
-class ScenarioFactory:
+class HostingManipulator:
     @staticmethod
-    def make_scenario(info:SourceInfo) -> ScenarioInterface:
+    def make_scenario(hosting: Hosting, info: SourceInfo) -> Source:
         ''' создаёт заготовку сценария для алисы '''
-        new_scenario = Scenario()
+        source = hosting.get_source(hosting.add_source(info))
+        new_scenario = source.interface
         
         new_scenario.create_enter_state(
             LevenshtainVector(
@@ -44,7 +45,7 @@ class ScenarioFactory:
             state.required = True
             state.attributes.output
         
-        return new_scenario
+        return source
 
 class SourceControll:
     @staticmethod

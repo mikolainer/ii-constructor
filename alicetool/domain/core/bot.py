@@ -155,14 +155,17 @@ class Hosting:
     __next_id: ScenarioID
     
     def __init__(self) -> None:
-        self.__sources = []
+        self.__sources = {}
         self.__next_id = ScenarioID(0)
     
     def add_source(self, info:SourceInfo) -> ScenarioID:
         id = self.__next_id
-        self.__next_id = self.__next_id(self.__next_id.value +1)
-        self.__next_id[id] = Source(id, info, Scenario())
+        self.__next_id = ScenarioID(self.__next_id.value +1)
+        self.__sources[id] = Source(id, info, Scenario())
         return id
+    
+    def get_source(self, id:ScenarioID) -> Source:
+        return self.__sources[id]
 
 class Scenario(ScenarioInterface):
     __new_state_id: int
