@@ -12,10 +12,10 @@ from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEd
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
 from alicetool.application.editor import ScenarioFactory, SourceControll
-from alicetool.domain.core.bot import Scenario, Output, Answer
-from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes
+from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes, Output, Answer, SourceInfo
 from alicetool.domain.core.exceptions import Exists
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
+from alicetool.domain.core.porst import ScenarioInterface
 
 class Project:
     __synonym_create_callback: Callable
@@ -214,13 +214,13 @@ class ProjectManager:
 
             item.set_choose_mode(False)
 
-    def __save_scenario_handler(self, scenario: Scenario):
+    def __save_scenario_handler(self, scenario: ScenarioInterface):
         path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
         with open(path, "w") as file:
             file.write(SourceControll.serialize(scenario))
 
 
-    def __open_project(self, scenario: Scenario):
+    def __open_project(self, scenario: ScenarioInterface):
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
         content_view.setModel(flows_model)
@@ -283,7 +283,7 @@ class ProjectManager:
         content_wgt.create_value.connect(lambda: self.__create_enter_handler(flows_model, proj))
 
         self.__projects[editor] = proj # важно добавить перед addTab() для коттектной работы слота "current_changed"
-        self.__workspaces.addTab(editor, scenario.name.value)
+        self.__workspaces.addTab(editor, "")#scenario.name.value) TODO: доставать имя из манипулятора
 
         ### векторы переходов
         ## наполнение представления
@@ -357,11 +357,13 @@ class ProjectManager:
         if dialog.exec() == QDialog.DialogCode.Rejected:
             return
 
+        info = SourceInfo(Name(dialog.name()), Description(dialog.description()))
+
         # создание проекта
-        scenario = ScenarioFactory.make_scenario(Name(dialog.name()), Description(dialog.description()))
+        scenario = ScenarioFactory.make_scenario(info)
         self.__open_project(scenario)
 
-    def __on_vector_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
+    def __on_vector_remove_from_gui(self, scenario: ScenarioInterface, index: QModelIndex) -> bool:
         input_name = Name(index.data(CustomDataRole.Name))
         if not scenario.check_vector_exists(input_name):
             return True
@@ -373,7 +375,7 @@ class ProjectManager:
         scenario.remove_vector(input_name)
         return True
 
-    def __on_flow_remove_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
+    def __on_flow_remove_from_gui(self, scenario: ScenarioInterface, index: QModelIndex) -> bool:
         _state_id:int = index.data(CustomDataRole.EnterStateId)
         state_id = StateID(_state_id)
         enter_state = scenario.states([state_id])[state_id]
@@ -383,7 +385,7 @@ class ProjectManager:
         scenario.remove_enter(state_id)
         return True
     
-    def __on_state_removed_from_gui(self, scenario: Scenario, index: QModelIndex) -> bool:
+    def __on_state_removed_from_gui(self, scenario: ScenarioInterface, index: QModelIndex) -> bool:
         state_id = StateID(index.data(CustomDataRole.Id))
         
         steps = scenario.steps(state_id)
@@ -393,7 +395,7 @@ class ProjectManager:
         scenario.remove_state(state_id)
         return True
 
-    def __on_enter_created_from_gui(self, scenario: Scenario, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
+    def __on_enter_created_from_gui(self, scenario: ScenarioInterface, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
         vector_name = Name(to_state_index.data(CustomDataRole.Name))
         state_id = StateID(to_state_index.data(CustomDataRole.Id))
         s_model: SynonymsSetModel
@@ -439,7 +441,7 @@ class ProjectManager:
         
         return True, s_model
 
-    def __on_step_created_from_gui(self, scenario: Scenario, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
+    def __on_step_created_from_gui(self, scenario: ScenarioInterface, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
         # найти state_from
         from_state_id = StateID(from_state_index.data(CustomDataRole.Id))
         #state_from = scenario.states([from_state_id])[from_state_id]
@@ -476,7 +478,7 @@ class ProjectManager:
 
         return True
     
-    def __on_step_removed_from_gui(self, scenario: Scenario, project:Project, state_from: QModelIndex, state_to: QModelIndex, input: SynonymsSetModel):
+    def __on_step_removed_from_gui(self, scenario: ScenarioInterface, project:Project, state_from: QModelIndex, state_to: QModelIndex, input: SynonymsSetModel):
         from_state_id:int = state_from.data(CustomDataRole.Id)
 
         input_vector = self.__get_vector_by_model(project, scenario, input)
@@ -484,7 +486,7 @@ class ProjectManager:
 
         return True
         
-    def __on_step_to_created_from_gui(self, scenario: Scenario, project:Project, from_state_index: QModelIndex, to_state_index: QModelIndex, input: SynonymsSetModel) -> bool:
+    def __on_step_to_created_from_gui(self, scenario: ScenarioInterface, project:Project, from_state_index: QModelIndex, to_state_index: QModelIndex, input: SynonymsSetModel) -> bool:
         from_state_id = StateID(from_state_index.data(CustomDataRole.Id))
         to_state_id = StateID(to_state_index.data(CustomDataRole.Id))
         states = scenario.states([from_state_id, to_state_id])
@@ -507,14 +509,14 @@ class ProjectManager:
         scenario.create_step(from_state_id, to_state_id, input_vector)
         return True
 
-    def __on_vector_created_from_gui(self, scenario: Scenario, name: str) -> ItemData:
+    def __on_vector_created_from_gui(self, scenario: ScenarioInterface, name: str) -> ItemData:
         #name = new_vector_item.data(CustomDataRole.Name)
         new_vector = LevenshtainVector(Name(name))
         scenario.add_vector(new_vector)
         item = LevenshtainVectorSerializer().to_data(new_vector)
         return item
 
-    def __on_state_changed_from_gui(self, scenario:Scenario, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
+    def __on_state_changed_from_gui(self, scenario:ScenarioInterface, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
         id = StateID(state_id)
         success = False
 
@@ -533,11 +535,11 @@ class ProjectManager:
         return old_value, success
 
     # TODO: staticmethod?
-    def __on_synonym_created_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, data: ItemData):
+    def __on_synonym_created_from_gui(self, proj:Project, scenario: ScenarioInterface, model:SynonymsSetModel, data: ItemData):
         self.__get_vector_by_model(proj, scenario, model).synonyms.synonyms.append(Synonym(data.on[CustomDataRole.Text]))
 
     # TODO: staticmethod?
-    def __connect_synonym_changes_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel):
+    def __connect_synonym_changes_from_gui(self, proj:Project, scenario: ScenarioInterface, model:SynonymsSetModel):
         model.dataChanged.connect(
             lambda topLeft, bottomRight, roles:
                 self.__on_synonym_changed_from_gui(proj, scenario, topLeft, roles)
@@ -548,19 +550,19 @@ class ProjectManager:
                 self.__on_synonym_deleted_from_gui(proj, scenario, index.model(), index.row())
         )
 
-    def __on_synonym_changed_from_gui(self, proj:Project, scenario: Scenario, index: QModelIndex, roles: list[int]):
+    def __on_synonym_changed_from_gui(self, proj:Project, scenario: ScenarioInterface, index: QModelIndex, roles: list[int]):
         if not CustomDataRole.Text in roles:
             return
         
         vector = self.__get_vector_by_model(proj, scenario, index.model())
         vector.synonyms.synonyms[index.row()] = Synonym(index.data(CustomDataRole.Text))
 
-    def __on_synonym_deleted_from_gui(self, proj:Project, scenario: Scenario, model:SynonymsSetModel, index: int) -> bool:
+    def __on_synonym_deleted_from_gui(self, proj:Project, scenario: ScenarioInterface, model:SynonymsSetModel, index: int) -> bool:
         vector = self.__get_vector_by_model(proj, scenario, model)
         vector.synonyms.synonyms.pop(index)
         return True
 
-    def __get_vector_by_model(self, proj:Project, scenario:Scenario, model:SynonymsSetModel) -> LevenshtainVector:
+    def __get_vector_by_model(self, proj:Project, scenario:ScenarioInterface, model:SynonymsSetModel) -> LevenshtainVector:
         group_name: Name = None
 
         input_vectors_count = proj.vectors_model.rowCount()

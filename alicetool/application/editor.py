@@ -1,15 +1,15 @@
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
-from alicetool.domain.core.primitives import Name, Description, ScenarioID
-from alicetool.domain.core.bot import Scenario, Connection
+from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo
+from alicetool.domain.core.bot import Scenario, Connection, Hosting
+from alicetool.domain.core.porst import ScenarioInterface
 
 class ScenarioFactory:
     @staticmethod
-    def make_scenario(name:Name, description: Description) -> Scenario:
+    def make_scenario(info:SourceInfo) -> ScenarioInterface:
         ''' создаёт заготовку сценария для алисы '''
-        new_project = Scenario(name, description)
-
+        new_scenario = Scenario()
         
-        new_project.create_enter_state(
+        new_scenario.create_enter_state(
             LevenshtainVector(
                 Name('Старт'),
                 SynonymsGroup([
@@ -18,7 +18,7 @@ class ScenarioFactory:
             )
         )
 
-        new_project.create_enter_state(
+        new_scenario.create_enter_state(
             LevenshtainVector(
                 Name('Информация'), 
                 SynonymsGroup([
@@ -29,7 +29,7 @@ class ScenarioFactory:
             )
         )
 
-        new_project.create_enter_state(
+        new_scenario.create_enter_state(
             LevenshtainVector(
                 Name('Помощь'), 
                 SynonymsGroup([
@@ -40,11 +40,11 @@ class ScenarioFactory:
             )
         )
 
-        for state in new_project.states().values():
+        for state in new_scenario.states().values():
             state.required = True
             state.attributes.output
         
-        return new_project
+        return new_scenario
 
 class SourceControll:
     @staticmethod

@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 
-from alicetool.domain.core.primitives import Name, Description, StateID, ScenarioID, Answer, Output, StateAttributes, Input
+from alicetool.domain.core.primitives import Name, Description, StateID, ScenarioID, Answer, Output, StateAttributes, Input, SourceInfo
 from alicetool.domain.core.exceptions import *
+from alicetool.domain.core.porst import ScenarioInterface
 
 def get_type_name(obj:Any) -> str:
     ''' Определение названия объекта доменной области, для короткого использования инсключений '''
@@ -143,11 +144,27 @@ class InputDescription:
 #    def get_next_state(cmd:Input, cur_state:StateID) -> State:
 #        raise NotImplementedError('Использование абстрактного класса')
 
-class Scenario:
-    name: Name
-    description: Description
+@dataclass
+class Source:
     id: Optional[ScenarioID]
+    info: SourceInfo
+    interface: ScenarioInterface
 
+class Hosting:
+    __sources: dict[ScenarioID, Source]
+    __next_id: ScenarioID
+    
+    def __init__(self) -> None:
+        self.__sources = []
+        self.__next_id = ScenarioID(0)
+    
+    def add_source(self, info:SourceInfo) -> ScenarioID:
+        id = self.__next_id
+        self.__next_id = self.__next_id(self.__next_id.value +1)
+        self.__next_id[id] = Source(id, info, Scenario())
+        return id
+
+class Scenario(ScenarioInterface):
     __new_state_id: int
     __states: dict[StateID, State]
     __connections: dict[str, dict] # ключи: 'from', 'to'; значения: <to> dict[StateID, Connection], <from> dict[StateID, list[Connection]]
@@ -155,11 +172,8 @@ class Scenario:
 
 # Scenario public
 
-    def __init__(self, name:Name, description: Description, id: ScenarioID = None, states: dict[StateID, State] = {}) -> None:
-        self.name = name
-        self.description = description
-        self.id = id
-        self.__states = states
+    def __init__(self) -> None:
+        self.__states = {}
         self.__new_state_id = 0
         self.__connections = {'from':{}, 'to':{}}
         self.__input_vectors = PossibleInputs()
