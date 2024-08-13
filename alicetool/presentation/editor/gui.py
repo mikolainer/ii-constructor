@@ -15,7 +15,6 @@ from alicetool.application.editor import HostingManipulator, ScenarioManipulator
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes, Output, Answer, SourceInfo
 from alicetool.domain.core.exceptions import Exists
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
-from alicetool.domain.core.porst import ScenarioInterface
 from alicetool.domain.core.bot import Hosting, Source
 
 class Project:
@@ -223,10 +222,7 @@ class ProjectManager:
         with open(path, "w") as file:
             file.write(manipulator.serialize())
 
-
     def __open_project(self, manipulator: ScenarioManipulator):
-        scenario:ScenarioInterface = manipulator.interface()
-
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
         content_view.setModel(flows_model)
@@ -293,7 +289,7 @@ class ProjectManager:
 
         ### векторы переходов
         ## наполнение представления
-        for vector in scenario.select_vectors():
+        for vector in manipulator.interface().select_vectors():
             # пока только левенштейн
             serialiser = LevenshtainVectorSerializer()
 
@@ -305,22 +301,15 @@ class ProjectManager:
 
                 synonyms_model:SynonymsSetModel = vector_item.on[CustomDataRole.SynonymsSet]
                 self.__connect_synonym_changes_from_gui(proj, manipulator, synonyms_model)
-        
-        ## обработчик изменений
-
-#        proj.vectors_model.rowsInserted.connect(
-#            lambda parent, first, last:
-#                self.__on_vector_created_from_gui(scenario, proj.vectors_model.index(first))
-#        )
 
         ### сцена (состояния и переходы)
         ## наполнение представления
-        for state in scenario.states().values():
+        for state in manipulator.interface().states().values():
             input_items = list[ItemData]()
 
             # подготовка шагов для модели состояний
             steps = list[ItemData]()
-            for step in scenario.steps(state.id()):
+            for step in manipulator.interface().steps(state.id()):
                 conn = step.connection
                 if conn is None:
                     continue # вообще-то не норм ситуация. возможно стоит бросать исключение

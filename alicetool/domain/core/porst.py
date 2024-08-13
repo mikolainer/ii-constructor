@@ -60,13 +60,13 @@ class ScenarioInterface:
 
     # векторы
 
-    def select_vectors(self, names:Optional[list[Name]] = None) -> list['InputDescription']:
+    def select_vectors(self, names:Optional[list[Name]] = None) -> list[InputDescription]:
         '''
         Возвращает список векторов управляющих воздействий по указанным именам
         @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
         '''
     
-    def get_vector(self, name:Name) -> Optional['InputDescription']:
+    def get_vector(self, name:Name) -> Optional[InputDescription]:
         '''
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
