@@ -11,7 +11,7 @@ from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, Flow
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
-from alicetool.application.editor import HostingManipulator, SourceControll
+from alicetool.application.editor import HostingManipulator, ScenarioManipulator
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes, Output, Answer, SourceInfo
 from alicetool.domain.core.exceptions import Exists
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
@@ -218,14 +218,14 @@ class ProjectManager:
 
             item.set_choose_mode(False)
 
-    def __save_scenario_handler(self, scenario: ScenarioInterface):
+    def __save_scenario_handler(self, manipulator: ScenarioManipulator):
         path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
         with open(path, "w") as file:
-            file.write(SourceControll.serialize(scenario))
+            file.write(manipulator.serialize())
 
 
-    def __open_project(self, source: Source):
-        scenario:ScenarioInterface = source.interface
+    def __open_project(self, manipulator: ScenarioManipulator):
+        scenario:ScenarioInterface = manipulator.interface()
 
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
@@ -244,7 +244,7 @@ class ProjectManager:
             lambda model: self.__connect_synonym_changes_from_gui(proj, scenario, model),
             editor,
             content_wgt,
-            lambda: self.__save_scenario_handler(scenario)
+            lambda: self.__save_scenario_handler(manipulator)
         )
         flows_model.set_remove_callback(lambda index: self.__on_flow_remove_from_gui(scenario, index))
         proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(scenario, index))
@@ -289,7 +289,7 @@ class ProjectManager:
         content_wgt.create_value.connect(lambda: self.__create_enter_handler(flows_model, proj))
 
         self.__projects[editor] = proj # важно добавить перед addTab() для коттектной работы слота "current_changed"
-        self.__workspaces.addTab(editor, source.info.name.value)
+        self.__workspaces.addTab(editor, manipulator.name())
 
         ### векторы переходов
         ## наполнение представления
@@ -340,7 +340,7 @@ class ProjectManager:
                     # формирование элемента модели содержания
                     input_item = ItemData()
                     input_item.on[CustomDataRole.Name] = state.attributes.name.value
-                    input_item.on[CustomDataRole.Description] = state.attributes.desrciption.value
+                    input_item.on[CustomDataRole.Description] = state.attributes.description.value
                     input_item.on[CustomDataRole.SynonymsSet] = s_model
                     input_item.on[CustomDataRole.EnterStateId] = state.id().value
                     input_item.on[CustomDataRole.SliderVisability] = False
@@ -366,8 +366,8 @@ class ProjectManager:
         info = SourceInfo(Name(dialog.name()), Description(dialog.description()))
 
         # создание проекта
-        src = HostingManipulator.make_scenario(self.__inmem_hosting, info)
-        self.__open_project(src)
+        manipulator = HostingManipulator.make_scenario(self.__inmem_hosting, info)
+        self.__open_project(manipulator)
 
     def __on_vector_remove_from_gui(self, scenario: ScenarioInterface, index: QModelIndex) -> bool:
         input_name = Name(index.data(CustomDataRole.Name))

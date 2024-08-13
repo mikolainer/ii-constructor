@@ -237,7 +237,7 @@ class Scenario(ScenarioInterface):
 
             if to_state.name.value != '':
                 state_to.attributes.name = to_state.name
-            state_to.attributes.desrciption = to_state.desrciption
+            state_to.attributes.description = to_state.description
             state_to.attributes.output = to_state.output
 
         new_conn = Connection(state_from, state_to, [])

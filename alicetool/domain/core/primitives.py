@@ -63,9 +63,9 @@ class Output:
 class StateAttributes:
     output: Output
     name: Name
-    desrciption: Description
+    description: Description
 
 @dataclass
 class SourceInfo:
     name: Name
-    desrciption: Description
+    description: Description

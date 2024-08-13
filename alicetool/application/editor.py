@@ -5,7 +5,7 @@ from alicetool.domain.core.porst import ScenarioInterface
 
 class HostingManipulator:
     @staticmethod
-    def make_scenario(hosting: Hosting, info: SourceInfo) -> Source:
+    def make_scenario(hosting: Hosting, info: SourceInfo) -> 'ScenarioManipulator':
         ''' создаёт заготовку сценария для алисы '''
         source = hosting.get_source(hosting.add_source(info))
         new_scenario = source.interface
@@ -45,17 +45,35 @@ class HostingManipulator:
             state.required = True
             state.attributes.output
         
-        return source
+        return ScenarioManipulator(source)
 
-class SourceControll:
-    @staticmethod
-    def serialize(scenario: Scenario) -> str:
+class ScenarioManipulator:
+    __source: Source
+
+    def __init__(self, source: Source) -> None:
+        self.__source = source
+
+    def id(self) -> str:
+        return self.__source.id.value
+
+    def name(self) -> str:
+        return self.__source.info.name.value
+    
+    def description(self) -> str:
+        return self.__source.info.description.value
+    
+    # TODO заменить собственным интерфейсом
+    def interface(self) -> ScenarioInterface:
+        return self.__source.interface
+
+    def serialize(self) -> str:
         ''' сформировать строку для сохранения в файл '''
-        answer = list[str]()
+        scenario = self.__source.interface
 
-        answer.append(f'Идентификатор: {scenario.id}')
-        answer.append(f'Название: {scenario.name.value}')
-        answer.append(f'Краткое описание: {scenario.description.value}')
+        answer = list[str]()
+        answer.append(f'Идентификатор: {self.id()}')
+        answer.append(f'Название: {self.name()}')
+        answer.append(f'Краткое описание: {self.description()}')
 
         vectors = list[list[str]]()
         for vector in scenario.select_vectors():
