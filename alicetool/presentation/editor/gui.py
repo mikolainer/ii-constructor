@@ -477,7 +477,7 @@ class ProjectManager:
         from_state_id:int = state_from.data(CustomDataRole.Id)
 
         input_vector = self.__get_vector_by_model(project, manipulator, input)
-        manipulator.remove_step(StateID(from_state_id), input_vector)
+        manipulator.interface().remove_step(StateID(from_state_id), input_vector)
 
         return True
         
