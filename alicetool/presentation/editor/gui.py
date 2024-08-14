@@ -37,6 +37,7 @@ class Project:
         save_callback: Callable
     ):
         self.vectors_model = SynonymsGroupsModel()
+        self.vectors_model.set_edit_callback(lambda i, r, o, n: True)
 
         self.__editor = editor
         self.__flows_wgt = content
@@ -225,6 +226,7 @@ class ProjectManager:
     def __open_project(self, manipulator: ScenarioManipulator):
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
+        flows_model.set_edit_callback(lambda i, r, o, n: True)
         content_view.setModel(flows_model)
         content_wgt = FlowListWidget(content_view)
         self.__flow_list.setWidget(content_wgt, True)
@@ -246,6 +248,7 @@ class ProjectManager:
         proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(manipulator, index))
 
         states_model = StatesModel(self.__main_window)
+        states_model.set_edit_callback(lambda i, r, o, n: True)
         states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(manipulator, index))
 
         # создание обработчика изменений на сцене
@@ -535,28 +538,30 @@ class ProjectManager:
 
     # TODO: staticmethod?
     def __connect_synonym_changes_from_gui(self, proj:Project, manipulator: ScenarioManipulator, model:SynonymsSetModel):
-        model.dataChanged.connect(
-            lambda topLeft, bottomRight, roles:
-                self.__on_synonym_changed_from_gui(proj, manipulator, topLeft, roles)
+        model.set_edit_callback(
+            lambda index, role, old_val, new_val:
+                self.__synonym_changed_from_gui_handler(proj, manipulator, index, role, old_val, new_val)
         )
 
         model.set_remove_callback(
             lambda index:
-                self.__on_synonym_deleted_from_gui(proj, manipulator, index)
+                self.__synonym_deleted_from_gui_handler(proj, manipulator, index)
         )
 
-    def __on_synonym_changed_from_gui(self, proj:Project, manipulator: ScenarioManipulator, index: QModelIndex, roles: list[int]):
-        if not CustomDataRole.Text in roles:
-            return
-        
-        vector = self.__get_vector_by_model(proj, manipulator, index.model())
-        vector.synonyms.synonyms[index.row()] = Synonym(index.data(CustomDataRole.Text))
-
-    def __on_synonym_deleted_from_gui(self, proj:Project, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
+    def __synonym_changed_from_gui_handler(self, proj:Project, manipulator: ScenarioManipulator, index: QModelIndex, role: int, old_value:Any, new_value:Any) -> bool:
         try:
             group_name = self.__get_vector_name_by_synonyms_model(proj, manipulator, index.model())
-            synonym_name = index.data(CustomDataRole.Text)
-            manipulator.remove_synonym(group_name, synonym_name)
+            manipulator.set_synonym_value(group_name, old_value, new_value)
+        except Exception as e:
+            return False
+        
+        return True
+
+    def __synonym_deleted_from_gui_handler(self, proj:Project, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
+        try:
+            group_name = self.__get_vector_name_by_synonyms_model(proj, manipulator, index.model())
+            synonym_value = index.data(CustomDataRole.Text)
+            manipulator.remove_synonym(group_name, synonym_value)
         except Exception as e:
             return False
         

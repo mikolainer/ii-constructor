@@ -119,16 +119,26 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     __map_custom_as_qt_role: dict[Qt.ItemDataRole, CustomDataRole]
 
     __remove_callback: Callable[[QModelIndex], bool]
+    ''' (index) -> ok '''
+
+    __edit_callback: Callable[[QModelIndex, int, Any, Any], bool]
+    ''' (index, role, old_value, new_value) -> ok '''
 
     def __init__( self, parent: QObject | None = None, prepared_item: Optional[ItemData] = None) -> None:
         super().__init__(parent)
-        self.__remove_callback = lambda vector_index: False
+        self.__remove_callback = lambda index: False
+        self.__edit_callback = lambda index, role, old_value, new_value: False
+
         self.__map_custom_as_qt_role = {}
         self.__prepared_item = prepared_item
 
     def set_remove_callback(self, callback: Callable[[QModelIndex], bool]):
         ''' callback обработки изменений из пользовательского интерфейса '''
         self.__remove_callback = callback
+
+    def set_edit_callback(self, callback: Callable[[QModelIndex, int, Any, Any], bool]):
+        ''' callback обработки изменений из пользовательского интерфейса '''
+        self.__edit_callback = callback
 
     def map_role_as(self, role: CustomDataRole, as_role: Qt.ItemDataRole):
         ''' устанавливает соответствие ролей для получения данных через `data()` '''
@@ -160,6 +170,9 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     
     def setData(self, index: QModelIndex | QPersistentModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole) -> bool:
         ''' Устанавливает значение для роли элемента, с индексом `index.row()` '''
+        if not self.__edit_callback(index, role, index.data(role), value):
+            return False
+
         if role == Qt.ItemDataRole.EditRole and Qt.ItemDataRole.DisplayRole in self.__map_custom_as_qt_role.keys():
             self.get_item(index.row()).on[self.__map_custom_as_qt_role[Qt.ItemDataRole.DisplayRole]] = value
             self.dataChanged.emit(index,index,[role])

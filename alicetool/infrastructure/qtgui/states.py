@@ -79,6 +79,7 @@ class SceneControll:
 
         self.__states_model = states_model
         self.__flows_model = flows_model
+
         self.__arrows = {}
         self.__main_window = main_window
 
@@ -164,6 +165,7 @@ class SceneControll:
             from_node.arrow_connect_as_start(arrow)
             to_node.arrow_connect_as_end(arrow)
             step_model = StepModel(arrow, from_node, to_node, scene)
+            step_model.set_edit_callback(lambda i, r, o, n: True)
             self.__arrows[arrow] = step_model
             step_model.rowsInserted.connect(lambda parent_index,first,last: self.__step_added_handler(step_model, first))
 

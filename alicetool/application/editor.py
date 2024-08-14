@@ -104,6 +104,12 @@ class ScenarioManipulator:
         
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         ''' изменяет значение синонима '''
+        vector:LevenshtainVector = self.interface().get_vector(Name(input_name))
+        if not isinstance(vector, LevenshtainVector):
+             raise Warning('ошибка получения вектора перехода')
+        
+        index = vector.synonyms.synonyms.index(Synonym(old_synonym)) # raises ValueError if `old_synonym` not found
+        vector.synonyms.synonyms[index] = Synonym(new_synonym)
         
     def check_vector_exists(self, name) -> bool:
         ''' проверяет существование вектора '''
