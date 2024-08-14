@@ -257,7 +257,7 @@ class Scenario(ScenarioInterface):
 
             if found is None:
                 # это первый переход из state_from в state_to
-                self.__connections['from'][from_state_id] = [new_conn]
+                self.__connections['from'][from_state_id].append(new_conn)
                 conn = new_conn
             else:
                 conn = found
