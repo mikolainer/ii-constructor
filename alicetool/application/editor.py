@@ -65,6 +65,51 @@ class ScenarioManipulator:
     # TODO заменить собственным интерфейсом
     def interface(self) -> ScenarioInterface:
         return self.__source.interface
+    
+    def remove_synonym(self, input_name: str, synonym: str):
+        ''' удаляет синоним '''
+        vector:LevenshtainVector = self.interface().get_vector(Name(input_name))
+        if not isinstance(vector, LevenshtainVector):
+             raise Warning('ошибка получения вектора перехода')
+        
+        index = vector.synonyms.synonyms.index(Synonym(synonym))
+        vector.synonyms.synonyms.pop(index)
+
+    def remove_vector(self, input_name: str):
+        ''' удаляет вектор '''
+        
+    def remove_enter(self, state_id: int):
+        ''' удаляет точку входа (переход) '''
+        
+    def remove_step(self, from_state_id: int, to_state_id: int, input_name: str):
+        ''' удаляет переход '''
+        
+    def remove_state(self, state_id: int):
+        ''' удаляет состояние '''
+        
+    def create_synonym(self, input_name: str, new_synonym: str):
+        ''' создаёт синоним '''
+        
+    def add_vector(self, input_name: str):
+        ''' создаёт вектор '''
+        
+    def make_enter(self, state_id: int):
+        ''' делает состояние точкой входа '''
+        
+    def create_step(self, from_state_id: int, to_state_id: int, input_name: int):
+        ''' создаёт переход '''
+        
+    def set_state_answer(self, state_id, new_value):
+        ''' изменяет ответ состояния '''
+        
+    def set_synonym_value(self, input_name, old_synonym, new_synonym):
+        ''' изменяет значение синонима '''
+        
+    def check_vector_exists(self, name) -> bool:
+        ''' проверяет существование вектора '''
+        
+    def save_to_file(self):
+        ''' сохраняет сценарий в файл '''
 
     def serialize(self) -> str:
         ''' сформировать строку для сохранения в файл '''

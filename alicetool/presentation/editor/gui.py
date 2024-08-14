@@ -542,7 +542,7 @@ class ProjectManager:
 
         model.set_remove_callback(
             lambda index:
-                self.__on_synonym_deleted_from_gui(proj, manipulator, index.model(), index.row())
+                self.__on_synonym_deleted_from_gui(proj, manipulator, index)
         )
 
     def __on_synonym_changed_from_gui(self, proj:Project, manipulator: ScenarioManipulator, index: QModelIndex, roles: list[int]):
@@ -552,12 +552,35 @@ class ProjectManager:
         vector = self.__get_vector_by_model(proj, manipulator, index.model())
         vector.synonyms.synonyms[index.row()] = Synonym(index.data(CustomDataRole.Text))
 
-    def __on_synonym_deleted_from_gui(self, proj:Project, manipulator: ScenarioManipulator, model:SynonymsSetModel, index: int) -> bool:
-        vector = self.__get_vector_by_model(proj, manipulator, model)
-        vector.synonyms.synonyms.pop(index)
+    def __on_synonym_deleted_from_gui(self, proj:Project, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
+        try:
+            group_name = self.__get_vector_name_by_synonyms_model(proj, manipulator, index.model())
+            synonym_name = index.data(CustomDataRole.Text)
+            manipulator.remove_synonym(group_name, synonym_name)
+        except Exception as e:
+            return False
+        
         return True
 
+    def __get_vector_name_by_synonyms_model(self, proj:Project, manipulator:ScenarioManipulator, model:SynonymsSetModel) -> str:
+        group_name: str = None
+
+        input_vectors_count = proj.vectors_model.rowCount()
+        for vector_model_row in range(input_vectors_count):
+            vector_index = proj.vectors_model.index(vector_model_row)
+            if not proj.vectors_model.data(vector_index, CustomDataRole.SynonymsSet) is model:
+                continue
+
+            group_name = proj.vectors_model.data(vector_index, CustomDataRole.Name)
+            break
+        
+        if group_name is None:
+            raise Warning('по модели набора синонимов группа синонимов не найдена')
+        
+        return group_name
+
     def __get_vector_by_model(self, proj:Project, manipulator:ScenarioManipulator, model:SynonymsSetModel) -> LevenshtainVector:
+        ''' !!! DEPRECATED !!! '''
         group_name: Name = None
 
         input_vectors_count = proj.vectors_model.rowCount()

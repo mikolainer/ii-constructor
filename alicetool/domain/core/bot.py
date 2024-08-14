@@ -66,7 +66,7 @@ class PossibleInputs:
         
         del self.__inputs[name]
 
-    def get(self, name:Name) -> Optional['InputDescription']:
+    def get(self, name:Name) -> 'InputDescription':
         '''
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
@@ -400,7 +400,7 @@ class Scenario(ScenarioInterface):
         '''
         return self.__input_vectors.select(names)
     
-    def get_vector(self, name:Name) -> Optional['InputDescription']:
+    def get_vector(self, name:Name) -> 'InputDescription':
         '''
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
