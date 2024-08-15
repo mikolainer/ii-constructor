@@ -1,4 +1,3 @@
-from PySide6.QtWidgets import QFileDialog 
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo
 from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source
@@ -117,13 +116,8 @@ class ScenarioManipulator:
         
     def save_to_file(self):
         ''' сохраняет сценарий в файл '''
-        path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
-        with open(path, "w") as file:
-            file.write(self.__serialize())
 
-        
-
-    def __serialize(self) -> str:
+    def serialize(self) -> str:
         ''' сформировать строку для сохранения в файл '''
         scenario = self.__source.interface
 
