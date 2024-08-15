@@ -1,6 +1,6 @@
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID
-from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source
+from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source, InputDescription
 from alicetool.domain.core.porst import ScenarioInterface
 
 class HostingManipulator:
@@ -83,8 +83,10 @@ class ScenarioManipulator:
         ''' удаляет точку входа (переход) '''
         self.interface().remove_enter(StateID(state_id))
         
-    def remove_step(self, from_state_id: int, to_state_id: int, input_name: str):
+    def remove_step(self, from_state_id: int, input_name: str):
         ''' удаляет переход '''
+        vector: InputDescription = self.interface().get_vector(Name(input_name))
+        self.interface().remove_step(StateID(from_state_id), vector)
         
     def remove_state(self, state_id: int):
         ''' удаляет состояние '''

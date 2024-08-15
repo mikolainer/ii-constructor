@@ -469,10 +469,14 @@ class ProjectManager:
         return True
     
     def __on_step_removed_from_gui(self, manipulator: ScenarioManipulator, project:Project, state_from: QModelIndex, state_to: QModelIndex, input: SynonymsSetModel):
-        from_state_id:int = state_from.data(CustomDataRole.Id)
-
-        input_vector = self.__get_vector_by_model(project, manipulator, input)
-        manipulator.interface().remove_step(StateID(from_state_id), input_vector)
+        try:
+            from_state_id:int = state_from.data(CustomDataRole.Id)
+            input_name:str = self.__get_vector_name_by_synonyms_model(project, manipulator, input)
+            manipulator.remove_step(from_state_id, input_name)
+        except Exception as e:
+            return False
+        
+        return True
 
         return True
         
