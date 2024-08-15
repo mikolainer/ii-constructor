@@ -378,13 +378,11 @@ class ProjectManager:
         return True
     
     def __on_state_removed_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
-        state_id = StateID(index.data(CustomDataRole.Id))
-        
-        steps = manipulator.interface().steps(state_id)
-        if len(steps) > 0:
+        try:
+            manipulator.remove_state(index.data(CustomDataRole.Id))
+        except Exception as e:
             return False
-
-        manipulator.interface().remove_state(state_id)
+        
         return True
 
     def __on_enter_created_from_gui(self, manipulator: ScenarioManipulator, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:

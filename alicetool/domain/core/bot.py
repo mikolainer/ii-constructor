@@ -275,9 +275,11 @@ class Scenario(ScenarioInterface):
 
     def remove_state(self, state_id:StateID):
         ''' удаляет состояние '''
-
-        # TODO: проверить существование состояния
-        # TODO: проверить существование переходов в и из состояние
+        if self.states([state_id])[state_id].required:
+            raise Exception("Обязательное состояние нельзя удалить!")
+        
+        if len(self.steps(state_id)) > 0:
+            raise Exists(state_id, f'Состояние с id={state_id.value} связано с переходами!')
 
         self.__states.pop(state_id)
 
@@ -286,7 +288,7 @@ class Scenario(ScenarioInterface):
         enter_state = self.states([state_id])[state_id]
 
         if enter_state.required:
-            raise Exception("Обязательное состояние нельзя удалить!")
+            raise Exception("Обязательную точку входа нельзя удалить!")
         
         self.__connections['to'].pop(state_id)
 

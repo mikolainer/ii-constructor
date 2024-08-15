@@ -88,6 +88,7 @@ class ScenarioManipulator:
         
     def remove_state(self, state_id: int):
         ''' удаляет состояние '''
+        self.interface().remove_state(StateID(state_id))
         
     def create_synonym(self, input_name: str, new_synonym: str):
         ''' создаёт синоним '''
