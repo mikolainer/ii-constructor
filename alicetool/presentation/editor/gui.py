@@ -370,13 +370,11 @@ class ProjectManager:
         return True
 
     def __on_flow_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
-        _state_id:int = index.data(CustomDataRole.EnterStateId)
-        state_id = StateID(_state_id)
-        enter_state = manipulator.interface().states([state_id])[state_id]
-        if enter_state.required:
+        try:
+            manipulator.remove_enter(index.data(CustomDataRole.EnterStateId))
+        except Exception as e:
             return False
         
-        manipulator.interface().remove_enter(state_id)
         return True
     
     def __on_state_removed_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:

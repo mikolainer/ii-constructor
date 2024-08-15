@@ -283,6 +283,11 @@ class Scenario(ScenarioInterface):
 
     def remove_enter(self, state_id:StateID):
         ''' удаляет связь с командой входа в состояние '''
+        enter_state = self.states([state_id])[state_id]
+
+        if enter_state.required:
+            raise Exception("Обязательное состояние нельзя удалить!")
+        
         self.__connections['to'].pop(state_id)
 
     def remove_step(self, from_state_id:StateID, input:InputDescription):
