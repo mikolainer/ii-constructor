@@ -76,7 +76,8 @@ class ScenarioManipulator:
         vector.synonyms.synonyms.pop(index)
 
     def remove_vector(self, input_name: str):
-        ''' удаляет вектор '''
+        ''' удаляет вектор '''        
+        self.interface().remove_vector(Name(input_name))
         
     def remove_enter(self, state_id: int):
         ''' удаляет точку входа (переход) '''

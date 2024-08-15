@@ -362,15 +362,11 @@ class ProjectManager:
         self.__open_project(manipulator)
 
     def __on_vector_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
-        input_name = Name(index.data(CustomDataRole.Name))
-        if not manipulator.interface().check_vector_exists(input_name):
-            return True
-        
-        input = manipulator.interface().get_vector(input_name)
-        if len(manipulator.interface().input_usage(input)) > 0:
+        try:
+            manipulator.remove_vector(index.data(CustomDataRole.Name))
+        except Exception as e:
             return False
         
-        manipulator.interface().remove_vector(input_name)
         return True
 
     def __on_flow_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:

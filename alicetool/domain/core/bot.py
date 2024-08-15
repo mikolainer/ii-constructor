@@ -419,6 +419,10 @@ class Scenario(ScenarioInterface):
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
         '''
+        input = self.get_vector(name)
+        if len(self.input_usage(input)) > 0:
+            raise Exists(name, f'Вектор с именем "{name.value}" используется в существующих переходах')
+        
         return self.__input_vectors.remove(name)
 
     def check_vector_exists(self, name:Name) -> bool:
