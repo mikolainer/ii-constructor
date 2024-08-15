@@ -218,11 +218,6 @@ class ProjectManager:
 
             item.set_choose_mode(False)
 
-    def __save_scenario_handler(self, manipulator: ScenarioManipulator):
-        path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
-        with open(path, "w") as file:
-            file.write(manipulator.serialize())
-
     def __open_project(self, manipulator: ScenarioManipulator):
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
@@ -242,7 +237,7 @@ class ProjectManager:
             lambda model: self.__connect_synonym_changes_from_gui(proj, manipulator, model),
             editor,
             content_wgt,
-            lambda: self.__save_scenario_handler(manipulator)
+            lambda: manipulator.save_to_file()
         )
         flows_model.set_remove_callback(lambda index: self.__on_flow_remove_from_gui(manipulator, index))
         proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(manipulator, index))
