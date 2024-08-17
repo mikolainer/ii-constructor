@@ -1,6 +1,6 @@
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
-from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID
-from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source, InputDescription
+from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
+from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source, InputDescription, Step, State
 from alicetool.domain.core.porst import ScenarioInterface
 
 class HostingManipulator:
@@ -101,11 +101,30 @@ class ScenarioManipulator:
     def make_enter(self, state_id: int):
         ''' делает состояние точкой входа '''
         
-    def create_step(self, from_state_id: int, to_state_id: int, input_name: int):
+    def create_step(self, from_state_id: int, to_state_id: int, input_name: str):
         ''' создаёт переход '''
+        vector = self.interface().get_vector(Name(input_name))
+        self.interface().create_step(StateID(from_state_id), StateID(to_state_id), vector)
+
+    def create_step_to_new_state(self, from_state_id: int, input_name: str, new_state_name: str) -> dict:
+        ''' создаёт состояние с переходом в него
+            возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
+        '''
+        vector = self.interface().get_vector(Name(input_name))
+        step:Step = self.interface().create_step(StateID(from_state_id), StateAttributes(Output(Answer('текст ответа')), Name(new_state_name), ''), vector)
+        to_state:State = step.connection.to_state
+
+        return {
+            'id': to_state.id().value,
+            'name': to_state.attributes.name.value,
+            'text': to_state.attributes.output.value.text,
+        }
         
-    def set_state_answer(self, state_id, new_value):
+    def set_state_answer(self, state_id: int, new_value: str):
         ''' изменяет ответ состояния '''
+
+    def rename_state(self, state_id: int, new_name: str):
+        ''' изменяет имя состояния '''
         
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         ''' изменяет значение синонима '''

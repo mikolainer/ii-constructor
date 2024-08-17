@@ -432,40 +432,25 @@ class ProjectManager:
         return True, s_model
 
     def __on_step_created_from_gui(self, manipulator: ScenarioManipulator, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
-        # найти state_from
-        from_state_id = StateID(from_state_index.data(CustomDataRole.Id))
-        #state_from = scenario.states([from_state_id])[from_state_id]
-        # найти input_vector
-        _input_name = None
-        for index in range(project.vectors_model.rowCount()):
-            model_item = project.vectors_model.get_item(index)
-            if model_item.on[CustomDataRole.SynonymsSet] is input:
-                _input_name = model_item.on[CustomDataRole.Name]
-        if _input_name is None: return False
+        try:
+            from_state_id = from_state_index.data(CustomDataRole.Id)
+            vector_name = self.__get_vector_name_by_synonyms_model(project, manipulator, input)
+            new_state_info = manipulator.create_step_to_new_state(from_state_id, vector_name, to_state_item.on[CustomDataRole.Name])
 
-        input_vector = manipulator.interface().get_vector(Name(_input_name))
+            # создать переход
+            step_item = ItemData()
+            step_item.on[CustomDataRole.FromState] = from_state_id
+            step_item.on[CustomDataRole.ToState] = new_state_info['id']
+            step_item.on[CustomDataRole.SynonymsSet] = input
+
+            to_state_item.on[CustomDataRole.Id] = new_state_info['id']
+            to_state_item.on[CustomDataRole.Name] = new_state_info['name']
+            to_state_item.on[CustomDataRole.Text] = new_state_info['text']
+            to_state_item.on[CustomDataRole.Steps] = [step_item]
+
+        except Exception as e:
+            return False
         
-        # сформировать аттрибуты нового состояния
-        new_state_attr = StateAttributes(
-            Output(Answer('текст ответа')),
-            Name(to_state_item.on[CustomDataRole.Name]),
-            Description('')
-        )
-
-        # создать переход
-        new_step = manipulator.interface().create_step(from_state_id, new_state_attr, input_vector)
-        step_item = ItemData()
-        step_item.on[CustomDataRole.FromState] = new_step.connection.from_state.id().value
-        step_item.on[CustomDataRole.ToState] = new_step.connection.to_state.id().value
-        step_item.on[CustomDataRole.SynonymsSet] = input
-
-        new_state_id = new_step.connection.to_state.id()
-        new_state = manipulator.interface().states([new_state_id])[new_state_id]
-        to_state_item.on[CustomDataRole.Id] = new_state.id().value
-        to_state_item.on[CustomDataRole.Name] = new_state.attributes.name.value
-        to_state_item.on[CustomDataRole.Text] = new_state.attributes.output.value.text
-        to_state_item.on[CustomDataRole.Steps] = [step_item]
-
         return True
     
     def __on_step_removed_from_gui(self, manipulator: ScenarioManipulator, project:Project, state_from: QModelIndex, state_to: QModelIndex, input: SynonymsSetModel):
@@ -477,30 +462,14 @@ class ProjectManager:
             return False
         
         return True
-
-        return True
         
     def __on_step_to_created_from_gui(self, manipulator: ScenarioManipulator, project:Project, from_state_index: QModelIndex, to_state_index: QModelIndex, input: SynonymsSetModel) -> bool:
-        from_state_id = StateID(from_state_index.data(CustomDataRole.Id))
-        to_state_id = StateID(to_state_index.data(CustomDataRole.Id))
-        states = manipulator.interface().states([from_state_id, to_state_id])
-        # найти state_from
-        state_from = states[from_state_id]
-        # найти state_to
-        state_from = states[to_state_id]
+        try:
+            input_name = self.__get_vector_name_by_synonyms_model(project, manipulator, input)
+            manipulator.create_step(from_state_index.data(CustomDataRole.Id), to_state_index.data(CustomDataRole.Id), input_name)
+        except Exception as e:
+            return False
         
-        # найти input_vector
-        _input_name = None
-        for index in range(project.vectors_model.rowCount()):
-            model_item = project.vectors_model.get_item(index)
-            if model_item.on[CustomDataRole.SynonymsSet] is input:
-                _input_name = model_item.on[CustomDataRole.Name]
-        if _input_name is None: return False
-
-        input_vector = manipulator.interface().get_vector(Name(_input_name))
-
-        # создать переход
-        manipulator.interface().create_step(from_state_id, to_state_id, input_vector)
         return True
 
     def __on_vector_created_from_gui(self, manipulator: ScenarioManipulator, name: str) -> ItemData:
