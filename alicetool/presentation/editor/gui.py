@@ -101,8 +101,13 @@ class Project:
         except Warning:
             return
 
-        item = self.__synonyms_group_create_callback(name)
+        self.__synonyms_group_create_callback(name)
 
+        item = ItemData()
+        item.on[CustomDataRole.Name] = name
+        item.on[CustomDataRole.SynonymsSet] = SynonymsSetModel()
+        item.on[CustomDataRole.Description] = ''
+    
         model.prepare_item(item)
         model.insertRow()
 
@@ -472,12 +477,13 @@ class ProjectManager:
         
         return True
 
-    def __on_vector_created_from_gui(self, manipulator: ScenarioManipulator, name: str) -> ItemData:
-        #name = new_vector_item.data(CustomDataRole.Name)
-        new_vector = LevenshtainVector(Name(name))
-        manipulator.interface().add_vector(new_vector)
-        item = LevenshtainVectorSerializer().to_data(new_vector)
-        return item
+    def __on_vector_created_from_gui(self, manipulator: ScenarioManipulator, name: str) -> bool:
+        try:
+            manipulator.add_vector(name)
+        except Exception as e:
+            return False
+        
+        return True
 
     def __on_state_changed_from_gui(self, manipulator:ScenarioManipulator, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
         id = StateID(state_id)

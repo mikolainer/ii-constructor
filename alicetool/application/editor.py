@@ -97,6 +97,7 @@ class ScenarioManipulator:
         
     def add_vector(self, input_name: str):
         ''' создаёт вектор '''
+        self.interface().add_vector(LevenshtainVector(Name(input_name)))
         
     def make_enter(self, state_id: int):
         ''' делает состояние точкой входа '''
