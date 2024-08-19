@@ -1,7 +1,12 @@
+from typing import Optional
+
+from PySide6.QtWidgets import QMessageBox 
+
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
 from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source, InputDescription, Step, State
 from alicetool.domain.core.porst import ScenarioInterface
+from alicetool.domain.core.exceptions import Exists
 
 class HostingManipulator:
     @staticmethod
@@ -99,8 +104,34 @@ class ScenarioManipulator:
         ''' создаёт вектор '''
         self.interface().add_vector(LevenshtainVector(Name(input_name)))
         
-    def make_enter(self, state_id: int):
-        ''' делает состояние точкой входа '''
+    def make_enter(self, state_id: int) -> str:
+        ''' делает состояние точкой входа, возвращает имя вектора '''
+        state_id_d = StateID(state_id)
+        state:State = self.interface().states([state_id_d])[state_id_d]
+        
+        vector_name = state.attributes.name
+
+        try: # создаём новый вектор
+            vector = LevenshtainVector(vector_name)
+            self.interface().create_enter_vector(vector, state_id_d)
+            
+        except Exists as err:
+            # если вектор уже существует - спрашиваем продолжать ли с ним
+            ask_result = QMessageBox.information(
+                None,
+                'Подтверждение',
+                f'{err.ui_text} Продолжить с существующим вектором?',
+                QMessageBox.StandardButton.Apply,
+                QMessageBox.StandardButton.Abort
+            )
+
+            # если пользователь отказался - завершаем операцию
+            if ask_result == QMessageBox.StandardButton.Abort:
+                raise RuntimeError()
+            
+        self.interface().make_enter(state_id_d)
+        
+        return vector_name.value
         
     def create_step(self, from_state_id: int, to_state_id: int, input_name: str):
         ''' создаёт переход '''

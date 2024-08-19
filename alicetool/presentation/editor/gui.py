@@ -391,49 +391,26 @@ class ProjectManager:
         return True
 
     def __on_enter_created_from_gui(self, manipulator: ScenarioManipulator, project:Project, to_state_index: QModelIndex) -> tuple[bool, Optional[SynonymsSetModel]]:
-        vector_name = Name(to_state_index.data(CustomDataRole.Name))
-        state_id = StateID(to_state_index.data(CustomDataRole.Id))
-        s_model: SynonymsSetModel
-
-        try: # создаём новый вектор
-            vector = LevenshtainVector(vector_name)
-            manipulator.interface().create_enter_vector(vector, state_id)
-            vector_item = LevenshtainVectorSerializer().to_data(vector)
-            project.vectors_model.prepare_item(vector_item)
-            project.vectors_model.insertRow()
-            s_model = vector_item.on[CustomDataRole.SynonymsSet]
-            self.__connect_synonym_changes_from_gui(project, manipulator, s_model)
-            
-        except Exists as err:
-            # если вектор уже существует - спрашиваем продолжать ли с ним
-            ask_result = QMessageBox.information(
-                self.__main_window,
-                'Подтверждение',
-                f'{err.ui_text} Продолжить с существующим вектором?',
-                QMessageBox.StandardButton.Apply,
-                QMessageBox.StandardButton.Abort
-            )
-
-            # если пользователь отказался - завершаем операцию
-            if ask_result == QMessageBox.StandardButton.Abort:
-                return False, None
-            
-            # берём набор синонимов из "кэша"
-            s_model = project.vectors_model.get_item_by(CustomDataRole.Name, vector_name.value).on[CustomDataRole.SynonymsSet]
+        vector_name:str
         
         try:
-            manipulator.interface().make_enter(state_id)
-
-        except Exists as err:
-            QMessageBox.warning(
-                self.__main_window,
-                'Невозможно выполнить',
-                err.ui_text,
-                QMessageBox.StandardButton.Apply,
-                QMessageBox.StandardButton.Abort
-            )
+            vector_name = manipulator.make_enter(to_state_index.data(CustomDataRole.Id))
+        except Exception as e:
             return False, None
-        
+
+        g_item = project.vectors_model.get_item_by(CustomDataRole.Name, vector_name)
+        if isinstance(g_item, ItemData):
+            return True, g_item.on[CustomDataRole.SynonymsSet]
+
+        s_model = SynonymsSetModel()
+        item = ItemData()
+        item.on[CustomDataRole.Name] = vector_name
+        item.on[CustomDataRole.SynonymsSet] = s_model
+        item.on[CustomDataRole.Description] = ''
+        project.vectors_model.prepare_item(item)
+        project.vectors_model.insertRow()
+        self.__connect_synonym_changes_from_gui(project, manipulator, s_model)
+
         return True, s_model
 
     def __on_step_created_from_gui(self, manipulator: ScenarioManipulator, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
