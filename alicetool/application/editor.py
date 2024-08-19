@@ -154,9 +154,12 @@ class ScenarioManipulator:
         
     def set_state_answer(self, state_id: int, new_value: str):
         ''' изменяет ответ состояния '''
+        self.interface().set_answer(StateID(state_id), Output(Answer(new_value)))
 
     def rename_state(self, state_id: int, new_name: str):
         ''' изменяет имя состояния '''
+        id = StateID(state_id)
+        self.interface().states([id])[id].attributes.name = Name(new_name)
         
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         ''' изменяет значение синонима '''

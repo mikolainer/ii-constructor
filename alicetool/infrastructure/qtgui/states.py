@@ -46,7 +46,6 @@ class StatesModel(BaseModel):
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
 class SceneControll:
-    __change_data_callback: Callable[[int, Any, int], tuple[bool, Any]] # (state_id:int, value:Any, role:int) -> bool, Any # возвращает флаг успешности и старые данные
     __new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
     __new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]
     __select_input_callback: Callable[[],Optional[SynonymsSetModel]]
@@ -60,8 +59,7 @@ class SceneControll:
     __main_window: QWidget
 
     def __init__(self,
-                 select_input_callback: Callable[[],Optional[SynonymsSetModel]], 
-                 change_data_callback: Callable[[int, Any, int], tuple[bool, Any]], 
+                 select_input_callback: Callable[[],Optional[SynonymsSetModel]],
                  new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool], 
                  step_remove_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool],
                  new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool],
@@ -71,7 +69,6 @@ class SceneControll:
                  main_window: QWidget,
                 ) -> None:
         self.__select_input_callback = select_input_callback
-        self.__change_data_callback = change_data_callback
         self.__new_step_callback = new_step_callback
         self.__step_remove_callback = step_remove_callback
         self.__new_state_callback = new_state_callback
@@ -288,9 +285,7 @@ class SceneControll:
         id = model_index.data(CustomDataRole.Id)
         role = CustomDataRole.Text
         new_value = editor.toPlainText()
-        success, old_value = self.__change_data_callback(id, new_value, role)
-        self.__states_model.setData(model_index, new_value if success else old_value, role)
-        if not success: self.__states_model.setData(model_index, old_value, role)
+        self.__states_model.setData(model_index, new_value, role)
 
     def __state_title_changed_handler(self, node:SceneNode, new_title:str):
         ''' по изменениям на сцене изменить модель '''
@@ -301,9 +296,7 @@ class SceneControll:
         id = model_index.data(CustomDataRole.Id)
         role = CustomDataRole.Name
         new_value = new_title
-        success, old_value = self.__change_data_callback(id, new_value, role)
-        self.__states_model.setData(model_index, new_value if success else old_value, role)
-        if not success: self.__states_model.setData(model_index, old_value, role)
+        self.__states_model.setData(model_index, new_value, role)
 
     def __new_step_request(self, from_node:SceneNode, to_node:SceneNode):
         state_index_from = self.__find_in_model(from_node)

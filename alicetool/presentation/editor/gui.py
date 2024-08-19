@@ -253,17 +253,13 @@ class ProjectManager:
         proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(manipulator, index))
 
         states_model = StatesModel(self.__main_window)
-        states_model.set_edit_callback(lambda i, r, o, n: True)
+        states_model.set_edit_callback(lambda i, r, o, n: self.__on_state_changed_from_gui(manipulator, i, r, o, n))
         states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(manipulator, index))
 
         # создание обработчика изменений на сцене
         states_controll = SceneControll(
             # select_input_callback: Callable[[],Optional[SynonymsSetModel]]
             lambda: proj.choose_input(),
-
-            # change_data_callback: Callable[[int, Any, int], tuple[bool, Any]]
-            lambda state_id, value, role:
-                self.__on_state_changed_from_gui(manipulator, state_id, value, role),
             
             # new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
             lambda from_state_index, to_state_index, input: 
@@ -462,23 +458,19 @@ class ProjectManager:
         
         return True
 
-    def __on_state_changed_from_gui(self, manipulator:ScenarioManipulator, state_id:int, value:Any, role:int) -> tuple[bool, Any]:
-        id = StateID(state_id)
-        success = False
+    def __on_state_changed_from_gui(self, manipulator:ScenarioManipulator, state_item:QModelIndex, role:int, old_value:Any, new_value:Any) -> bool:
+        state_id = state_item.data(CustomDataRole.Id)
+        try:
+            if role == CustomDataRole.Text:
+                manipulator.set_state_answer(state_id, new_value)
 
-        if role == CustomDataRole.Text:
-            old_value = manipulator.interface().states([id])[id].attributes.output.value.text
-            if isinstance(value, str):
-                manipulator.interface().set_answer(id, Output(Answer(value)))
-                success = True
+            elif role == CustomDataRole.Name:
+                manipulator.rename_state(state_id, new_value)
 
-        elif role == CustomDataRole.Name:
-            old_value = manipulator.interface().states([id])[id].attributes.name.value
-            if isinstance(value, str):
-                success = True
-                manipulator.interface().states([id])[id].attributes.name = Name(value)
+        except Exception as e:
+            return False
 
-        return old_value, success
+        return True
 
     # TODO: staticmethod?
     def __on_synonym_created_from_gui(self, proj:Project, manipulator: ScenarioManipulator, model:SynonymsSetModel, data: ItemData):
