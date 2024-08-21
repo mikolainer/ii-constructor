@@ -99,6 +99,11 @@ class ScenarioManipulator:
         
     def create_synonym(self, input_name: str, new_synonym: str):
         ''' создаёт синоним '''
+        vector: LevenshtainVector = self.interface().get_vector(Name(input_name))
+        if not isinstance(vector, LevenshtainVector):
+            raise Warning('ошибка получения вектора перехода')
+        
+        vector.synonyms.synonyms.append(Synonym(new_synonym))
         
     def add_vector(self, input_name: str):
         ''' создаёт вектор '''

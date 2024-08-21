@@ -118,10 +118,10 @@ class Project:
 
         item = ItemData()
         item.on[CustomDataRole.Text] = default_value
-        model.prepare_item(item)
-        model.insertRow()
-
-        self.__synonym_create_callback(model, item)
+        
+        if self.__synonym_create_callback(model, item):
+            model.prepare_item(item)
+            model.insertRow()
 
     def scene(self) -> Editor:
         return self.__editor.scene()
@@ -473,8 +473,18 @@ class ProjectManager:
         return True
 
     # TODO: staticmethod?
-    def __on_synonym_created_from_gui(self, proj:Project, manipulator: ScenarioManipulator, model:SynonymsSetModel, data: ItemData):
-        self.__get_vector_by_model(proj, manipulator, model).synonyms.synonyms.append(Synonym(data.on[CustomDataRole.Text]))
+    def __on_synonym_created_from_gui(self, proj:Project, manipulator: ScenarioManipulator, model:SynonymsSetModel, data: ItemData) -> bool:
+        try:
+            manipulator.create_synonym(
+                self.__get_vector_name_by_synonyms_model(proj, manipulator, model),
+                data.on[CustomDataRole.Text]
+            )
+
+        except Exception as e:
+            return False
+
+        return True
+        
 
     # TODO: staticmethod?
     def __connect_synonym_changes_from_gui(self, proj:Project, manipulator: ScenarioManipulator, model:SynonymsSetModel):

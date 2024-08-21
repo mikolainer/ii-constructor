@@ -66,7 +66,7 @@ class ScenarioInterface:
         @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
         '''
     
-    def get_vector(self, name:Name) -> Optional[InputDescription]:
+    def get_vector(self, name:Name) -> InputDescription:
         '''
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)

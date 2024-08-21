@@ -407,7 +407,7 @@ class Scenario(ScenarioInterface):
         '''
         return self.__input_vectors.select(names)
     
-    def get_vector(self, name:Name) -> 'InputDescription':
+    def get_vector(self, name:Name) -> InputDescription:
         '''
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
