@@ -174,10 +174,7 @@ class ScenarioManipulator:
         
         index = vector.synonyms.synonyms.index(Synonym(old_synonym)) # raises ValueError if `old_synonym` not found
         vector.synonyms.synonyms[index] = Synonym(new_synonym)
-        
-    def check_vector_exists(self, name) -> bool:
-        ''' проверяет существование вектора '''
-        
+                
     def save_to_file(self):
         ''' сохраняет сценарий в файл '''
 
