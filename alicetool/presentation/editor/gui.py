@@ -485,7 +485,6 @@ class ProjectManager:
 
         return True
         
-
     # TODO: staticmethod?
     def __connect_synonym_changes_from_gui(self, proj:Project, manipulator: ScenarioManipulator, model:SynonymsSetModel):
         model.set_edit_callback(
@@ -533,15 +532,3 @@ class ProjectManager:
             raise Warning('по модели набора синонимов группа синонимов не найдена')
         
         return group_name
-
-    def open_project(self) -> Project:
-        pass
-
-    def close_current(self):
-        pass
-
-    def export_current(self) -> TextIOWrapper:
-        pass
-
-    def publish_current():
-        pass
