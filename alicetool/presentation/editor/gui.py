@@ -118,7 +118,7 @@ class Project:
 
         item = ItemData()
         item.on[CustomDataRole.Text] = default_value
-        
+
         if self.__synonym_create_callback(model, item):
             model.prepare_item(item)
             model.insertRow()
@@ -533,29 +533,6 @@ class ProjectManager:
             raise Warning('по модели набора синонимов группа синонимов не найдена')
         
         return group_name
-
-    def __get_vector_by_model(self, proj:Project, manipulator:ScenarioManipulator, model:SynonymsSetModel) -> LevenshtainVector:
-        ''' !!! DEPRECATED !!! '''
-        group_name: Name = None
-
-        input_vectors_count = proj.vectors_model.rowCount()
-        for vector_model_row in range(input_vectors_count):
-            vector_index = proj.vectors_model.index(vector_model_row)
-            if not proj.vectors_model.data(vector_index, CustomDataRole.SynonymsSet) is model:
-                continue
-
-            group_name = Name(proj.vectors_model.data(vector_index, CustomDataRole.Name))
-            break
-        
-        if group_name is None:
-            raise Warning('по модели набора синонимов группа синонимов не найдена')
-        
-        vector: LevenshtainVector = manipulator.interface().get_vector(group_name)
-
-        if not isinstance(vector, LevenshtainVector):
-             raise Warning('ошибка получения вектора перехода')
-        
-        return vector
 
     def open_project(self) -> Project:
         pass
