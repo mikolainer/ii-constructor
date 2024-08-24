@@ -103,7 +103,12 @@ class ScenarioManipulator:
         if not isinstance(vector, LevenshtainVector):
             raise Warning('ошибка получения вектора перехода')
         
-        vector.synonyms.synonyms.append(Synonym(new_synonym))
+        synonym = Synonym(new_synonym)
+
+        if synonym in vector.synonyms.synonyms:
+            raise Exists(synonym, f'Синоним "{new_synonym}" группы "{input_name}"')
+        
+        vector.synonyms.synonyms.append(synonym)
         
     def add_vector(self, input_name: str):
         ''' создаёт вектор '''

@@ -479,6 +479,10 @@ class ProjectManager:
                 self.__get_vector_name_by_synonyms_model(proj, manipulator, model),
                 data.on[CustomDataRole.Text]
             )
+        
+        except Exists as e:
+            QMessageBox.critical(self.__main_window, "Невозможно выполнить", e.ui_text)
+            return False
 
         except Exception as e:
             return False

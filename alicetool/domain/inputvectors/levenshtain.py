@@ -10,6 +10,9 @@ from alicetool.application.data import BaseSerializer
 class Synonym:
     value:str
 
+    def __eq__(self, value: object) -> bool:
+        return value.value == self.value
+
 class SynonymsGroup:
     synonyms: list[Synonym]
     
