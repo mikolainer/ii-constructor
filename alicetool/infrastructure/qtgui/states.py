@@ -246,6 +246,24 @@ class SceneControll:
 
         self.on_add_enter(input_item)
 
+    def serialize_layout(self) -> str:
+        ''' сертализует информацию об отображении элементов сцены '''
+        result = list[str]()
+
+        items_num = self.__states_model.rowCount()
+        for row in range(items_num):
+            index = self.__states_model.index(row)
+            id: int = self.__states_model.data(index, CustomDataRole.Id)
+            node: SceneNode = self.__states_model.data(index, CustomDataRole.Node)
+
+            if node is None:
+                continue
+            
+            pos = node.scenePos()
+            result.append(f'{id}: x={pos.x()}, y={pos.y()};')
+        
+        return '\n'.join(result)
+
     def __find_arrow(self, from_node: SceneNode, to_node: SceneNode) -> Optional[Arrow]:
         ''' ищет связь между элементами сцены '''
         for step_model in self.__arrows.values():

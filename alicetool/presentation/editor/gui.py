@@ -223,10 +223,17 @@ class ProjectManager:
 
             item.set_choose_mode(False)
 
-    def __save_scenario_handler(self, manipulator: ScenarioManipulator):
+    def __save_scenario_handler(self, manipulator: ScenarioManipulator, scene_ctrl: SceneControll):
         path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
+
+        if not path:
+            return
+
         with open(path, "w") as file:
             file.write(manipulator.serialize())
+
+        with open(path + ".lay", "w") as lay_file:
+            lay_file.write(scene_ctrl.serialize_layout())
 
     def __open_project(self, manipulator: ScenarioManipulator):
         content_view = FlowsView(self.__flow_list)
@@ -239,25 +246,13 @@ class ProjectManager:
         editor = QGraphicsView(Editor(self.__main_window), self.__workspaces)
         editor.centerOn(0, 0)
         editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-        
-        # создание объекта взаимодействий с проектом
-        proj = Project(
-            lambda model, data: self.__on_synonym_created_from_gui(proj, manipulator, model, data),
-            lambda name: self.__on_vector_created_from_gui(manipulator, name),
-            lambda model: self.__connect_synonym_changes_from_gui(proj, manipulator, model),
-            editor,
-            content_wgt,
-            lambda: self.__save_scenario_handler(manipulator)
-        )
-        flows_model.set_remove_callback(lambda index: self.__on_flow_remove_from_gui(manipulator, index))
-        proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(manipulator, index))
 
+        # создание обработчика изменений на сцене
         states_model = StatesModel(self.__main_window)
         states_model.set_edit_callback(lambda i, r, o, n: self.__on_state_changed_from_gui(manipulator, i, r, o, n))
         states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(manipulator, index))
 
-        # создание обработчика изменений на сцене
-        states_controll = SceneControll(
+        scene_controll = SceneControll(
             # select_input_callback: Callable[[],Optional[SynonymsSetModel]]
             lambda: proj.choose_input(),
             
@@ -285,6 +280,18 @@ class ProjectManager:
             # main_window: QWidget
             self.__main_window
         )
+        
+        # создание объекта взаимодействий с проектом
+        proj = Project(
+            lambda model, data: self.__on_synonym_created_from_gui(proj, manipulator, model, data),
+            lambda name: self.__on_vector_created_from_gui(manipulator, name),
+            lambda model: self.__connect_synonym_changes_from_gui(proj, manipulator, model),
+            editor,
+            content_wgt,
+            lambda: self.__save_scenario_handler(manipulator, scene_controll)
+        )
+        flows_model.set_remove_callback(lambda index: self.__on_flow_remove_from_gui(manipulator, index))
+        proj.vectors_model.set_remove_callback(lambda index: self.__on_vector_remove_from_gui(manipulator, index))
 
         content_wgt.create_value.connect(lambda: self.__create_enter_handler(flows_model, proj))
 
@@ -347,9 +354,9 @@ class ProjectManager:
             item.on[CustomDataRole.Steps] = steps
 
             # добавление элемента модели состояний
-            states_controll.on_insert_node(proj.scene(), item, input_items)
+            scene_controll.on_insert_node(proj.scene(), item, input_items)
 
-        states_controll.init_arrows(proj.scene())
+        scene_controll.init_arrows(proj.scene())
 
     def create_project(self) -> Project:
         dialog = NewProjectDialog(self.__main_window)
