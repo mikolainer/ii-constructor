@@ -1,4 +1,5 @@
 from typing import Optional
+from xml.etree.ElementTree import ElementTree, Element, tostring, indent
 
 from PySide6.QtWidgets import QMessageBox 
 
@@ -58,7 +59,7 @@ class ScenarioManipulator:
     def __init__(self, source: Source) -> None:
         self.__source = source
 
-    def id(self) -> str:
+    def id(self) -> int:
         return self.__source.id.value
 
     def name(self) -> str:
@@ -185,107 +186,73 @@ class ScenarioManipulator:
 
     def serialize(self) -> str:
         ''' сформировать строку для сохранения в файл '''
+
         scenario = self.__source.interface
 
-        answer = list[str]()
-        answer.append(f'Идентификатор: {self.id()}')
-        answer.append(f'Название: {self.name()}')
-        answer.append(f'Краткое описание: {self.description()}')
+        root = Element('сценарий', {'Идентификатор': str(self.id()), 'Название': self.name(), 'Краткое_описание': self.description()})
+        vectors = Element('Управляющие_воздействия')
+        states = Element('Состояния')
+        enters = Element('Входы')
+        steps = Element('Переходы')
 
-        vectors = list[list[str]]()
+        root.append(vectors)
+        root.append(states)
+        root.append(enters)
+        root.append(steps)
+
         for vector in scenario.select_vectors():
-            _vector = list[str]()
-            _vector.append('{')
-            _vector.append(f'\tназвание: "{vector.name().value}"')
-            _vector.append(f'\t{"["}')
-            for synonym in vector.synonyms.synonyms:
-                _vector.append(f'\t\t"{synonym.value}",')
-            _vector.append(f'\t{"]"}')
-            _vector.append('}')
-            vectors.append(_vector)
+            if isinstance(vector, LevenshtainVector):
+                _vector = Element('Описание', {'Название': vector.name().value, 'Тип': 'Группа синонимов'})
+                for synonym in vector.synonyms.synonyms:
+                    _synonym = Element('Синоним')
+                    _synonym.text = synonym.value
+                    _vector.append(_synonym)
+                vectors.append(_vector)
 
-
-        states = list[list[str]]()
         for state in scenario.states().values():
-            _state = list[str]()
-            _state.append('{')
-            _state.append(f'\tid: {state.id().value}')
-            _state.append(f'\tИмя: {state.attributes.name.value}')
-            _state.append(f'\tОтвет: {state.attributes.output.value.text}')
-            _state.append('}')
+            state: State = state
+            _state = Element('Состояние', {'Идентификатор': str(state.id().value), 'Название': state.attributes.name.value})
+            _state.text = state.attributes.output.value.text
             states.append(_state)
 
-        enters = list[list[str]]()
         very_bad_thing = scenario._Scenario__connections
         for enter_state_id in very_bad_thing['to'].keys():
             enter_conn: Connection = very_bad_thing['to'][enter_state_id]
-            enter = list[str]()
-            enter.append('{')
-            enter.append(f'\tсостояние: {enter_state_id.value}')
-            enter.append(f'\tпереходы:')
-            enter.append(f'\t{"["}')
+            _enter = Element('Точка_входа', {'Состояние': str(enter_state_id.value)})
+
             for step in enter_conn.steps:
                 vector:LevenshtainVector = step.input
-                enter.append(f'\t\t{"["}')
-                for synonym in vector.synonyms.synonyms:
-                    enter.append(f'\t\t\t"{synonym.value}",')
-                enter.append(f'\t\t{"]"}')
-            enter.append(f'\t{"]"}')
-            enter.append('}')
-            enters.append(enter)
+                if isinstance(vector, LevenshtainVector):
+                    _vector = Element('Управляющее_воздействие', {'Название': vector.name().value, 'Тип': 'Группа синонимов'})
+                    for synonym in vector.synonyms.synonyms:
+                        _synonym = Element('Синоним')
+                        _synonym.text = synonym.value
+                        _vector.append(_synonym)
+                    _enter.append(_vector)
 
-        connections = list[list[str]]()
+            enters.append(_enter)
+
         for from_state_id in very_bad_thing['from'].keys():
-            _conn = list[str]()
-            _conn.append('{')
-            _conn.append(f'\tиз состояния: {from_state_id.value}')
+            _conn = Element('Связи', {'Состояние': str(from_state_id.value)})
             for conn in very_bad_thing['from'][from_state_id]:
                 conn:Connection = conn # просто аннотирование
-                _conn.append(f'\tпереходы в состояние {conn.to_state.id().value}:')
-                _conn.append(f'\t{"["}')
+                _step = Element('Переход', {'В_состояние': str(conn.to_state.id().value)})
                 for step in conn.steps:
                     vector:LevenshtainVector = step.input
-                    _conn.append(f'\t\t{"["}')
-                    for synonym in vector.synonyms.synonyms:
-                        _conn.append(f'\t\t\t"{synonym.value}",')
-                    _conn.append(f'\t\t{"]"}')
-                _conn.append(f'\t{"]"}')
-            _conn.append('}')
-            connections.append(_conn)
+                    if isinstance(vector, LevenshtainVector):
+                        _vector = Element('Управляющее_воздействие', {'Название': vector.name().value, 'Тип': 'Группа синонимов'})
+                        for synonym in vector.synonyms.synonyms:
+                            _synonym = Element('Синоним')
+                            _synonym.text = synonym.value
+                            _vector.append(_synonym)
+                        _step.append(_vector)
+                
+                _conn.append(_step)
 
-        answer.append('')
-        answer.append('[Векторы перехода (Наборы синонимов)]')
-        answer.append('{')
-        for vector in vectors:
-            for line in vector:
-                answer.append(f'\t{line}')
-        answer.append('}')
+            steps.append(_conn)
 
-        answer.append('')
-        answer.append('[Состояния]')
-        answer.append('{')
-        for state in states:
-            for line in state:
-                answer.append(f'\t{line}')
-        answer.append('}')
-
-        answer.append('')
-        answer.append('[Входы]')
-        answer.append('{')
-        for enter in enters:
-            for line in enter:
-                answer.append(f'\t{line}')
-        answer.append('}')
-
-        answer.append('')
-        answer.append('[Переходы]')
-        answer.append('{')
-        for connection in connections:
-            for line in connection:
-                answer.append(f'\t{line}')
-        answer.append('}')
-
-        return '\n'.join(answer)
+        indent(root)
+        return tostring(root, 'unicode')
 
     @staticmethod
     def save_project(scenario:Scenario):
