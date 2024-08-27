@@ -180,6 +180,26 @@ class ScenarioManipulator:
         
         index = vector.synonyms.synonyms.index(Synonym(old_synonym)) # raises ValueError if `old_synonym` not found
         vector.synonyms.synonyms[index] = Synonym(new_synonym)
+
+    def steps_from(self, from_state:int) -> dict[int, list[str]]:
+        ''' возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов '''
+        result = dict[int, list[str]]()
+        steps: list[Step] = self.interface().steps(StateID(from_state))
+        for step in steps:
+            if step.connection is None:
+                continue
+
+            if step.connection.from_state is None or step.connection.from_state.id().value != from_state:
+                continue
+
+            to_state:int = step.connection.to_state.id().value
+            input_name:str = step.input.name().value
+            if not to_state in result.keys():
+                result[to_state] = [input_name]
+            else:
+                result[to_state].append(input_name)
+
+        return result
                 
     def save_to_file(self):
         ''' сохраняет сценарий в файл '''

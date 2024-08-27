@@ -1,5 +1,7 @@
 from typing import Optional, Callable, Any
 from dataclasses import dataclass
+from alicetool.application.editor import ScenarioManipulator
+from alicetool.infrastructure.qtgui.synonyms import SynonymsGroupsModel
 
 from PySide6.QtCore import (
     Qt,
@@ -40,7 +42,7 @@ class StatesModel(BaseModel):
             CustomDataRole.Text
         ]
 
-        self._data_init(index_roles=roles, required_roles=[CustomDataRole.Steps])
+        self._data_init(index_roles=roles)
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
@@ -58,7 +60,10 @@ class SceneControll:
     __arrows: dict[Arrow, StepModel]
     __main_window: QWidget
 
+    __manipulator: ScenarioManipulator
+
     def __init__(self,
+                 manipulator: ScenarioManipulator,
                  select_input_callback: Callable[[],Optional[SynonymsSetModel]],
                  new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool], 
                  step_remove_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool],
@@ -68,6 +73,7 @@ class SceneControll:
                  flows_model: FlowsModel,
                  main_window: QWidget,
                 ) -> None:
+        self.__manipulator = manipulator
         self.__select_input_callback = select_input_callback
         self.__new_step_callback = new_step_callback
         self.__step_remove_callback = step_remove_callback
@@ -80,28 +86,20 @@ class SceneControll:
         self.__arrows = {}
         self.__main_window = main_window
 
-    def init_arrows(self, scene:Editor):
-        ''' создать стрелки переходов в соответствии с моделью '''
+    def init_arrows(self, scene:Editor, v_model: SynonymsGroupsModel):
+        ''' создать стрелки переходов '''
         for row in range(self.__states_model.rowCount()):
             state_index = self.__states_model.index(row)
 
             node_from:SceneNode = state_index.data(CustomDataRole.Node)
-            
-            for step_item in state_index.data(CustomDataRole.Steps):
-                ''' step_item.on[CustomDataRole.<...>]
-                FromState - id состояния (int) или None
-                ToState - id cocтояния (int)
-                SynonymsSet - input (SynonymsSetModel)
-                '''
-                step_input = step_item.on[CustomDataRole.SynonymsSet]
+            inputs_to = self.__manipulator.steps_from(state_index.data(CustomDataRole.Id))
 
-                if step_item.on[CustomDataRole.FromState] != state_index.data(CustomDataRole.Id): continue
+            for state_id in inputs_to.keys():
+                node_to = self.__states_model.get_item_by( CustomDataRole.Id, state_id ).on[CustomDataRole.Node]
 
-                node_to = self.__states_model.get_item_by(
-                    CustomDataRole.Id, step_item.on[CustomDataRole.ToState]
-                ).on[CustomDataRole.Node]
-
-                self.on_add_step(scene, step_input, node_from, node_to)
+                for input_name in inputs_to[state_id]:
+                    s_model = v_model.get_item_by(CustomDataRole.Name, input_name).on[CustomDataRole.SynonymsSet]
+                    self.on_add_step(scene, s_model, node_from, node_to)
 
     def on_insert_node(self, scene: Editor, data:ItemData, enter_data:list[ItemData] = [], pos: Optional[QPoint] = None) -> SceneNode:
         ''' по изменениям в сценарии изменить модель и добавить элемент сцены '''
@@ -164,7 +162,6 @@ class SceneControll:
             step_model = StepModel(arrow, from_node, to_node, scene)
             step_model.set_edit_callback(lambda i, r, o, n: True)
             self.__arrows[arrow] = step_model
-            step_model.rowsInserted.connect(lambda parent_index,first,last: self.__step_added_handler(step_model, first))
 
             step_model.set_remove_callback(lambda index: self.on_remove_step(index))
             arrow.set_edit_connection_handler(lambda: self.__edit_connection(step_model))
@@ -278,19 +275,6 @@ class SceneControll:
                 return self.__states_model.index(row)
         
         return QModelIndex()
-
-    def __step_added_handler(self, model:StepModel, row: int):
-        state_index_from = self.__find_in_model(model.node_from())
-        state_index_to = self.__find_in_model(model.node_to())
-        from_state_id =  state_index_from.data(CustomDataRole.Id)
-        to_state_id = state_index_to.data(CustomDataRole.Id)
-        
-        step_item = model.get_item(row)
-        step_item.on[CustomDataRole.FromState] = from_state_id
-        step_item.on[CustomDataRole.ToState] = to_state_id
-
-        state_index_from.data(CustomDataRole.Steps).append(step_item)
-        state_index_to.data(CustomDataRole.Steps).append(step_item)
 
     def __state_content_changed_handler(self, node:SceneNode):
         ''' по изменениям на сцене изменить модель '''

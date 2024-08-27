@@ -253,6 +253,8 @@ class ProjectManager:
         states_model.set_remove_callback(lambda index: self.__on_state_removed_from_gui(manipulator, index))
 
         scene_controll = SceneControll(
+            manipulator,
+
             # select_input_callback: Callable[[],Optional[SynonymsSetModel]]
             lambda: proj.choose_input(),
             
@@ -319,22 +321,15 @@ class ProjectManager:
             input_items = list[ItemData]()
 
             # подготовка шагов для модели состояний
-            steps = list[ItemData]()
             for step in manipulator.interface().steps(state.id()):
                 conn = step.connection
                 if conn is None:
                     continue # вообще-то не норм ситуация. возможно стоит бросать исключение
-                step_item = ItemData()
 
-                step_item.on[CustomDataRole.FromState] = None if step.connection.from_state is None else step.connection.from_state.id().value
-                step_item.on[CustomDataRole.ToState] = step.connection.to_state.id().value
                 vector_data = proj.vectors_model.get_item_by(
                     CustomDataRole.Name, step.input.name().value
                 )
                 s_model = vector_data.on[CustomDataRole.SynonymsSet]
-                step_item.on[CustomDataRole.SynonymsSet] = s_model
-
-                steps.append(step_item)
 
                 if step.connection.from_state is None:
                     # формирование элемента модели содержания
@@ -351,12 +346,11 @@ class ProjectManager:
             item.on[CustomDataRole.Id] = state.id().value
             item.on[CustomDataRole.Name] = state.attributes.name.value
             item.on[CustomDataRole.Text] = state.attributes.output.value.text
-            item.on[CustomDataRole.Steps] = steps
 
             # добавление элемента модели состояний
             scene_controll.on_insert_node(proj.scene(), item, input_items)
 
-        scene_controll.init_arrows(proj.scene())
+        scene_controll.init_arrows(proj.scene(), proj.vectors_model)
 
     def create_project(self) -> Project:
         dialog = NewProjectDialog(self.__main_window)
@@ -422,16 +416,9 @@ class ProjectManager:
             vector_name = self.__get_vector_name_by_synonyms_model(project, manipulator, input)
             new_state_info = manipulator.create_step_to_new_state(from_state_id, vector_name, to_state_item.on[CustomDataRole.Name])
 
-            # создать переход
-            step_item = ItemData()
-            step_item.on[CustomDataRole.FromState] = from_state_id
-            step_item.on[CustomDataRole.ToState] = new_state_info['id']
-            step_item.on[CustomDataRole.SynonymsSet] = input
-
             to_state_item.on[CustomDataRole.Id] = new_state_info['id']
             to_state_item.on[CustomDataRole.Name] = new_state_info['name']
             to_state_item.on[CustomDataRole.Text] = new_state_info['text']
-            to_state_item.on[CustomDataRole.Steps] = [step_item]
 
         except Exception as e:
             return False

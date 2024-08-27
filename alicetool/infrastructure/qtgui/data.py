@@ -21,10 +21,6 @@ class CustomDataRole(IntEnum):
     EnterStateId    : 'CustomDataRole' = Qt.ItemDataRole.UserRole +6,   # int
     SliderVisability: 'CustomDataRole' = Qt.ItemDataRole.UserRole +7,   # bool
     Node            : 'CustomDataRole' = Qt.ItemDataRole.UserRole +8,   # SceneNode
-    Steps           : 'CustomDataRole' = Qt.ItemDataRole.UserRole +9,   # list[ItemData]
-    ToState         : 'CustomDataRole' = Qt.ItemDataRole.UserRole +10,  # int
-    FromState       : 'CustomDataRole' = Qt.ItemDataRole.UserRole +11,  # int
-
 
 class ItemData:
     ''' Обёртка над данными с использованием ролей '''

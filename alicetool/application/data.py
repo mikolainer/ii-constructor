@@ -1,8 +1,7 @@
 from typing import Any
 
 import json
-from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, SynonymsSetModel
-from alicetool.infrastructure.qtgui.states import SceneNode
+from alicetool.infrastructure.qtgui.data import ItemData
 class BaseSerializer():
     type = Any
 
