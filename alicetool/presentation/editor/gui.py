@@ -237,7 +237,7 @@ class ProjectManager:
         with open(path + ".lay", "w") as lay_file:
             lay_file.write(scene_ctrl.serialize_layout())
 
-    def __open_project(self, manipulator: ScenarioManipulator):
+    def __open_project(self, manipulator: ScenarioManipulator) -> SceneControll:
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
         flows_model.set_edit_callback(lambda i, r, o, n: True)
