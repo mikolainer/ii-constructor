@@ -1,5 +1,5 @@
 from typing import Optional
-from xml.etree.ElementTree import ElementTree, Element, tostring, indent
+from xml.etree.ElementTree import ElementTree, Element, tostring, fromstring, indent
 
 from PySide6.QtWidgets import QMessageBox 
 
@@ -51,6 +51,43 @@ class HostingManipulator:
             state.required = True
             state.attributes.output
         
+        return ScenarioManipulator(source)
+
+    def open_scenario(hosting: Hosting, data:str) -> 'ScenarioManipulator':
+        root: Element = fromstring(data)
+        source = hosting.get_source(hosting.add_source(SourceInfo(Name(root.attrib['Название']), Description(root.attrib['Краткое_описание']))))
+        scenario = source.interface
+
+        vectors = root.find('Управляющие_воздействия')
+        states = root.find('Состояния')
+        enters = root.find('Входы')
+        steps = root.find('Переходы')
+
+        # добавляем векторы
+        for elem in root.find('Управляющие_воздействия').findall('Описание'):
+            synonyms = list[Synonym]()
+            for synonym in elem.findall('Синоним'):
+                synonyms.append(Synonym(synonym.text))
+
+            scenario.add_vector(LevenshtainVector(Name(elem.attrib['Название']), SynonymsGroup(synonyms)))
+
+        # добавляем состояния
+        for elem in root.find('Состояния').findall('Состояние'):
+            scenario.add_state(StateID(int(elem.attrib['Идентификатор'])), Name(elem.attrib['Название']), Output(Answer(elem.text)))
+
+        # добавляем входы
+        for elem in root.find('Входы').findall('Точка_входа'):
+            scenario.make_enter(StateID(int(elem.attrib['Состояние'])))
+
+        # добавляем переходы
+        for elem in root.find('Переходы').findall('Связи'):
+            state_from_id = StateID(int(elem.attrib['Состояние']))
+            for step in elem.findall('Переход'):
+                state_to_id = StateID(int(step.attrib['В_состояние']))
+                for input in step.findall('Управляющее_воздействие'):
+                    _vector = scenario.get_vector(Name(input.attrib['Название']))
+                    scenario.create_step(state_from_id, state_to_id, _vector)
+
         return ScenarioManipulator(source)
 
 class ScenarioManipulator:

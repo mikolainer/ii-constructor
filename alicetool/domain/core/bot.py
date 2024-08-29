@@ -439,6 +439,15 @@ class Scenario(ScenarioInterface):
         '''
         return self.__input_vectors.exists(name)
 
+    def add_state(self, id:StateID, name:Name, output:Output):
+        ''' только для открытия из файла '''
+        if self.__new_state_id <= id.value:
+            self.__new_state_id = id.value + 1
+
+        state = State(id, name)
+        state.attributes.output = output
+        self.__states[state.id()] = state
+
 # Scenario private
 
     def __create_state(self) -> State:

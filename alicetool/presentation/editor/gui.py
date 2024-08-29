@@ -180,6 +180,7 @@ class ProjectManager:
         btn.status_tip = 'Открыть файл проекта'
         btn.whats_this = 'Кнопка открытия проекта из файла'
         btn.apply_options()
+        btn.clicked.connect(lambda: self.open_project())
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton('Новый проект', QIcon(":/icons/new_proj_norm.svg"), self.__main_window)
@@ -361,6 +362,20 @@ class ProjectManager:
 
         # создание проекта
         manipulator = HostingManipulator.make_scenario(self.__inmem_hosting, info)
+        self.__open_project(manipulator)
+
+    def open_project(self) -> Project:
+        path, filetype = QFileDialog.getOpenFileName(self.__main_window, 'Создать из файла')
+
+        if not path:
+            return
+
+        data:str
+        with open(path, "r") as file:
+            data = "".join(file.readlines())
+
+        # создание проекта
+        manipulator = HostingManipulator.open_scenario(self.__inmem_hosting, data)
         self.__open_project(manipulator)
 
     def __on_vector_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
