@@ -243,6 +243,20 @@ class SceneControll:
 
         self.on_add_enter(input_item)
 
+    def load_layout(self, data:str):
+        for line in data.split(';\n'):
+            line = line.replace(' ', '')
+            id_sep = line.index(":")
+            dir_sep = line.index(",")
+            id = int(line[0 : id_sep])
+            x = float(line[id_sep+3 : dir_sep])
+            y = float(line[dir_sep+3 : -1])
+
+            state_index = self.__states_model.index(id)
+            node = self.__states_model.data(state_index, CustomDataRole.Node)
+            node: SceneNode = node
+            node.setPos(x, y)
+
     def serialize_layout(self) -> str:
         ''' сертализует информацию об отображении элементов сцены '''
         result = list[str]()

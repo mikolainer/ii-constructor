@@ -1,5 +1,6 @@
 from io import TextIOWrapper
 from typing import Callable, Any, Optional
+import os.path
 
 from PySide6.QtGui import QShortcut, QIcon, QShortcut
 from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox, QFileDialog 
@@ -353,6 +354,8 @@ class ProjectManager:
 
         scene_controll.init_arrows(proj.scene(), proj.vectors_model)
 
+        return scene_controll
+
     def create_project(self) -> Project:
         dialog = NewProjectDialog(self.__main_window)
         if dialog.exec() == QDialog.DialogCode.Rejected:
@@ -376,7 +379,14 @@ class ProjectManager:
 
         # создание проекта
         manipulator = HostingManipulator.open_scenario(self.__inmem_hosting, data)
-        self.__open_project(manipulator)
+        scene_ctrl = self.__open_project(manipulator)
+
+        lay_path = path + ".lay"
+        if os.path.exists(lay_path):
+            with open(path + ".lay", "r") as lay_file:
+                scene_ctrl.load_layout("".join(lay_file.readlines()))
+        else:
+            QMessageBox.warning(self.__main_window, 'Не удалось найти файл .lay', 'Не удалось найти файл .lay')
 
     def __on_vector_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
         try:

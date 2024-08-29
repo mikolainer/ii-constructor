@@ -58,11 +58,6 @@ class HostingManipulator:
         source = hosting.get_source(hosting.add_source(SourceInfo(Name(root.attrib['Название']), Description(root.attrib['Краткое_описание']))))
         scenario = source.interface
 
-        vectors = root.find('Управляющие_воздействия')
-        states = root.find('Состояния')
-        enters = root.find('Входы')
-        steps = root.find('Переходы')
-
         # добавляем векторы
         for elem in root.find('Управляющие_воздействия').findall('Описание'):
             synonyms = list[Synonym]()
