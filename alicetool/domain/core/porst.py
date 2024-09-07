@@ -50,9 +50,6 @@ class ScenarioInterface:
 
     def set_answer(self, state_id:StateID, data:Output):
         ''' Изменить ответ состояния '''
-
-    def input_usage(self, input: InputDescription) -> list[Connection]:
-        ''' Получить связи, в которых используется вектор '''
         
     def is_enter(self, state:State) -> bool:
         ''' Проверить является ли состояние входом '''

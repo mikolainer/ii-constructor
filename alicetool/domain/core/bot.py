@@ -107,25 +107,21 @@ class State:
     required: bool
     attributes: StateAttributes
 
-    def __init__(self, id: StateID, name:Name = None) -> None:
+    def __init__(self, id: StateID, attributes:StateAttributes, required:bool = False) -> None:
         self.__id = id
-        _name = Name(str(id.value)) if name is None or name.value == '' else name
-        self.attributes = StateAttributes(Output(Answer('текст ответа')), _name, Description(''))
-        self.required = False
+        self.required = required
+        self.attributes = attributes
+        if attributes.name is None or attributes.name.value == '':
+            attributes.name = Name(str(id.value))
+
+        if attributes.description is None:
+            attributes.description = Description('')
+        
+        if attributes.output is None or attributes.output.value.text == '':
+            attributes.output = Output(Answer('текст ответа'))
 
     def id(self) -> StateID:
         return self.__id
-
-@dataclass
-class Step:
-    input: 'InputDescription'
-    connection: Optional['Connection'] = None
-
-@dataclass
-class Connection:
-    from_state: Optional[State]
-    to_state: Optional[State]
-    steps: list[Step]
 
 class InputDescription:
     __name: Name
@@ -138,6 +134,16 @@ class InputDescription:
     
     def __eq__(self, value: object) -> bool:
         return isinstance(value, InputDescription) and value.name() == self.__name
+@dataclass
+class Step:
+    input: InputDescription
+    connection: Optional['Connection'] = None
+
+@dataclass
+class Connection:
+    from_state: Optional[State]
+    to_state: Optional[State]
+    steps: list[Step]
 
 #class StepVectorBaseClassificator:
 #    @staticmethod
@@ -186,23 +192,22 @@ class Scenario(ScenarioInterface):
         ''' добавляет вектор и новое состояние-вход с таким-же именем '''
 
         # создаём вектор
-        self.__input_vectors.add(input)
+        self.add_vector(input)
 
         # создаём состояние
-        state_to = self.__create_state()
-        state_to.attributes.name = input.name()
+        state_to = self.__create_state(StateAttributes(None, input.name(), None))
 
         # делаем состояние точкой входа
         self.make_enter(state_to.id())
 
     def create_enter_vector(self, input:InputDescription, state_id: StateID):
         ''' Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем '''
-        # проверяем существование вектора
-        vector_name = state_to = self.states([state_id])[state_id].attributes.name
-        if self.__input_vectors.exists(vector_name):
-            raise Exists(self.__input_vectors.get(vector_name), f'Вектор с именем "{vector_name.value}"')
+        # проверяем существование вектора c именем состояния входа
+        vector_name: Name = self.states([state_id])[state_id].attributes.name
+        if self.check_vector_exists(vector_name):
+            raise Exists(vector_name, f'Вектор с именем "{vector_name.value}"')
         
-        self.__input_vectors.add(input)
+        self.add_vector(input)
     
     def make_enter(self, state_id: StateID):
         ''' привязывает к состоянию существующий вектор с соответствующим именем как команду входа '''
@@ -214,10 +219,7 @@ class Scenario(ScenarioInterface):
             raise Exists(state_to, f'Точка входа в состояние "{state_to.id().value}"')
         
         input_name = state_to.attributes.name
-        conn = Connection(None, self.__states[state_id], [])
-        new_step = Step(self.__input_vectors.get(input_name), conn)
-        conn.steps.append(new_step)
-        self.__connections['to'][state_id] = conn
+        self.__new_step(None, state_to.id(), input_name)
 
     def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription) -> Step:
         '''
@@ -230,46 +232,12 @@ class Scenario(ScenarioInterface):
         state_to:State
 
         if isinstance(to_state, StateID):
-            state_to = self.__states[to_state]
+            state_to = self.states([to_state])[to_state]
 
         elif isinstance(to_state, StateAttributes):
-            state_to = self.__create_state()
+            state_to = self.__create_state(to_state)
 
-            if to_state.name.value != '':
-                state_to.attributes.name = to_state.name
-            state_to.attributes.description = to_state.description
-            state_to.attributes.output = to_state.output
-
-        new_conn = Connection(state_from, state_to, [])
-
-        # если это первый переход из этого состояния
-        if not from_state_id in self.__connections['from'].keys():
-            self.__connections['from'][from_state_id] = [new_conn]
-            conn = new_conn
-
-        else:
-            found:Connection = None
-            for _conn in self.__connections['from'][from_state_id]:
-                _conn:Connection = _conn
-                if _conn.to_state == state_to:
-                    found = _conn
-                    break
-
-            if found is None:
-                # это первый переход из state_from в state_to
-                self.__connections['from'][from_state_id].append(new_conn)
-                conn = new_conn
-            else:
-                conn = found
-
-        for step in conn.steps:
-            if step.input == input:
-                raise RuntimeError('переход уже существует')
-
-        new_step = Step(input, conn)
-        conn.steps.append(new_step)
-        
-        return new_step
+        return self.__new_step(from_state_id, state_to.id(), input.name())
 
     # удаление сущностей
 
@@ -290,7 +258,7 @@ class Scenario(ScenarioInterface):
         if enter_state.required:
             raise Exception("Обязательную точку входа нельзя удалить!")
         
-        self.__connections['to'].pop(state_id)
+        self.__delete_step(None, state_id)
 
     def remove_step(self, from_state_id:StateID, input:InputDescription):
         '''
@@ -298,31 +266,7 @@ class Scenario(ScenarioInterface):
         @from_state_id: состояние - обработчик управляющих воздействий
         @input: управляющее воздействие
         '''
-
-        '''
-        TODO: добавить индексацию Step в Connection
-        по ролям InputDescription когда они появятся
-
-        роли нужны для выбора оптимального классификатора
-        в зависимости от типа управляющего сигнала
-        (кнопка / голос / текст / строгая команда в стиле CLI и т.д.)
-        '''
-
-        if not from_state_id in self.__connections['from'].keys():
-            return # возможо стоит бросить исключение
-
-        for conn in self.__connections['from'][from_state_id]:
-            for step in conn.steps:
-                if step.input == input:
-                    conn.steps.remove(step)
-                    
-                    if len(conn.steps) == 0:
-                        self.__connections['from'][from_state_id].remove(conn)
-                    
-                    if len(self.__connections['from'][from_state_id]) == 0:
-                        self.__connections['from'].pop(from_state_id)
-                    
-                    return
+        self.__delete_step(from_state_id, None, input.name)
 
     # геттеры
 
@@ -366,37 +310,16 @@ class Scenario(ScenarioInterface):
                 result.append(step)
 
         return list(result)
-    
+
+    def is_enter(self, state:State) -> bool:
+        ''' Проверить является ли состояние входом '''
+        return state.id() in self.__connections['to'].keys()
+
     # сеттеры
 
     def set_answer(self, state_id:StateID, data:Output):
         ''' Изменить ответ состояния '''
         self.__states[state_id].attributes.output = data
-
-    def input_usage(self, input: InputDescription) -> list[Connection]:
-        ''' Получить связи, в которых используется вектор '''
-        result = list[Connection]()
-        
-        for conn in self.__connections['to'].values():
-            conn: Connection = conn
-            for step in conn.steps:
-                if step.input == input:
-                    result.append(conn)
-                    break
-        
-        for conn_list in self.__connections['from'].values():
-            for conn in conn_list:
-                conn: Connection = conn
-                for step in conn.steps:
-                    if step.input == input:
-                        result.append(conn)
-                        break
-        
-        return result
-
-    def is_enter(self, state:State) -> bool:
-        ''' Проверить является ли состояние входом '''
-        return state.id() in self.__connections['to'].keys()
 
     # векторы
 
@@ -427,7 +350,7 @@ class Scenario(ScenarioInterface):
         @name - имя вектора для удаления (идентификатор)
         '''
         input = self.get_vector(name)
-        if len(self.input_usage(input)) > 0:
+        if len(self.__input_usage(input)) > 0:
             raise Exists(name, f'Вектор с именем "{name.value}" используется в существующих переходах')
         
         return self.__input_vectors.remove(name)
@@ -439,19 +362,17 @@ class Scenario(ScenarioInterface):
         '''
         return self.__input_vectors.exists(name)
 
+# Scenario private
     def add_state(self, id:StateID, name:Name, output:Output):
         ''' только для открытия из файла '''
         if self.__new_state_id <= id.value:
             self.__new_state_id = id.value + 1
 
-        state = State(id, name)
-        state.attributes.output = output
+        state = State(id, StateAttributes(output, name, None))
         self.__states[state.id()] = state
 
-# Scenario private
-
-    def __create_state(self) -> State:
-        new_state = State(StateID(self.__new_state_id))
+    def __create_state(self, attributes:StateAttributes) -> State:
+        new_state = State(StateID(self.__new_state_id), attributes)
         self.__new_state_id = self.__new_state_id + 1
         self.__states[new_state.id()] = new_state
         return new_state
@@ -465,3 +386,109 @@ class Scenario(ScenarioInterface):
                     result.append(conn)
 
         return result
+    
+    def __input_usage(self, input: InputDescription) -> list[Connection]:
+        ''' Получить связи, в которых используется вектор '''
+        result = list[Connection]()
+        
+        for conn in self.__connections['to'].values():
+            conn: Connection = conn
+            for step in conn.steps:
+                if step.input == input:
+                    result.append(conn)
+                    break
+        
+        for conn_list in self.__connections['from'].values():
+            for conn in conn_list:
+                conn: Connection = conn
+                for step in conn.steps:
+                    if step.input == input:
+                        result.append(conn)
+                        break
+        
+        return result
+
+    def __new_step(self, from_state: Optional[StateID], to_state: StateID, input_name: Name) -> Step:
+        if not isinstance(to_state, StateID):
+            raise TypeError(to_state)
+        if not isinstance(input_name, Name):
+            raise TypeError(input_name)
+        if not self.check_vector_exists(input_name):
+            raise ValueError(input_name)
+        
+        new_step: Step
+
+        if from_state is None: # точка входа
+            conn = Connection(None, self.__states[to_state], [])
+            new_step = Step(self.__input_vectors.get(input_name), conn)
+            conn.steps.append(new_step)
+            self.__connections['to'][to_state] = conn
+
+        else: # переход между состояниями
+            if not isinstance(from_state, StateID):
+                raise TypeError(from_state)
+            if not isinstance(to_state, StateID):
+                raise TypeError(to_state)
+
+            state_to = self.__states[to_state]
+            new_conn = Connection(self.__states[from_state], self.__states[to_state], [])
+
+            # если это первый переход из этого состояния
+            if not from_state in self.__connections['from'].keys():
+                self.__connections['from'][from_state] = [new_conn]
+                conn = new_conn
+
+            else:
+                found:Connection = None
+                for _conn in self.__connections['from'][from_state]:
+                    _conn:Connection = _conn
+                    if _conn.to_state == state_to:
+                        found = _conn
+                        break
+
+                if found is None:
+                    # это первый переход из state_from в state_to
+                    self.__connections['from'][from_state].append(new_conn)
+                    conn = new_conn
+                else:
+                    conn = found
+
+            for step in conn.steps:
+                if step.input.name() == input_name:
+                    raise RuntimeError('переход уже существует')
+
+            new_step = Step(self.get_vector(input_name), conn)
+            conn.steps.append(new_step)
+        
+        return new_step
+    
+    def __delete_step(self, from_state: Optional[StateID], to_state: Optional[StateID], input_name: Optional[Name] = None):
+        if from_state is None: # точка входа
+            if not isinstance(to_state, StateID):
+                raise TypeError(to_state)
+            if not to_state in self.__connections['to']:
+                raise ValueError(to_state)
+
+            self.__connections['to'].pop(to_state)
+
+        else: # переход
+            if not isinstance(from_state, StateID):
+                raise TypeError(from_state)
+            if not from_state in self.__connections['from'].keys():
+                raise ValueError(from_state)
+
+            for conn in self.__connections['from'][from_state]:
+                conn: Connection = conn
+
+                for step in conn.steps:
+                    step:Step = step
+                    if step.input.name() == input_name:
+                        conn.steps.remove(step)
+                        
+                        if len(conn.steps) == 0:
+                            self.__connections['from'][from_state].remove(conn)
+                        
+                        if len(self.__connections['from'][from_state]) == 0:
+                            self.__connections['from'].pop(from_state)
+                        
+                        return
