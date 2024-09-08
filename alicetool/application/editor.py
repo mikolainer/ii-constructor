@@ -13,8 +13,7 @@ class HostingManipulator:
     @staticmethod
     def make_scenario(hosting: Hosting, info: SourceInfo) -> 'ScenarioManipulator':
         ''' создаёт заготовку сценария для алисы '''
-        source = hosting.get_source(hosting.add_source(info))
-        new_scenario = source.interface
+        new_scenario = hosting.get_scenario(hosting.add_source(info))
         
         new_scenario.create_enter_state(
             LevenshtainVector(
@@ -51,12 +50,11 @@ class HostingManipulator:
             state.required = True
             state.attributes.output
         
-        return ScenarioManipulator(source)
+        return ScenarioManipulator(new_scenario)
 
     def open_scenario(hosting: Hosting, data:str) -> 'ScenarioManipulator':
         root: Element = fromstring(data)
-        source = hosting.get_source(hosting.add_source(SourceInfo(Name(root.attrib['Название']), Description(root.attrib['Краткое_описание']))))
-        scenario = source.interface
+        scenario = hosting.get_scenario(hosting.add_source(SourceInfo(Name(root.attrib['Название']), Description(root.attrib['Краткое_описание']))))
 
         # добавляем векторы
         for elem in root.find('Управляющие_воздействия').findall('Описание'):
@@ -68,7 +66,7 @@ class HostingManipulator:
 
         # добавляем состояния
         for elem in root.find('Состояния').findall('Состояние'):
-            scenario.add_state(StateID(int(elem.attrib['Идентификатор'])), Name(elem.attrib['Название']), Output(Answer(elem.text)))
+            scenario.source().add_state(StateID(int(elem.attrib['Идентификатор'])), Name(elem.attrib['Название']), Output(Answer(elem.text)))
 
         # добавляем входы
         for elem in root.find('Входы').findall('Точка_входа'):
@@ -83,26 +81,26 @@ class HostingManipulator:
                     _vector = scenario.get_vector(Name(input.attrib['Название']))
                     scenario.create_step(state_from_id, state_to_id, _vector)
 
-        return ScenarioManipulator(source)
+        return ScenarioManipulator(scenario)
 
 class ScenarioManipulator:
-    __source: Source
+    __scenario: ScenarioInterface
 
-    def __init__(self, source: Source) -> None:
-        self.__source = source
+    def __init__(self, scenario: ScenarioInterface) -> None:
+        self.__scenario = scenario
 
     def id(self) -> int:
-        return self.__source.id.value
+        return self.__scenario.source().id.value
 
     def name(self) -> str:
-        return self.__source.info.name.value
+        return self.__scenario.source().info.name.value
     
     def description(self) -> str:
-        return self.__source.info.description.value
+        return self.__scenario.source().info.description.value
     
     # TODO заменить собственным интерфейсом
     def interface(self) -> ScenarioInterface:
-        return self.__source.interface
+        return self.__scenario
     
     def remove_synonym(self, input_name: str, synonym: str):
         ''' удаляет синоним '''
@@ -239,8 +237,6 @@ class ScenarioManipulator:
     def serialize(self) -> str:
         ''' сформировать строку для сохранения в файл '''
 
-        scenario = self.__source.interface
-
         root = Element('сценарий', {'Идентификатор': str(self.id()), 'Название': self.name(), 'Краткое_описание': self.description()})
         vectors = Element('Управляющие_воздействия')
         states = Element('Состояния')
@@ -252,7 +248,7 @@ class ScenarioManipulator:
         root.append(enters)
         root.append(steps)
 
-        for vector in scenario.select_vectors():
+        for vector in self.__scenario.select_vectors():
             if isinstance(vector, LevenshtainVector):
                 _vector = Element('Описание', {'Название': vector.name().value, 'Тип': 'Группа синонимов'})
                 for synonym in vector.synonyms.synonyms:
@@ -261,13 +257,13 @@ class ScenarioManipulator:
                     _vector.append(_synonym)
                 vectors.append(_vector)
 
-        for state in scenario.states().values():
+        for state in self.__scenario.states().values():
             state: State = state
             _state = Element('Состояние', {'Идентификатор': str(state.id().value), 'Название': state.attributes.name.value})
             _state.text = state.attributes.output.value.text
             states.append(_state)
 
-        very_bad_thing = scenario._Scenario__connections
+        very_bad_thing = self.__scenario.source()._SourceInMemory__connections
         for enter_state_id in very_bad_thing['to'].keys():
             enter_conn: Connection = very_bad_thing['to'][enter_state_id]
             _enter = Element('Точка_входа', {'Состояние': str(enter_state_id.value)})

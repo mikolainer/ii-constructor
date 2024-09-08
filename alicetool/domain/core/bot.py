@@ -150,125 +150,101 @@ class Connection:
 #    def get_next_state(cmd:Input, cur_state:StateID) -> State:
 #        raise NotImplementedError('Использование абстрактного класса')
 
-@dataclass
-class Source:
+class Source():
     id: Optional[ScenarioID]
     info: SourceInfo
-    interface: ScenarioInterface
 
-class Hosting:
-    __sources: dict[ScenarioID, Source]
-    __next_id: ScenarioID
-    
-    def __init__(self) -> None:
-        self.__sources = {}
-        self.__next_id = ScenarioID(0)
-    
-    def add_source(self, info:SourceInfo) -> ScenarioID:
-        id = self.__next_id
-        self.__next_id = ScenarioID(self.__next_id.value +1)
-        self.__sources[id] = Source(id, info, Scenario())
-        return id
-    
-    def get_source(self, id:ScenarioID) -> Source:
-        return self.__sources[id]
+    def __init__(self, id:Optional[ScenarioID], info: SourceInfo):
+        self.id = id
+        self.info = info
 
-class Scenario(ScenarioInterface):
+    def delete_state(self, state_id:StateID):
+        ''' удалить состояние '''
+
+    def get_states_by_name(self, name: Name) -> list[State]:
+        ''' получить все состояния с данным именем '''
+    
+    def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
+        ''' получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния'''
+    
+    def steps(self, state_id:StateID) -> list[Step]:
+        ''' получить все переходы, связанные с состоянием по его идентификатору '''
+
+    def is_enter(self, state:State) -> bool:
+        ''' Проверить является ли состояние входом '''
+
+    # сеттеры
+
+    def set_answer(self, state_id:StateID, data:Output):
+        ''' Изменить ответ состояния '''
+
+    # векторы
+
+    def select_vectors(self, names:Optional[list[Name]] = None) -> list['InputDescription']:
+        '''
+        Возвращает список векторов управляющих воздействий по указанным именам
+        @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
+        '''
+    
+    def get_vector(self, name:Name) -> InputDescription:
+        '''
+        Возвращает вектор управляющих воздействий по имени
+        @names - имя вектора (идентификатор)
+        '''
+
+    def add_vector(self, input: InputDescription):
+        '''
+        Сохраняет новый вектор для обработки управляющих воздействий
+        @input_type - новый вектор
+        '''
+
+    def remove_vector(self, name:Name):
+        '''
+        Удаляет вектор управляющих воздействий
+        @name - имя вектора для удаления (идентификатор)
+        '''
+
+    def check_vector_exists(self, name:Name) -> bool:
+        '''
+        Проверяет существование вектора
+        @name - имя вектора для проверки (идентификатор)
+        '''
+
+# Scenario private
+    def add_state(self, id:StateID, name:Name, output:Output):
+        ''' только для открытия из файла '''
+
+    def create_state(self, attributes:StateAttributes) -> State:
+        ''' Создать состояние '''
+
+    def find_connections_to(self, state_id:StateID) -> list[Connection]:
+        ''' Получить входящие связи '''
+    
+    def input_usage(self, input: InputDescription) -> list[Connection]:
+        ''' Получить связи, в которых используется вектор '''
+
+    def new_step(self, from_state: Optional[StateID], to_state: StateID, input_name: Name) -> Step:
+        ''' создаёт переходы и связи '''
+    
+    def delete_step(self, from_state: Optional[StateID], to_state: Optional[StateID], input_name: Optional[Name] = None):
+        ''' удаляет переходы и связи '''
+
+class SourceInMemory(Source):
     __new_state_id: int
     __states: dict[StateID, State]
     __connections: dict[str, dict] # ключи: 'from', 'to'; значения: <to> dict[StateID, Connection], <from> dict[StateID, list[Connection]]
     __input_vectors: PossibleInputs
 
-# Scenario public
+    def __init__(self, id:Optional[ScenarioID], info: SourceInfo) -> None:
+        super().__init__(id, info)
 
-    def __init__(self) -> None:
         self.__states = {}
         self.__new_state_id = 0
         self.__connections = {'from':{}, 'to':{}}
         self.__input_vectors = PossibleInputs()
 
-    # создание сущностей
-    def create_enter_state(self, input:InputDescription):
-        ''' добавляет вектор и новое состояние-вход с таким-же именем '''
-
-        # создаём вектор
-        self.add_vector(input)
-
-        # создаём состояние
-        state_to = self.__create_state(StateAttributes(None, input.name(), None))
-
-        # делаем состояние точкой входа
-        self.make_enter(state_to.id())
-
-    def create_enter_vector(self, input:InputDescription, state_id: StateID):
-        ''' Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем '''
-        # проверяем существование вектора c именем состояния входа
-        vector_name: Name = self.states([state_id])[state_id].attributes.name
-        if self.check_vector_exists(vector_name):
-            raise Exists(vector_name, f'Вектор с именем "{vector_name.value}"')
-        
-        self.add_vector(input)
-    
-    def make_enter(self, state_id: StateID):
-        ''' привязывает к состоянию существующий вектор с соответствующим именем как команду входа '''
-        # получаем состояние
-        state_to = self.states([state_id])[state_id]
-
-        # проверяем является ли входом
-        if self.is_enter(state_to):
-            raise Exists(state_to, f'Точка входа в состояние "{state_to.id().value}"')
-        
-        input_name = state_to.attributes.name
-        self.__new_step(None, state_to.id(), input_name)
-
-    def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription) -> Step:
-        '''
-        Создаёт переход из from_state в to_state по переходу input
-        @from_state_id: id состояния для обработки управляющего воздействия input
-        @to_state: id состояния в которое будет добавлен переход или аттрибуты для создания такого состояния
-        @input: управляющее воздействие
-        '''
-        state_from = self.__states[from_state_id]
-        state_to:State
-
-        if isinstance(to_state, StateID):
-            state_to = self.states([to_state])[to_state]
-
-        elif isinstance(to_state, StateAttributes):
-            state_to = self.__create_state(to_state)
-
-        return self.__new_step(from_state_id, state_to.id(), input.name())
-
-    # удаление сущностей
-
-    def remove_state(self, state_id:StateID):
-        ''' удаляет состояние '''
-        if self.states([state_id])[state_id].required:
-            raise Exception("Обязательное состояние нельзя удалить!")
-        
-        if len(self.steps(state_id)) > 0:
-            raise Exists(state_id, f'Состояние с id={state_id.value} связано с переходами!')
-
+    def delete_state(self, state_id:StateID):
         self.__states.pop(state_id)
-
-    def remove_enter(self, state_id:StateID):
-        ''' удаляет связь с командой входа в состояние '''
-        enter_state = self.states([state_id])[state_id]
-
-        if enter_state.required:
-            raise Exception("Обязательную точку входа нельзя удалить!")
-        
-        self.__delete_step(None, state_id)
-
-    def remove_step(self, from_state_id:StateID, input:InputDescription):
-        '''
-        удаляет связь между состояниями
-        @from_state_id: состояние - обработчик управляющих воздействий
-        @input: управляющее воздействие
-        '''
-        self.__delete_step(from_state_id, None, input.name)
-
-    # геттеры
 
     def get_states_by_name(self, name: Name) -> list[State]:
         ''' получить все состояния с данным именем '''
@@ -305,7 +281,7 @@ class Scenario(ScenarioInterface):
             for step in self.__connections['to'][state_id].steps:
                 result.append(step)
         
-        for conn in self.__find_connections_to(state_id):
+        for conn in self.find_connections_to(state_id):
             for step in conn.steps:
                 result.append(step)
 
@@ -350,7 +326,7 @@ class Scenario(ScenarioInterface):
         @name - имя вектора для удаления (идентификатор)
         '''
         input = self.get_vector(name)
-        if len(self.__input_usage(input)) > 0:
+        if len(self.input_usage(input)) > 0:
             raise Exists(name, f'Вектор с именем "{name.value}" используется в существующих переходах')
         
         return self.__input_vectors.remove(name)
@@ -371,13 +347,13 @@ class Scenario(ScenarioInterface):
         state = State(id, StateAttributes(output, name, None))
         self.__states[state.id()] = state
 
-    def __create_state(self, attributes:StateAttributes) -> State:
+    def create_state(self, attributes:StateAttributes) -> State:
         new_state = State(StateID(self.__new_state_id), attributes)
         self.__new_state_id = self.__new_state_id + 1
         self.__states[new_state.id()] = new_state
         return new_state
 
-    def __find_connections_to(self, state_id:StateID) -> list[Connection]:
+    def find_connections_to(self, state_id:StateID) -> list[Connection]:
         result = list[Connection]()
         for connections in self.__connections['from'].values():
             for conn in connections:
@@ -387,7 +363,7 @@ class Scenario(ScenarioInterface):
 
         return result
     
-    def __input_usage(self, input: InputDescription) -> list[Connection]:
+    def input_usage(self, input: InputDescription) -> list[Connection]:
         ''' Получить связи, в которых используется вектор '''
         result = list[Connection]()
         
@@ -408,7 +384,7 @@ class Scenario(ScenarioInterface):
         
         return result
 
-    def __new_step(self, from_state: Optional[StateID], to_state: StateID, input_name: Name) -> Step:
+    def new_step(self, from_state: Optional[StateID], to_state: StateID, input_name: Name) -> Step:
         if not isinstance(to_state, StateID):
             raise TypeError(to_state)
         if not isinstance(input_name, Name):
@@ -462,7 +438,7 @@ class Scenario(ScenarioInterface):
         
         return new_step
     
-    def __delete_step(self, from_state: Optional[StateID], to_state: Optional[StateID], input_name: Optional[Name] = None):
+    def delete_step(self, from_state: Optional[StateID], to_state: Optional[StateID], input_name: Optional[Name] = None):
         if from_state is None: # точка входа
             if not isinstance(to_state, StateID):
                 raise TypeError(to_state)
@@ -492,3 +468,172 @@ class Scenario(ScenarioInterface):
                             self.__connections['from'].pop(from_state)
                         
                         return
+
+class Hosting:
+    __sources: dict[ScenarioID, ScenarioInterface]
+    __next_id: ScenarioID
+    
+    def __init__(self) -> None:
+        self.__sources = {}
+        self.__next_id = ScenarioID(0)
+    
+    def add_source(self, info:SourceInfo) -> ScenarioID:
+        id = self.__next_id
+        self.__next_id = ScenarioID(self.__next_id.value +1)
+        self.__sources[id] = Scenario(SourceInMemory(id, info))
+        return id
+    
+    def get_scenario(self, id:ScenarioID) -> ScenarioInterface:
+        return self.__sources[id]
+
+class Scenario(ScenarioInterface):
+    __src: Source
+
+# Scenario public
+
+    def __init__(self, src: Source) -> None:
+        self.__src = src
+
+    def source(self) -> Source:
+        return self.__src
+
+    # создание сущностей
+    def create_enter_state(self, input:InputDescription):
+        ''' добавляет вектор и новое состояние-вход с таким-же именем '''
+
+        # создаём вектор
+        self.add_vector(input)
+
+        # создаём состояние
+        state_to = self.__src.create_state(StateAttributes(None, input.name(), None))
+
+        # делаем состояние точкой входа
+        self.make_enter(state_to.id())
+
+    def create_enter_vector(self, input:InputDescription, state_id: StateID):
+        ''' Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем '''
+        # проверяем существование вектора c именем состояния входа
+        vector_name: Name = self.states([state_id])[state_id].attributes.name
+        if self.check_vector_exists(vector_name):
+            raise Exists(vector_name, f'Вектор с именем "{vector_name.value}"')
+        
+        self.add_vector(input)
+    
+    def make_enter(self, state_id: StateID):
+        ''' привязывает к состоянию существующий вектор с соответствующим именем как команду входа '''
+        # получаем состояние
+        state_to = self.states([state_id])[state_id]
+
+        # проверяем является ли входом
+        if self.is_enter(state_to):
+            raise Exists(state_to, f'Точка входа в состояние "{state_to.id().value}"')
+        
+        input_name = state_to.attributes.name
+        self.__src.new_step(None, state_to.id(), input_name)
+
+    def create_step(self, from_state_id:StateID, to_state:StateAttributes | StateID, input:InputDescription) -> Step:
+        '''
+        Создаёт переход из from_state в to_state по переходу input
+        @from_state_id: id состояния для обработки управляющего воздействия input
+        @to_state: id состояния в которое будет добавлен переход или аттрибуты для создания такого состояния
+        @input: управляющее воздействие
+        '''
+        state_to:State
+
+        if isinstance(to_state, StateID):
+            state_to = self.states([to_state])[to_state]
+
+        elif isinstance(to_state, StateAttributes):
+            state_to = self.__src.create_state(to_state)
+
+        return self.__src.new_step(from_state_id, state_to.id(), input.name())
+
+    # удаление сущностей
+
+    def remove_state(self, state_id:StateID):
+        ''' удаляет состояние '''
+        if self.states([state_id])[state_id].required:
+            raise Exception("Обязательное состояние нельзя удалить!")
+        
+        if len(self.steps(state_id)) > 0:
+            raise Exists(state_id, f'Состояние с id={state_id.value} связано с переходами!')
+
+        self.__src.delete_state(state_id)
+
+    def remove_enter(self, state_id:StateID):
+        ''' удаляет связь с командой входа в состояние '''
+        enter_state = self.states([state_id])[state_id]
+
+        if enter_state.required:
+            raise Exception("Обязательную точку входа нельзя удалить!")
+        
+        self.__src.delete_step(None, state_id)
+
+    def remove_step(self, from_state_id:StateID, input:InputDescription):
+        '''
+        удаляет связь между состояниями
+        @from_state_id: состояние - обработчик управляющих воздействий
+        @input: управляющее воздействие
+        '''
+        self.__src.delete_step(from_state_id, None, input.name())
+
+    # геттеры
+
+    def get_states_by_name(self, name: Name) -> list[State]:
+        ''' получить все состояния с данным именем '''
+        return self.__src.get_states_by_name(name)
+    
+    def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
+        ''' получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния''' 
+        return self.__src.states(ids)
+    
+    def steps(self, state_id:StateID) -> list[Step]:
+        ''' получить все переходы, связанные с состоянием по его идентификатору '''
+        return self.__src.steps(state_id)
+
+    def is_enter(self, state:State) -> bool:
+        ''' Проверить является ли состояние входом '''
+        return self.__src.is_enter(state)
+
+    # сеттеры
+
+    def set_answer(self, state_id:StateID, data:Output):
+        ''' Изменить ответ состояния '''
+        self.__src.set_answer(state_id, data)
+
+    # векторы
+
+    def select_vectors(self, names:Optional[list[Name]] = None) -> list['InputDescription']:
+        '''
+        Возвращает список векторов управляющих воздействий по указанным именам
+        @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
+        '''
+        return self.__src.select_vectors(names)
+    
+    def get_vector(self, name:Name) -> InputDescription:
+        '''
+        Возвращает вектор управляющих воздействий по имени
+        @names - имя вектора (идентификатор)
+        '''
+        return self.__src.get_vector(name)
+
+    def add_vector(self, input: InputDescription):
+        '''
+        Сохраняет новый вектор для обработки управляющих воздействий
+        @input_type - новый вектор
+        '''
+        return self.__src.add_vector(input)
+
+    def remove_vector(self, name:Name):
+        '''
+        Удаляет вектор управляющих воздействий
+        @name - имя вектора для удаления (идентификатор)
+        '''
+        self.__src.remove_vector(name)
+
+    def check_vector_exists(self, name:Name) -> bool:
+        '''
+        Проверяет существование вектора
+        @name - имя вектора для проверки (идентификатор)
+        '''
+        return self.__src.check_vector_exists(name)
