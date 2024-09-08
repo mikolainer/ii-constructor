@@ -263,9 +263,9 @@ class ScenarioManipulator:
             _state.text = state.attributes.output.value.text
             states.append(_state)
 
-        very_bad_thing = self.__scenario.source()._SourceInMemory__connections
-        for enter_state_id in very_bad_thing['to'].keys():
-            enter_conn: Connection = very_bad_thing['to'][enter_state_id]
+        connections = self.__scenario.source().get_all_connections()
+        for enter_state_id in connections['to'].keys():
+            enter_conn: Connection = connections['to'][enter_state_id]
             _enter = Element('Точка_входа', {'Состояние': str(enter_state_id.value)})
 
             for step in enter_conn.steps:
@@ -280,9 +280,9 @@ class ScenarioManipulator:
 
             enters.append(_enter)
 
-        for from_state_id in very_bad_thing['from'].keys():
+        for from_state_id in connections['from'].keys():
             _conn = Element('Связи', {'Состояние': str(from_state_id.value)})
-            for conn in very_bad_thing['from'][from_state_id]:
+            for conn in connections['from'][from_state_id]:
                 conn:Connection = conn # просто аннотирование
                 _step = Element('Переход', {'В_состояние': str(conn.to_state.id().value)})
                 for step in conn.steps:

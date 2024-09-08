@@ -229,11 +229,21 @@ class Source():
     def delete_step(self, from_state: Optional[StateID], to_state: Optional[StateID], input_name: Optional[Name] = None):
         ''' удаляет переходы и связи '''
 
+    def get_all_connections(self) -> dict[str, dict]:
+        '''
+        получить все связи\n
+        ключи: 'from', 'to'; значения: to=dict[StateID, Connection], from=dict[StateID, list[Connection]]
+        '''
+
 class SourceInMemory(Source):
     __new_state_id: int
     __states: dict[StateID, State]
-    __connections: dict[str, dict] # ключи: 'from', 'to'; значения: <to> dict[StateID, Connection], <from> dict[StateID, list[Connection]]
     __input_vectors: PossibleInputs
+
+    __connections: dict[str, dict]
+    ''' все связи\n
+    ключи: 'from', 'to'; значения: to=dict[StateID, Connection], from=dict[StateID, list[Connection]]
+    '''
 
     def __init__(self, id:Optional[ScenarioID], info: SourceInfo) -> None:
         super().__init__(id, info)
@@ -468,6 +478,9 @@ class SourceInMemory(Source):
                             self.__connections['from'].pop(from_state)
                         
                         return
+
+    def get_all_connections(self) -> dict[str, dict]:
+        return self.__connections
 
 class Hosting:
     __sources: dict[ScenarioID, ScenarioInterface]
