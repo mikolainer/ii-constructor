@@ -223,7 +223,7 @@ class ScenarioManipulator:
             возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         '''
         vector = self.interface().get_vector(Name(input_name))
-        step:Step = self.interface().create_step(StateID(from_state_id), StateAttributes(Output(Answer('текст ответа')), Name(new_state_name), ''), vector)
+        step:Step = self.interface().create_step(StateID(from_state_id), StateAttributes(Output(Answer('текст ответа')), Name(new_state_name), Description('')), vector)
         to_state:State = step.connection.to_state
 
         return {

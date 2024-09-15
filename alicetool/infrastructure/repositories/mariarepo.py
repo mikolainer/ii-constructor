@@ -262,9 +262,9 @@ class SourceMariaDB(Source):
         _name = 'DEFAULT'
         if not attributes.name is None: _name = f"'{attributes.name.value}'"
         _descr = 'DEFAULT'
-        if not attributes.description is None: _name = f"'{attributes.description.value}'"
+        if not attributes.description is None: _descr = f"'{attributes.description.value}'"
         _answ = 'DEFAULT'
-        if not attributes.output is None and not attributes.output.value is None: _name = f"'{attributes.output.value.text}'"
+        if not attributes.output is None and not attributes.output.value is None: _answ = f"'{attributes.output.value.text}'"
 
         query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (?, {_name}, {_descr}, {_answ}, 0) RETURNING `id`, `answer`, `name`, `descr`, `required`"
         cur.execute(query, (_proj_id,))
