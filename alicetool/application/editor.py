@@ -3,15 +3,17 @@ from xml.etree.ElementTree import ElementTree, Element, tostring, fromstring, in
 
 from PySide6.QtWidgets import QMessageBox 
 
+from alicetool.infrastructure.repositories.inmemory import HostingInmem
+from alicetool.infrastructure.repositories.mariarepo import HostingMaria
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
-from alicetool.domain.core.bot import Scenario, Connection, Hosting, Source, InputDescription, Step, State
+from alicetool.domain.core.bot import Scenario, Connection, Source, InputDescription, Step, State
 from alicetool.domain.core.porst import ScenarioInterface
 from alicetool.domain.core.exceptions import Exists
 
 class HostingManipulator:
     @staticmethod
-    def make_scenario(hosting: Hosting, info: SourceInfo) -> 'ScenarioManipulator':
+    def make_scenario(hosting: HostingInmem, info: SourceInfo) -> 'ScenarioManipulator':
         ''' создаёт заготовку сценария для алисы '''
         new_scenario = hosting.get_scenario(hosting.add_source(info))
         
@@ -52,7 +54,7 @@ class HostingManipulator:
         
         return ScenarioManipulator(new_scenario)
 
-    def open_scenario(hosting: Hosting, data:str) -> 'ScenarioManipulator':
+    def open_scenario(hosting: HostingInmem, data:str) -> 'ScenarioManipulator':
         root: Element = fromstring(data)
         scenario = hosting.get_scenario(hosting.add_source(SourceInfo(Name(root.attrib['Название']), Description(root.attrib['Краткое_описание']))))
 
@@ -82,6 +84,43 @@ class HostingManipulator:
                     scenario.create_step(state_from_id, state_to_id, _vector)
 
         return ScenarioManipulator(scenario)
+
+    def make_scenario_in_db(hosting: HostingMaria, info: SourceInfo) -> 'ScenarioManipulator':
+        ''' создаёт заготовку сценария для алисы в MariaDB '''
+        new_scenario = hosting.get_scenario(hosting.add_source(info))
+
+        new_scenario.create_enter_state(
+            LevenshtainVector(
+                Name('Старт'),
+                SynonymsGroup([
+                    Synonym('Алиса, запусти навык ...'),
+                ])
+            )
+        )
+
+        new_scenario.create_enter_state(
+            LevenshtainVector(
+                Name('Информация'), 
+                SynonymsGroup([
+                    Synonym('Информация'), 
+                    Synonym('Справка'), 
+                    Synonym('Расскажи о себе'),
+                ])
+            )
+        )
+
+        new_scenario.create_enter_state(
+            LevenshtainVector(
+                Name('Помощь'), 
+                SynonymsGroup([
+                    Synonym('Помощь'), 
+                    Synonym('Помоги'), 
+                    Synonym('Как выйти'),
+                ])
+            )
+        )
+        
+        return ScenarioManipulator(new_scenario)
 
 class ScenarioManipulator:
     __scenario: ScenarioInterface

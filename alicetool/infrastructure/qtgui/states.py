@@ -48,6 +48,7 @@ class StatesModel(BaseModel):
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
     
 class SceneControll:
+    __node_insert_index: int
     __new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
     __new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]
     __select_input_callback: Callable[[],Optional[SynonymsSetModel]]
@@ -73,6 +74,7 @@ class SceneControll:
                  flows_model: FlowsModel,
                  main_window: QWidget,
                 ) -> None:
+        self.__node_insert_index = 0
         self.__manipulator = manipulator
         self.__select_input_callback = select_input_callback
         self.__new_step_callback = new_step_callback
@@ -115,10 +117,11 @@ class SceneControll:
 
         if pos is None:
             pos = QPoint(
-                NodeWidget.START_WIDTH * (state_id) +
-                scene.START_SPACINS * (state_id+1),
+                NodeWidget.START_WIDTH * (self.__node_insert_index) +
+                scene.START_SPACINS * (self.__node_insert_index+1),
                 scene.START_SPACINS
             )
+            self.__node_insert_index += 1
         else:
             pos.setX(pos.x() - (NodeWidget.START_WIDTH/2))
             pos.setY(pos.y() - (NodeWidget.START_WIDTH/2))

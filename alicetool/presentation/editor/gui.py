@@ -6,17 +6,18 @@ from PySide6.QtGui import QShortcut, QIcon, QShortcut
 from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox, QFileDialog 
 from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, Editor, SceneNode
+from alicetool.infrastructure.repositories.inmemory import HostingInmem
+from alicetool.infrastructure.repositories.mariarepo import HostingMaria
+from alicetool.infrastructure.qtgui.primitives.sceneitems import Editor, SceneNode
 from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
 from alicetool.application.editor import HostingManipulator, ScenarioManipulator
-from alicetool.domain.core.primitives import Name, Description, ScenarioID, StateID, StateAttributes, Output, Answer, SourceInfo
+from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo
 from alicetool.domain.core.exceptions import Exists
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, LevenshtainVectorSerializer
-from alicetool.domain.core.bot import Hosting, Source
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, LevenshtainVectorSerializer
 
 class Project:
     __synonym_create_callback: Callable
@@ -139,10 +140,12 @@ class ProjectManager:
     __flow_list: FlowList
     __esc_sqortcut: QShortcut
 
-    __inmem_hosting: Hosting
+    __inmem_hosting: HostingInmem
+    __maria_hosting: HostingMaria
 
     def __init__(self) -> None:
-        self.__inmem_hosting = Hosting()
+        self.__maria_hosting = HostingMaria()
+        self.__inmem_hosting = HostingInmem()
         self.__workspaces = Workspaces()
         self.__flow_list = FlowList()
         self.__main_window = MainWindow(self.__flow_list, self.__workspaces)
@@ -164,10 +167,11 @@ class ProjectManager:
         btn.clicked.connect(lambda: self.__current().edit_inputs())
         self.__main_window.insert_button(btn)
 
-        btn = MainToolButton('Опубликовать проект', QIcon(":/icons/export_proj_norm.svg"), self.__main_window)
-        btn.status_tip = 'Разместить проект в БД '
-        btn.whats_this = 'Кнопка экспорта проекта в базу данных'
+        btn = MainToolButton('Подключиться к БД', QIcon(":/icons/export_proj_norm.svg"), self.__main_window)
+        btn.status_tip = 'Подключиться к БД '
+        btn.whats_this = 'Кнопка работы с БД'
         btn.apply_options()
+        btn.clicked.connect(lambda: self.db_connections())
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton('Сохранить проект', QIcon(":/icons/save_proj_norm.svg"), self.__main_window)
@@ -387,6 +391,30 @@ class ProjectManager:
                 scene_ctrl.load_layout("".join(lay_file.readlines()))
         else:
             QMessageBox.warning(self.__main_window, 'Не удалось найти файл .lay', 'Не удалось найти файл .lay')
+
+    def db_connections(self):
+#        if self.__maria_hosting.connected():
+#            QMessageBox.critical(self.__main_window, "Ошибка", "Cценарий уже создан!")
+#            return
+
+        while not self.__maria_hosting.connected():
+            ip, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'ip')
+            if not ok: return
+            port, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'Порт')
+            if not ok: return
+            username, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'Имя пользователя')
+            if not ok: return
+            password, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'Пароль')
+            if not ok: return
+        
+        dialog = NewProjectDialog(self.__main_window)
+        if dialog.exec() == QDialog.DialogCode.Rejected:
+            return
+
+        info = SourceInfo(Name(dialog.name()), Description(dialog.description()))
+        manipulator = HostingManipulator.make_scenario_in_db(self.__maria_hosting, info)
+        
+        scene_ctrl = self.__open_project(manipulator)
 
     def __on_vector_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
         try:
