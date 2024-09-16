@@ -167,9 +167,12 @@ class ProjectManager:
         btn.clicked.connect(lambda: self.__current().edit_inputs())
         self.__main_window.insert_button(btn)
 
-        btn = MainToolButton('Подключиться к БД', QIcon(":/icons/export_proj_norm.svg"), self.__main_window)
-        btn.status_tip = 'Подключиться к БД '
-        btn.whats_this = 'Кнопка работы с БД'
+        #btn = MainToolButton('Подключиться к БД', QIcon(":/icons/export_proj_norm.svg"), self.__main_window)
+        #btn.status_tip = 'Подключиться к БД '
+        #btn.whats_this = 'Кнопка работы с БД'
+        btn = MainToolButton('Создать в БД', QIcon(":/icons/export_proj_norm.svg"), self.__main_window)
+        btn.status_tip = 'Создать в БД '
+        btn.whats_this = 'Создать в БД'
         btn.apply_options()
         btn.clicked.connect(lambda: self.db_connections())
         self.__main_window.insert_button(btn)
