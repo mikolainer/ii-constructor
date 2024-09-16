@@ -305,6 +305,7 @@ class ProjectManager:
 
         self.__projects[editor] = proj # важно добавить перед addTab() для коттектной работы слота "current_changed"
         self.__workspaces.addTab(editor, manipulator.name())
+        self.__workspaces.setCurrentWidget(editor)
 
         ### векторы переходов
         ## наполнение представления
