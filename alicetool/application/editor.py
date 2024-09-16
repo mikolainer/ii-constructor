@@ -153,7 +153,8 @@ class ScenarioManipulator:
              raise Warning('ошибка получения вектора перехода')
         
         index = vector.synonyms.synonyms.index(Synonym(synonym))
-        vector.synonyms.synonyms.pop(index)
+        
+        self.__scenario.remove_synonym(input_name, synonym)
 
     def remove_vector(self, input_name: str):
         ''' удаляет вектор '''        
@@ -183,7 +184,7 @@ class ScenarioManipulator:
         if synonym in vector.synonyms.synonyms:
             raise Exists(synonym, f'Синоним "{new_synonym}" группы "{input_name}"')
         
-        vector.synonyms.synonyms.append(synonym)
+        self.__scenario.create_synonym(input_name, new_synonym)
         
     def add_vector(self, input_name: str):
         ''' создаёт вектор '''
@@ -253,7 +254,7 @@ class ScenarioManipulator:
              raise Warning('ошибка получения вектора перехода')
         
         index = vector.synonyms.synonyms.index(Synonym(old_synonym)) # raises ValueError if `old_synonym` not found
-        vector.synonyms.synonyms[index] = Synonym(new_synonym)
+        self.__scenario.set_synonym_value(input_name, old_synonym, new_synonym)
 
     def steps_from(self, from_state:int) -> dict[int, list[str]]:
         ''' возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов '''

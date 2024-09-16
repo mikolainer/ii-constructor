@@ -233,6 +233,15 @@ class Source():
         ключи: 'from', 'to'; значения: to=dict[StateID, Connection], from=dict[StateID, list[Connection]]
         '''
         #TODO: оптимизировать API. (фактически в память выгружается вся база)
+
+    def set_synonym_value(self, input_name: str, old_synonym: str, new_synonym: str):
+        ''' изменяет значение синонима '''
+            
+    def create_synonym(self, input_name: str, new_synonym: str):
+        ''' создаёт синоним '''
+            
+    def remove_synonym(self, input_name: str, synonym: str):
+        ''' удаляет синоним '''
         
 class Hosting:
     def get_scenario(self, id:ScenarioID) -> ScenarioInterface:
@@ -392,3 +401,15 @@ class Scenario(ScenarioInterface):
         @name - имя вектора для проверки (идентификатор)
         '''
         return self.__src.check_vector_exists(name)
+
+    def set_synonym_value(self, input_name: str, old_synonym: str, new_synonym: str):
+        ''' изменяет значение синонима '''
+        self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
+            
+    def create_synonym(self, input_name: str, new_synonym: str):
+        ''' создаёт синоним '''
+        self.__src.create_synonym(input_name, new_synonym)
+            
+    def remove_synonym(self, input_name: str, synonym: str):
+        ''' удаляет синоним '''
+        self.__src.remove_synonym(input_name, synonym)

@@ -39,7 +39,7 @@ class SourceMariaDB(Source):
         conn.commit()
 
     def delete_state(self, state_id:StateID):
-        self.__do("DELETE FROM states WHERE `states`.`project_id` = ? AND `states`.`id` = ?", (self.id.value, state_id.value))
+        self.__do("DELETE FROM `states` WHERE `project_id` = ? AND `id` = ?", (self.id.value, state_id.value))
 
     def get_states_by_name(self, name: Name) -> list[State]:
         query = f"SELECT id, IFNULL( name, id ) AS name, descr, answer, required FROM `states` WHERE project_id = {self.id.value}"
@@ -452,6 +452,15 @@ class SourceMariaDB(Source):
             _conn.steps.append(step) # вроде должны быть уникальными
 
         return result
+    
+    def set_synonym_value(self, input_name: str, old_synonym: str, new_synonym: str):
+        self.__do("UPDATE `synonyms` SET `value`= ? WHERE `project_id`= ? AND `group_name`= ? AND `value` = ?", (new_synonym, self.id.value, input_name, old_synonym))
+            
+    def create_synonym(self, input_name: str, new_synonym: str):
+        self.__do("INSERT INTO `synonyms` (`project_id`, `group_name`, `value`) VALUES (?, ?, ?)", (self.id.value, input_name, new_synonym))
+            
+    def remove_synonym(self, input_name: str, synonym: str):
+        self.__do("DELETE FROM `synonyms` WHERE `project_id` = ? AND `group_name` = ? AND `value` = ?", (self.id.value, input_name, synonym))
         
 
 class HostingMaria(Hosting):
