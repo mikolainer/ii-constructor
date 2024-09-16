@@ -56,6 +56,9 @@ class SourceMariaDB(Source):
         return result
     
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
+        if ids == []:
+            return dict[StateID, State]()
+
         query = f"SELECT id, IFNULL( name, id ) AS name, descr, answer, required FROM `states` WHERE project_id = {self.id.value}"
         if not ids is None:
             where_append = []
@@ -183,7 +186,9 @@ class SourceMariaDB(Source):
         cur = conn.cursor()
         result = list[InputDescription]()
 
-        if not names is None:
+        if names == []:
+            return list['InputDescription']()
+        elif not names is None:
             _names = names
         else:
             _names = list[Name]()
@@ -374,14 +379,14 @@ class SourceMariaDB(Source):
         if from_state is None:
             self.__do(
                 f"DELETE FROM `steps` WHERE `project_id` = {self.id.value}"
-                f" AND `from_state_id` = 'NULL'"
+                f" AND `from_state_id` IS NULL"
                 f" AND `to_state_id` = {to_state.value}"
             )
         else:
             self.__do(
                 f"DELETE FROM `steps` WHERE `project_id` = {self.id.value}"
                 f" AND `from_state_id` = {from_state.value}"
-                f" AND `vector_name` = {input_name.value}"
+                f" AND `vector_name` = '{input_name.value}'"
             )
 
     def get_all_connections(self) -> dict[str, dict]:
