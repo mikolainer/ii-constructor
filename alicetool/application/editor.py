@@ -148,7 +148,7 @@ class ScenarioManipulator:
     
     def remove_synonym(self, input_name: str, synonym: str):
         ''' удаляет синоним '''
-        vector:LevenshtainVector = self.interface().get_vector(Name(input_name))
+        vector:LevenshtainVector = self.__scenario.get_vector(Name(input_name))
         if not isinstance(vector, LevenshtainVector):
              raise Warning('ошибка получения вектора перехода')
         
@@ -157,24 +157,24 @@ class ScenarioManipulator:
 
     def remove_vector(self, input_name: str):
         ''' удаляет вектор '''        
-        self.interface().remove_vector(Name(input_name))
+        self.__scenario.remove_vector(Name(input_name))
         
     def remove_enter(self, state_id: int):
         ''' удаляет точку входа (переход) '''
-        self.interface().remove_enter(StateID(state_id))
+        self.__scenario.remove_enter(StateID(state_id))
         
     def remove_step(self, from_state_id: int, input_name: str):
         ''' удаляет переход '''
-        vector: InputDescription = self.interface().get_vector(Name(input_name))
-        self.interface().remove_step(StateID(from_state_id), vector)
+        vector: InputDescription = self.__scenario.get_vector(Name(input_name))
+        self.__scenario.remove_step(StateID(from_state_id), vector)
         
     def remove_state(self, state_id: int):
         ''' удаляет состояние '''
-        self.interface().remove_state(StateID(state_id))
+        self.__scenario.remove_state(StateID(state_id))
         
     def create_synonym(self, input_name: str, new_synonym: str):
         ''' создаёт синоним '''
-        vector: LevenshtainVector = self.interface().get_vector(Name(input_name))
+        vector: LevenshtainVector = self.__scenario.get_vector(Name(input_name))
         if not isinstance(vector, LevenshtainVector):
             raise Warning('ошибка получения вектора перехода')
         
@@ -187,18 +187,18 @@ class ScenarioManipulator:
         
     def add_vector(self, input_name: str):
         ''' создаёт вектор '''
-        self.interface().add_vector(LevenshtainVector(Name(input_name)))
+        self.__scenario.add_vector(LevenshtainVector(Name(input_name)))
         
     def make_enter(self, state_id: int) -> str:
         ''' делает состояние точкой входа, возвращает имя вектора '''
         state_id_d = StateID(state_id)
-        state:State = self.interface().states([state_id_d])[state_id_d]
+        state:State = self.__scenario.states([state_id_d])[state_id_d]
         
         vector_name = state.attributes.name
 
         try: # создаём новый вектор
             vector = LevenshtainVector(vector_name)
-            self.interface().create_enter_vector(vector, state_id_d)
+            self.__scenario.create_enter_vector(vector, state_id_d)
             
         except Exists as err:
             # если вектор уже существует - спрашиваем продолжать ли с ним
@@ -214,21 +214,21 @@ class ScenarioManipulator:
             if ask_result == QMessageBox.StandardButton.Abort:
                 raise RuntimeError()
             
-        self.interface().make_enter(state_id_d)
+        self.__scenario.make_enter(state_id_d)
         
         return vector_name.value
         
     def create_step(self, from_state_id: int, to_state_id: int, input_name: str):
         ''' создаёт переход '''
-        vector = self.interface().get_vector(Name(input_name))
-        self.interface().create_step(StateID(from_state_id), StateID(to_state_id), vector)
+        vector = self.__scenario.get_vector(Name(input_name))
+        self.__scenario.create_step(StateID(from_state_id), StateID(to_state_id), vector)
 
     def create_step_to_new_state(self, from_state_id: int, input_name: str, new_state_name: str) -> dict:
         ''' создаёт состояние с переходом в него
             возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         '''
-        vector = self.interface().get_vector(Name(input_name))
-        step:Step = self.interface().create_step(StateID(from_state_id), StateAttributes(Output(Answer('текст ответа')), Name(new_state_name), Description('')), vector)
+        vector = self.__scenario.get_vector(Name(input_name))
+        step:Step = self.__scenario.create_step(StateID(from_state_id), StateAttributes(Output(Answer('текст ответа')), Name(new_state_name), Description('')), vector)
         to_state:State = step.connection.to_state
 
         return {
@@ -239,16 +239,16 @@ class ScenarioManipulator:
         
     def set_state_answer(self, state_id: int, new_value: str):
         ''' изменяет ответ состояния '''
-        self.interface().set_answer(StateID(state_id), Output(Answer(new_value)))
+        self.__scenario.set_answer(StateID(state_id), Output(Answer(new_value)))
 
     def rename_state(self, state_id: int, new_name: str):
         ''' изменяет имя состояния '''
         id = StateID(state_id)
-        self.interface().states([id])[id].attributes.name = Name(new_name)
+        self.__scenario.states([id])[id].attributes.name = Name(new_name)
         
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         ''' изменяет значение синонима '''
-        vector:LevenshtainVector = self.interface().get_vector(Name(input_name))
+        vector:LevenshtainVector = self.__scenario.get_vector(Name(input_name))
         if not isinstance(vector, LevenshtainVector):
              raise Warning('ошибка получения вектора перехода')
         
@@ -258,7 +258,7 @@ class ScenarioManipulator:
     def steps_from(self, from_state:int) -> dict[int, list[str]]:
         ''' возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов '''
         result = dict[int, list[str]]()
-        steps: list[Step] = self.interface().steps(StateID(from_state))
+        steps: list[Step] = self.__scenario.steps(StateID(from_state))
         for step in steps:
             if step.connection is None:
                 continue
