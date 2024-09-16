@@ -577,3 +577,4 @@ class SynonymsSelector(QDialog):
             return None
         else:
             return g_item.on[CustomDataRole.SynonymsSet]
+        

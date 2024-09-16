@@ -254,7 +254,7 @@ class SourceMariaDB(Source):
         ''' не используется (достаточно подключиться) '''
         return
 
-    def create_state(self, attributes:StateAttributes) -> State:
+    def create_state(self, attributes:StateAttributes, required:bool = False) -> State:
         conn: mariadb.Connection = self.__db_connection
         cur = conn.cursor()
 
@@ -266,8 +266,8 @@ class SourceMariaDB(Source):
         _answ = 'DEFAULT'
         if not attributes.output is None and not attributes.output.value is None: _answ = f"'{attributes.output.value.text}'"
 
-        query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (?, {_name}, {_descr}, {_answ}, 0) RETURNING `id`, `answer`, `name`, `descr`, `required`"
-        cur.execute(query, (_proj_id,))
+        query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (?, {_name}, {_descr}, {_answ}, ?) RETURNING `id`, `answer`, `name`, `descr`, `required`"
+        cur.execute(query, (_proj_id, required))
         conn.commit()
         id, answer, name, descr, required = cur.fetchone()
         return State(StateID(id), StateAttributes(Output(Answer(answer)), Name(name), Description(descr)), required)

@@ -3,7 +3,7 @@ from typing import Optional
 from alicetool.domain.core.primitives import Name, StateID, Output, StateAttributes
 
 class ScenarioInterface:
-    def create_enter_state(self, input:InputDescription):
+    def create_enter_state(self, input:InputDescription, required: bool = False):
         ''' добавляет вектор и новое состояние-вход с таким-же именем '''
 
     def create_enter_vector(self, input:InputDescription, state_id: StateID):

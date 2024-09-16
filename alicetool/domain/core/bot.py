@@ -211,7 +211,7 @@ class Source():
     def add_state(self, id:StateID, name:Name, output:Output):
         ''' только для открытия из файла '''
 
-    def create_state(self, attributes:StateAttributes) -> State:
+    def create_state(self, attributes:StateAttributes, required:bool = False) -> State:
         ''' Создать состояние '''
 
     def find_connections_to(self, state_id:StateID) -> list[Connection]:
@@ -250,14 +250,14 @@ class Scenario(ScenarioInterface):
         return self.__src
 
     # создание сущностей
-    def create_enter_state(self, input:InputDescription):
+    def create_enter_state(self, input:InputDescription, required: bool = False):
         ''' добавляет вектор и новое состояние-вход с таким-же именем '''
 
         # создаём вектор
         self.add_vector(input)
 
         # создаём состояние
-        state_to = self.__src.create_state(StateAttributes(None, input.name(), None))
+        state_to = self.__src.create_state(StateAttributes(None, input.name(), None), required)
 
         # делаем состояние точкой входа
         self.make_enter(state_to.id())

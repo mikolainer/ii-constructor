@@ -126,8 +126,8 @@ class SourceInMemory(Source):
         state = State(id, StateAttributes(output, name, None))
         self.__states[state.id()] = state
 
-    def create_state(self, attributes:StateAttributes) -> State:
-        new_state = State(StateID(self.__new_state_id), attributes)
+    def create_state(self, attributes:StateAttributes, required:bool = False) -> State:
+        new_state = State(StateID(self.__new_state_id), attributes, required)
         self.__new_state_id = self.__new_state_id + 1
         self.__states[new_state.id()] = new_state
         return new_state

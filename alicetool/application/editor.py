@@ -34,7 +34,8 @@ class HostingManipulator:
                     Synonym('Справка'), 
                     Synonym('Расскажи о себе'),
                 ])
-            )
+            ),
+            True
         )
 
         new_scenario.create_enter_state(
@@ -45,7 +46,8 @@ class HostingManipulator:
                     Synonym('Помоги'), 
                     Synonym('Как выйти'),
                 ])
-            )
+            ),
+            True
         )
 
         for state in new_scenario.states().values():
@@ -95,7 +97,8 @@ class HostingManipulator:
                 SynonymsGroup([
                     Synonym('Алиса, запусти навык ...'),
                 ])
-            )
+            ),
+            True
         )
 
         new_scenario.create_enter_state(
@@ -106,7 +109,8 @@ class HostingManipulator:
                     Synonym('Справка'), 
                     Synonym('Расскажи о себе'),
                 ])
-            )
+            ),
+            True
         )
 
         new_scenario.create_enter_state(
@@ -117,7 +121,8 @@ class HostingManipulator:
                     Synonym('Помоги'), 
                     Synonym('Как выйти'),
                 ])
-            )
+            ),
+            True
         )
         
         return ScenarioManipulator(new_scenario)
