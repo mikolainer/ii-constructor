@@ -86,3 +86,6 @@ class ScenarioInterface:
         Проверяет существование вектора
         @name - имя вектора для проверки (идентификатор)
         '''
+
+    def rename_state(self, state:StateID, name:Name):
+        ''' Переименовывает состояние '''

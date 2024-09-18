@@ -88,6 +88,12 @@ class SceneControll:
         self.__arrows = {}
         self.__main_window = main_window
 
+    def state_settings(self, node: SceneNode):
+        text, ok = QInputDialog.getText(self.__main_window, 'Переименовать состояние', 'Новое имя:')
+        if not ok: return
+
+        node.wrapper_widget().set_title(text)
+
     def init_arrows(self, scene:Editor, v_model: SynonymsGroupsModel):
         ''' создать стрелки переходов '''
         for row in range(self.__states_model.rowCount()):
@@ -137,6 +143,7 @@ class SceneControll:
         node = scene.addNode(pos, content)
         node.wrapper_widget().delete_request.connect(lambda node: self.on_remove_node(node))
         node.wrapper_widget().chosen.connect(lambda node: self.on_node_chosen(node))
+        node.wrapper_widget().open_settings.connect(lambda: self.state_settings(node))
         node.set_handlers(lambda from_node, to_node: self.__new_step_request(from_node, to_node), lambda from_node, to_pos: self.__new_state_request(from_node, to_pos))
         content.setText(state_text)
         node.set_title(state_name)
@@ -149,7 +156,7 @@ class SceneControll:
         self.__states_model.insertRow()
 
         content.textChanged.connect(lambda: self.__state_content_changed_handler(node))
-        node.wrapper_widget().title_changed.connect(lambda title: self.__state_title_changed_handler(node, title))
+        node.wrapper_widget().set_change_title_handler(lambda title: self.__state_title_changed_handler(node, title))
 
         return node
     
@@ -306,16 +313,17 @@ class SceneControll:
         new_value = editor.toPlainText()
         self.__states_model.setData(model_index, new_value, role)
 
-    def __state_title_changed_handler(self, node:SceneNode, new_title:str):
+    def __state_title_changed_handler(self, node:SceneNode, new_title:str) -> bool:
         ''' по изменениям на сцене изменить модель '''
         model_index = self.__find_in_model(node)
         if not model_index.isValid():
-            return
+            return False
         
         id = model_index.data(CustomDataRole.Id)
         role = CustomDataRole.Name
         new_value = new_title
-        self.__states_model.setData(model_index, new_value, role)
+        ok = self.__states_model.setData(model_index, new_value, role)
+        return ok
 
     def __new_step_request(self, from_node:SceneNode, to_node:SceneNode):
         state_index_from = self.__find_in_model(from_node)

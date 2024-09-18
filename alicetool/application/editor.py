@@ -9,7 +9,7 @@ from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
 from alicetool.domain.core.bot import Scenario, Connection, Source, InputDescription, Step, State
 from alicetool.domain.core.porst import ScenarioInterface
-from alicetool.domain.core.exceptions import Exists
+from alicetool.domain.core.exceptions import Exists, CoreException
 
 class HostingManipulator:
     @staticmethod
@@ -215,6 +215,8 @@ class ScenarioManipulator:
             if ask_result == QMessageBox.StandardButton.Abort:
                 raise RuntimeError()
             
+        except: raise
+            
         self.__scenario.make_enter(state_id_d)
         
         return vector_name.value
@@ -244,8 +246,7 @@ class ScenarioManipulator:
 
     def rename_state(self, state_id: int, new_name: str):
         ''' изменяет имя состояния '''
-        id = StateID(state_id)
-        self.__scenario.states([id])[id].attributes.name = Name(new_name)
+        self.__scenario.rename_state(StateID(state_id), Name(new_name))
         
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         ''' изменяет значение синонима '''

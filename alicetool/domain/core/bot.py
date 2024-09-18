@@ -242,6 +242,9 @@ class Source():
             
     def remove_synonym(self, input_name: str, synonym: str):
         ''' удаляет синоним '''
+
+    def rename_state(self, state:StateID, name:Name):
+        ''' Переименовывает состояние '''
         
 class Hosting:
     def get_scenario(self, id:ScenarioID) -> ScenarioInterface:
@@ -273,6 +276,12 @@ class Scenario(ScenarioInterface):
 
     def create_enter_vector(self, input:InputDescription, state_id: StateID):
         ''' Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем '''
+        _states = self.states()
+        state_to = _states[state_id]
+        for _state in _states.values():
+            if _state.attributes.name == state_to.attributes.name and _state.id() != state_to.id():
+                raise CoreException(f'Состояние-вход должно иметь уникальное имя!')
+            
         # проверяем существование вектора c именем состояния входа
         vector_name: Name = self.states([state_id])[state_id].attributes.name
         if self.check_vector_exists(vector_name):
@@ -305,6 +314,11 @@ class Scenario(ScenarioInterface):
             state_to = self.states([to_state])[to_state]
 
         elif isinstance(to_state, StateAttributes):
+            _states = self.states()
+            for _state in _states.values():
+                if _state.attributes.name == to_state.name and self.is_enter(_state):
+                    raise CoreException(f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.')
+
             state_to = self.__src.create_state(to_state)
 
         return self.__src.new_step(from_state_id, state_to.id(), input.name())
@@ -413,3 +427,23 @@ class Scenario(ScenarioInterface):
     def remove_synonym(self, input_name: str, synonym: str):
         ''' удаляет синоним '''
         self.__src.remove_synonym(input_name, synonym)
+
+    def rename_state(self, state:StateID, name:Name):
+        ''' Переименовывает состояние '''
+        if self.is_enter(self.__src.states([state])[state]):
+            raise CoreException("Нельзя переименовать состояние, которое является входом")
+        
+        vector_exsists = True
+        vector: InputDescription
+        try:
+            vector = self.get_vector(name)
+        except:
+            vector_exsists = False
+
+        if vector_exsists:
+            for _conn in self.__src.input_usage(vector):
+                if _conn.from_state is None:
+                    if self.is_enter(_conn.to_state):
+                        raise CoreException(f'Состояние с именем "{name.value}" уже существует и является входом')
+
+        self.__src.rename_state(state, name)

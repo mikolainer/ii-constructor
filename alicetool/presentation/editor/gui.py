@@ -16,7 +16,7 @@ from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
 from alicetool.application.editor import HostingManipulator, ScenarioManipulator
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo
-from alicetool.domain.core.exceptions import Exists
+from alicetool.domain.core.exceptions import Exists, CoreException
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, LevenshtainVectorSerializer
 
 class Project:
@@ -449,6 +449,11 @@ class ProjectManager:
         
         try:
             vector_name = manipulator.make_enter(to_state_index.data(CustomDataRole.Id))
+        
+        except CoreException as e:
+            QMessageBox.warning(self.__main_window, "Невозможно выполнить!", e.ui_text)
+            return False, None
+        
         except Exception as e:
             return False, None
 
@@ -476,6 +481,10 @@ class ProjectManager:
             to_state_item.on[CustomDataRole.Id] = new_state_info['id']
             to_state_item.on[CustomDataRole.Name] = new_state_info['name']
             to_state_item.on[CustomDataRole.Text] = new_state_info['text']
+
+        except CoreException as e:
+            QMessageBox.warning(self.__main_window, "Невозможно выполнить!", e.ui_text)
+            return False
 
         except Exception as e:
             return False
@@ -517,6 +526,10 @@ class ProjectManager:
 
             elif role == CustomDataRole.Name:
                 manipulator.rename_state(state_id, new_value)
+
+        except CoreException as e:
+            QMessageBox.warning(self.__main_window, "Невозможно выполнить", e.ui_text)
+            return False
 
         except Exception as e:
             return False

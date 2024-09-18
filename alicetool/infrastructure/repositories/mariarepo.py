@@ -193,7 +193,7 @@ class SourceMariaDB(Source):
         else:
             _names = list[Name]()
 
-            cur.execute("SELECT DISTINCT `group_name` FROM `synonyms` WHERE `project_id` = ?", (self.id.value,))
+            cur.execute("SELECT DISTINCT `name` FROM `vectors` WHERE `project_id` = ?", (self.id.value,))
             conn.commit()
 
             for (val,) in cur:
@@ -406,14 +406,12 @@ class SourceMariaDB(Source):
         conn.commit()
         db_result_from = cur.fetchall()
 
-        f_states = self.states()
-        f_vectors = self.select_vectors()
-
         result = {
             'from': dict[StateID, list[Connection]](),
             'to': dict[StateID, Connection](),
         }
 
+        f_states = self.states()
         # сформировать все Connection
         for (_from_state, _to_state, _vector_name) in db_result_from:
             #raise not _from_state is None
@@ -427,6 +425,7 @@ class SourceMariaDB(Source):
                 __conn_list = result["from"][__from_state_id]
             else:
                 __conn_list = list[Connection]()
+                result["from"][__from_state_id] = __conn_list
 
             skip_append = False
             for _conn in __conn_list:
@@ -438,21 +437,33 @@ class SourceMariaDB(Source):
             __conn_list.append(Connection(__from_state, __to_state, []))
 
         for (_from_state, _to_state, _vector_name) in db_result_to:
+            __to_state_id = StateID(_to_state)
             if __to_state_id in result["to"].keys():
                 continue
 
             result["to"][__to_state_id] = Connection(None, f_states[__to_state_id], [])
 
+        f_vectors = self.select_vectors()
+
         # заполнить все Connection переходами
         for (_from_state, _to_state, _vector_name) in db_result_from:
+            __from_state_id = StateID(_from_state)
+            __to_state_id = StateID(_to_state)
             #raise not _from_state is None
-            _conn = result["from"][StateID(_to_state)]
+            _conn: Connection
+            for __conn in result["from"][__from_state_id]:
+                if __conn.to_state.id() == __to_state_id:
+                    _conn = __conn
+                    break
+            
             step = Step(self.__find_vector(f_vectors, Name(_vector_name)), _conn)
             _conn.steps.append(step) # вроде должны быть уникальными
 
+
         for (_from_state, _to_state, _vector_name) in db_result_to:
-            __from_state_id = StateID(_from_state)
-            _conn = result["to"][__from_state_id]
+            __from_state_id = None # always is None
+            __to_state_id = StateID(_to_state)
+            _conn = result["to"][__to_state_id]
             step = Step(self.__find_vector(f_vectors, Name(_vector_name)), _conn)
             _conn.steps.append(step) # вроде должны быть уникальными
 
@@ -466,7 +477,9 @@ class SourceMariaDB(Source):
             
     def remove_synonym(self, input_name: str, synonym: str):
         self.__do("DELETE FROM `synonyms` WHERE `project_id` = ? AND `group_name` = ? AND `value` = ?", (self.id.value, input_name, synonym))
-        
+    
+    def rename_state(self, state:StateID, name:Name):
+        self.__do("UPDATE `states` SET `name`= ? WHERE `project_id`= ? AND `id`= ?", (name.value, self.id.value, state.value))
 
 class HostingMaria(Hosting):
     __connection: Optional[mariadb.Connection]

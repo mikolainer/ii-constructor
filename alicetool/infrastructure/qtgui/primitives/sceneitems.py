@@ -17,6 +17,7 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QColor,
+    QContextMenuEvent,
     QFocusEvent,
     QPen,
     QPainter,
@@ -31,6 +32,7 @@ from PySide6.QtGui import (
 )
 
 from PySide6.QtWidgets import (
+    QMenu,
     QTextEdit,
     QGraphicsScene,
     QVBoxLayout,
@@ -715,23 +717,29 @@ class NodeWidget(QWidget):
     TITLE_HEIGHT:int = 20
     START_WIDTH:int = 150
 
-    __title: QLabel
+    __title: 'NodeTitle'
     __close_btn: EnterDetectionButton
     __content: QScrollArea
     __item_on_scene: SceneNode | None
 
-    title_changed = Signal(str)
+    open_settings = Signal()
     delete_request = Signal(SceneNode)
     chosen = Signal(SceneNode)
     __choose_mode: bool
+    __change_title_handler: Callable[[str], bool]
     
+    def set_change_title_handler(self, handler: Callable[[str], bool]):
+        self.__change_title_handler = handler
+
     def __init__(self, title: str, parent = None):
+        self.__change_title_handler = None
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.__choose_mode = False
         self.__item_on_scene = None
-        self.__title = QLabel(title, self)
+        self.__title = NodeTitle(title, self)
+        self.__title.open_settings.connect(lambda: self.open_settings.emit())
         font = self.__title.font()
         font.setWeight(QFont.Weight.ExtraBold)
         self.__title.setFont(font)
@@ -794,9 +802,9 @@ class NodeWidget(QWidget):
 
     def set_title(self, text:str):
         ''' Устанавливает заголовок. Прямое использование не ожидается (обрабатывается в SceneNode) '''
-        self.__title.setText(text)
-        self.__title.setToolTip(text)
-        self.title_changed.emit(text)
+        if self.__change_title_handler is None or self.__change_title_handler(text):
+            self.__title.setText(text)
+            self.__title.setToolTip(text)
 
     def setWidget(self, widget: QWidget) -> None:
         ''' Устанавливает содержимое. Прямое использование не ожидается (обрабатывается в SceneNode) '''
@@ -829,6 +837,19 @@ class NodeWidget(QWidget):
     def on_close_btn_mouse_enter(self):
         if not self.__item_on_scene is None and not self.__choose_mode:
             self.__item_on_scene.show_tools()
+
+class NodeTitle(QLabel):
+    open_settings = Signal()
+
+    def __init__(self, text:str, parent: Optional[QWidget]):
+        super().__init__(text, parent)
+
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        menu = QMenu(self)
+        action = menu.addAction("Переименовать")
+        result = menu.exec_(self.mapToGlobal(event.pos()))
+        if action == result:
+            self.open_settings.emit()
 
 class Editor(QGraphicsScene):
     __START_SIZE = QRect(0, 0, 2000, 2000)
