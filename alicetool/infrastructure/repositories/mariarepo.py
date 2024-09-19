@@ -483,7 +483,6 @@ class SourceMariaDB(Source):
 
     def rename_vector(self, old_name:Name, new_name: Name):
         self.__do("UPDATE `vectors` SET `name`= ? WHERE `project_id`= ? AND `name`= ?", (new_name.value, self.id.value, old_name.value))
-        #self.__do("UPDATE `synonyms` SET `group_name`= ? WHERE `project_id`= ? AND `group_name`= ?", (new_name.value, self.id.value, old_name.value))
 
 class HostingMaria(Hosting):
     __connection: Optional[mariadb.Connection]

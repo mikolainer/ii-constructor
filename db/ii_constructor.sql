@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost
--- Время создания: Сен 19 2024 г., 21:07
+-- Время создания: Сен 20 2024 г., 01:30
 -- Версия сервера: 10.11.6-MariaDB
 -- Версия PHP: 8.0.28
 
@@ -126,14 +126,16 @@ ALTER TABLE `steps`
   ADD KEY `from_state_id` (`from_state_id`),
   ADD KEY `to_state_id` (`to_state_id`),
   ADD KEY `vector_name` (`vector_name`),
-  ADD KEY `project_id` (`project_id`);
+  ADD KEY `project_id` (`project_id`),
+  ADD KEY `steps_ibfk_4` (`project_id`,`vector_name`);
 
 --
 -- Индексы таблицы `synonyms`
 --
 ALTER TABLE `synonyms`
   ADD KEY `group_name` (`group_name`),
-  ADD KEY `project_id` (`project_id`);
+  ADD KEY `project_id` (`project_id`),
+  ADD KEY `synonyms_ibfk_2` (`project_id`,`group_name`);
 
 --
 -- Индексы таблицы `vectors`
@@ -173,30 +175,28 @@ ALTER TABLE `states`
 -- Ограничения внешнего ключа таблицы `states`
 --
 ALTER TABLE `states`
-  ADD CONSTRAINT `states_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
+  ADD CONSTRAINT `states_to_projid` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
 
 --
 -- Ограничения внешнего ключа таблицы `steps`
 --
 ALTER TABLE `steps`
-  ADD CONSTRAINT `steps_ibfk_1` FOREIGN KEY (`from_state_id`) REFERENCES `states` (`id`),
-  ADD CONSTRAINT `steps_ibfk_2` FOREIGN KEY (`to_state_id`) REFERENCES `states` (`id`),
-  ADD CONSTRAINT `steps_ibfk_3` FOREIGN KEY (`vector_name`) REFERENCES `vectors` (`name`),
-  ADD CONSTRAINT `steps_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
+  ADD CONSTRAINT `steps_to_fromstateid` FOREIGN KEY (`from_state_id`) REFERENCES `states` (`id`),
+  ADD CONSTRAINT `steps_to_tostateid` FOREIGN KEY (`to_state_id`) REFERENCES `states` (`id`),
+  ADD CONSTRAINT `steps_to_vectors` FOREIGN KEY (`project_id`,`vector_name`) REFERENCES `vectors` (`project_id`, `name`) ON UPDATE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `synonyms`
 --
 ALTER TABLE `synonyms`
-  ADD CONSTRAINT `synonyms_ibfk_1` FOREIGN KEY (`group_name`) REFERENCES `vectors` (`name`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `synonyms_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
+  ADD CONSTRAINT `synonyms_to_vectors` FOREIGN KEY (`project_id`,`group_name`) REFERENCES `vectors` (`project_id`, `name`) ON UPDATE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `vectors`
 --
 ALTER TABLE `vectors`
-  ADD CONSTRAINT `vectors_ibfk_1` FOREIGN KEY (`type`) REFERENCES `vector_types` (`typename`),
-  ADD CONSTRAINT `vectors_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
+  ADD CONSTRAINT `vectors_to_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
+  ADD CONSTRAINT `vectors_to_type` FOREIGN KEY (`type`) REFERENCES `vector_types` (`typename`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
