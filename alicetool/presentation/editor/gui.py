@@ -34,12 +34,14 @@ class Project:
         synonym_create_callback: Callable,
         synonyms_group_create_callback: Callable,
         connect_synonym_changes_callback: Callable,
+        vector_rename_callback: Callable[[QModelIndex, int, Any, Any], bool],
         editor: QGraphicsView,
         content: FlowListWidget,
         save_callback: Callable
     ):
         self.vectors_model = SynonymsGroupsModel()
-        self.vectors_model.set_edit_callback(lambda i, r, o, n: True)
+        #self.vectors_model.set_edit_callback(lambda i, r, o, n: True)
+        self.vectors_model.set_edit_callback(lambda i, r, o, n: vector_rename_callback(i, r, o, n))
 
         self.__editor = editor
         self.__flows_wgt = content
@@ -297,6 +299,7 @@ class ProjectManager:
             lambda model, data: self.__on_synonym_created_from_gui(proj, manipulator, model, data),
             lambda name: self.__on_vector_created_from_gui(manipulator, name),
             lambda model: self.__connect_synonym_changes_from_gui(proj, manipulator, model),
+            lambda i, r, o, n: self.__rename_vector_handler(proj, manipulator, i, r, o, n),
             editor,
             content_wgt,
             lambda: self.__save_scenario_handler(manipulator, scene_controll)
@@ -551,6 +554,19 @@ class ProjectManager:
         except Exception as e:
             return False
 
+        return True
+    
+    def __rename_vector_handler(self, proj:Project, manipulator: ScenarioManipulator, index: QModelIndex, row: int, old_name: str, new_name: str):
+        try:
+            manipulator.rename_vector(old_name, new_name)
+
+        except CoreException as e:
+            QMessageBox.warning(self.__main_window, "Невозможно выполнить", e.ui_text)
+            return False
+
+        except Exception as e:
+            return False
+        
         return True
         
     # TODO: staticmethod?

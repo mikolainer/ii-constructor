@@ -42,7 +42,7 @@ class SourceMariaDB(Source):
         self.__do("DELETE FROM `states` WHERE `project_id` = ? AND `id` = ?", (self.id.value, state_id.value))
 
     def get_states_by_name(self, name: Name) -> list[State]:
-        query = f"SELECT id, IFNULL( name, id ) AS name, descr, answer, required FROM `states` WHERE project_id = {self.id.value}"
+        query = f"SELECT id, IFNULL( name, id ) AS name, descr, answer, required FROM `states` WHERE project_id = {self.id.value} AND name = '{name.value}'"
 
         conn: mariadb.Connection = self.__db_connection
         cur = conn.cursor()
@@ -218,7 +218,7 @@ class SourceMariaDB(Source):
         n_val = name.value
 
         if not self.check_vector_exists(name):
-            raise CoreException(f'Не существует управляющего воздействия "{n_val}"')
+            raise NotExists(name, f'Вектор с именем "{name.value}"')
 
         conn: mariadb.Connection = self.__db_connection
         cur = conn.cursor()
@@ -480,6 +480,10 @@ class SourceMariaDB(Source):
     
     def rename_state(self, state:StateID, name:Name):
         self.__do("UPDATE `states` SET `name`= ? WHERE `project_id`= ? AND `id`= ?", (name.value, self.id.value, state.value))
+
+    def rename_vector(self, old_name:Name, new_name: Name):
+        self.__do("UPDATE `vectors` SET `name`= ? WHERE `project_id`= ? AND `name`= ?", (new_name.value, self.id.value, old_name.value))
+        #self.__do("UPDATE `synonyms` SET `group_name`= ? WHERE `project_id`= ? AND `group_name`= ?", (new_name.value, self.id.value, old_name.value))
 
 class HostingMaria(Hosting):
     __connection: Optional[mariadb.Connection]

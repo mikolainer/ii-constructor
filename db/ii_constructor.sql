@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost
--- Время создания: Сен 15 2024 г., 18:20
+-- Время создания: Сен 19 2024 г., 21:07
 -- Версия сервера: 10.11.6-MariaDB
 -- Версия PHP: 8.0.28
 
@@ -96,6 +96,13 @@ CREATE TABLE `vector_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 
 --
+-- Дамп данных таблицы `vector_types`
+--
+
+INSERT INTO `vector_types` (`typename`) VALUES
+('synonyms_set');
+
+--
 -- Индексы сохранённых таблиц
 --
 
@@ -181,7 +188,7 @@ ALTER TABLE `steps`
 -- Ограничения внешнего ключа таблицы `synonyms`
 --
 ALTER TABLE `synonyms`
-  ADD CONSTRAINT `synonyms_ibfk_1` FOREIGN KEY (`group_name`) REFERENCES `vectors` (`name`),
+  ADD CONSTRAINT `synonyms_ibfk_1` FOREIGN KEY (`group_name`) REFERENCES `vectors` (`name`) ON UPDATE CASCADE,
   ADD CONSTRAINT `synonyms_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`);
 
 --
@@ -195,5 +202,3 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
-INSERT INTO `vector_types` (`typename`) VALUES ('synonyms_set');

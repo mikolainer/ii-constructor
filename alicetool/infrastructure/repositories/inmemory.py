@@ -268,8 +268,10 @@ class SourceInMemory(Source):
         vector.synonyms.synonyms.pop(index)
 
     def rename_state(self, state:StateID, name:Name):
-        ''' Переименовывает состояние '''
         self.states([state])[state].attributes.name = name
+
+    def rename_vector(self, old_name:Name, new_name: Name):
+        self.get_vector(old_name).set_name(new_name)
 
 class HostingInmem(Hosting):
     __sources: dict[ScenarioID, ScenarioInterface]

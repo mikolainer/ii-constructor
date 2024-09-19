@@ -128,6 +128,9 @@ class InputDescription:
     def name(self) -> Name:
         return self.__name
     
+    def set_name(self, new_name:Name) -> None:
+        self.__name = new_name
+    
     def __eq__(self, value: object) -> bool:
         return isinstance(value, InputDescription) and value.name() == self.__name
 
@@ -246,6 +249,9 @@ class Source():
     def rename_state(self, state:StateID, name:Name):
         ''' Переименовывает состояние '''
         
+    def rename_vector(self, old_name:Name, new_name: Name):
+        ''' переименовывает группу синонимов '''
+
 class Hosting:
     def get_scenario(self, id:ScenarioID) -> ScenarioInterface:
         ''' Получить сценарий по id '''
@@ -447,3 +453,18 @@ class Scenario(ScenarioInterface):
                         raise CoreException(f'Состояние с именем "{name.value}" уже существует и является входом')
 
         self.__src.rename_state(state, name)
+
+    def rename_vector(self, old_name:Name, new_name: Name):
+        ''' переименовывает группу синонимов '''
+        for state in self.get_states_by_name(old_name):
+            if self.is_enter(state):
+                raise CoreException("Нельзя переименовать вектор, который используется с точкой входа!")
+            
+        try:
+            self.get_vector(new_name)
+            raise CoreException(f'Вектор с именем "{new_name.value}" уже существует!')
+        
+        except NotExists:
+            self.__src.rename_vector(old_name, new_name)
+        
+        except: raise

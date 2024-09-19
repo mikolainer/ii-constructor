@@ -247,6 +247,10 @@ class ScenarioManipulator:
     def rename_state(self, state_id: int, new_name: str):
         ''' изменяет имя состояния '''
         self.__scenario.rename_state(StateID(state_id), Name(new_name))
+
+    def rename_vector(self, old_name:str, new_name: str):
+        ''' переименовывает группу синонимов '''
+        self.__scenario.rename_vector(Name(old_name), Name(new_name))
         
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         ''' изменяет значение синонима '''

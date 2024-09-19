@@ -18,6 +18,7 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QContextMenuEvent,
+    QKeyEvent,
     QResizeEvent,
     QMouseEvent,
     QMouseEvent,
@@ -29,6 +30,7 @@ from PySide6.QtGui import (
 )
 
 from PySide6.QtWidgets import (
+    QInputDialog,
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -148,6 +150,12 @@ class SynonymsGroupsView(QListView):
         for index in self.selectedIndexes():
             self.__remove_row(index)
 
+    def __rename_row(self, index:QModelIndex):
+        new_name, ok = QInputDialog.getText(self, "Переименовать вектор", "Новое имя вектора:")
+        if not ok: return
+        
+        self.model().setData(index, new_name, CustomDataRole.Name)
+
     def __remove_row(self, index:QModelIndex):
         if not self.model().removeRow(index.row()):
             QMessageBox.warning(self, 'Невозможно выполнить', 'Невозможно удалить выбранный вектор. Он используется в существующих переходах!')
@@ -156,6 +164,14 @@ class SynonymsGroupsView(QListView):
         self.on_selectionChanged.emit(selected, deselected)
         return super().selectionChanged(selected, deselected)
     
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_F2:
+            indexes = self.selectedIndexes()
+            if len(indexes) > 0:
+                self.__rename_row(indexes[0])
+            
+        return super().keyPressEvent(event)
+    
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         index = self.indexAt(event.pos())
         if not index.isValid():
@@ -163,6 +179,7 @@ class SynonymsGroupsView(QListView):
 
         menu = QMenu(self)
         menu.addAction('Удалить', lambda: self.__remove_row(index), QKeySequence(QKeySequence.StandardKey.Delete))
+        menu.addAction('Переименовать', lambda: self.__rename_row(index), QKeySequence(Qt.Key.Key_F2))
         menu.move(event.globalPos())
         menu.show()
 

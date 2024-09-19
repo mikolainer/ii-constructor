@@ -89,3 +89,6 @@ class ScenarioInterface:
 
     def rename_state(self, state:StateID, name:Name):
         ''' Переименовывает состояние '''
+
+    def rename_vector(self, old_name:Name, new_name: Name):
+        ''' переименовывает группу синонимов '''
