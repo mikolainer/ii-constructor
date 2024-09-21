@@ -18,6 +18,7 @@ from alicetool.application.editor import HostingManipulator, ScenarioManipulator
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo
 from alicetool.domain.core.exceptions import Exists, CoreException
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, LevenshtainVectorSerializer
+from alicetool.infrastructure.qtgui.primitives.widgets import DBConnectWidget
 
 class Project:
     __synonym_create_callback: Callable
@@ -405,14 +406,20 @@ class ProjectManager:
 #            return
 
         while not self.__maria_hosting.connected():
-            ip, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'ip')
-            if not ok: return
-            port, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'Порт')
-            if not ok: return
-            username, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'Имя пользователя')
-            if not ok: return
-            password, ok = QInputDialog.getText(self.__main_window, 'Подключение к БД', 'Пароль')
-            if not ok: return
+            dialog = DBConnectWidget(self.__main_window)
+            ok = dialog.exec()
+            if ok == QDialog.DialogCode.Rejected:
+                return
+
+            data = dialog.data()
+            ip = data["ip"]
+            port = data["port"]
+            username = data["user"]
+            password = data["password"]
+            self.__maria_hosting.connect(ip, port, username, password)
+
+            if not self.__maria_hosting.connected():
+                QMessageBox.warning(self.__main_window, "Ошибка", "Не удалось подключиться!")
         
         dialog = NewProjectDialog(self.__main_window)
         if dialog.exec() == QDialog.DialogCode.Rejected:
