@@ -4,7 +4,7 @@ from xml.etree.ElementTree import ElementTree, Element, tostring, fromstring, in
 from PySide6.QtWidgets import QMessageBox 
 
 from alicetool.infrastructure.repositories.inmemory import HostingInmem
-from alicetool.infrastructure.repositories.mariarepo import HostingMaria
+from alicetool.infrastructure.repositories.mariarepo import HostingMaria, SourceMariaDB
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
 from alicetool.domain.core.bot import Scenario, Connection, Source, InputDescription, Step, State
@@ -87,6 +87,9 @@ class HostingManipulator:
 
         return ScenarioManipulator(scenario)
 
+    def open_scenario_from_db(hosting: HostingMaria, id: int):
+        return ScenarioManipulator(hosting.get_scenario(ScenarioID(id)))
+
     def make_scenario_in_db(hosting: HostingMaria, info: SourceInfo) -> 'ScenarioManipulator':
         ''' создаёт заготовку сценария для алисы в MariaDB '''
         new_scenario = hosting.get_scenario(hosting.add_source(info))
@@ -141,6 +144,9 @@ class ScenarioManipulator:
     
     def description(self) -> str:
         return self.__scenario.source().info.description.value
+    
+    def in_db(self) -> bool:
+        return isinstance(self.__scenario.source(), SourceMariaDB)
     
     # TODO заменить собственным интерфейсом
     def interface(self) -> ScenarioInterface:

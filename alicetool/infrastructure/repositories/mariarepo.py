@@ -531,3 +531,16 @@ class HostingMaria(Hosting):
         (result,) = cursor.fetchone()
         return ScenarioID(result)
     
+    def sources(self) -> list[tuple[int, str, str]]:
+        result = list[tuple[int, str, str]]()
+
+        conn:mariadb.Connection = self.__connection
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT `id`, `name`, `description` FROM `projects`")
+        conn.commit()
+        
+        for row in cursor:
+            result.append(row)
+
+        return result

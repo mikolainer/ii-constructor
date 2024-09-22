@@ -3,7 +3,7 @@ from typing import Callable, Any, Optional
 import os.path
 
 from PySide6.QtGui import QShortcut, QIcon, QShortcut
-from PySide6.QtWidgets import QGraphicsView, QDialog, QInputDialog, QMessageBox, QFileDialog 
+from PySide6.QtWidgets import QGraphicsView, QWidget, QDialog, QInputDialog, QMessageBox, QFileDialog, QTableWidget, QPushButton, QVBoxLayout, QAbstractItemView, QHeaderView
 from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
 
 from alicetool.infrastructure.repositories.inmemory import HostingInmem
@@ -27,11 +27,13 @@ class Project:
     __editor: QGraphicsView
     __flows_wgt: FlowListWidget
     __save_callback: Callable
+    manipulator: ScenarioManipulator
 
     vectors_model: SynonymsGroupsModel
     
     def __init__(
         self,
+        manipulator: ScenarioManipulator,
         synonym_create_callback: Callable,
         synonyms_group_create_callback: Callable,
         connect_synonym_changes_callback: Callable,
@@ -40,6 +42,7 @@ class Project:
         content: FlowListWidget,
         save_callback: Callable
     ):
+        self.manipulator = manipulator
         self.vectors_model = SynonymsGroupsModel()
         #self.vectors_model.set_edit_callback(lambda i, r, o, n: True)
         self.vectors_model.set_edit_callback(lambda i, r, o, n: vector_rename_callback(i, r, o, n))
@@ -52,10 +55,6 @@ class Project:
         self.__connect_synonym_changes_callback = connect_synonym_changes_callback
         self.__save_callback = save_callback
 
-
-    def id(self) -> ScenarioID:
-        return self.__id
-    
     def editor(self) -> QGraphicsView:
         return self.__editor
     
@@ -297,6 +296,7 @@ class ProjectManager:
         
         # создание объекта взаимодействий с проектом
         proj = Project(
+            manipulator,
             lambda model, data: self.__on_synonym_created_from_gui(proj, manipulator, model, data),
             lambda name: self.__on_vector_created_from_gui(manipulator, name),
             lambda model: self.__connect_synonym_changes_from_gui(proj, manipulator, model),
@@ -401,10 +401,6 @@ class ProjectManager:
             QMessageBox.warning(self.__main_window, 'Не удалось найти файл .lay', 'Не удалось найти файл .lay')
 
     def db_connections(self):
-#        if self.__maria_hosting.connected():
-#            QMessageBox.critical(self.__main_window, "Ошибка", "Cценарий уже создан!")
-#            return
-
         while not self.__maria_hosting.connected():
             dialog = DBConnectWidget(self.__main_window)
             ok = dialog.exec()
@@ -420,15 +416,32 @@ class ProjectManager:
 
             if not self.__maria_hosting.connected():
                 QMessageBox.warning(self.__main_window, "Ошибка", "Не удалось подключиться!")
-        
-        dialog = NewProjectDialog(self.__main_window)
-        if dialog.exec() == QDialog.DialogCode.Rejected:
-            return
 
-        info = SourceInfo(Name(dialog.name()), Description(dialog.description()))
-        manipulator = HostingManipulator.make_scenario_in_db(self.__maria_hosting, info)
-        
-        scene_ctrl = self.__open_project(manipulator)
+        if self.__maria_hosting.connected():
+            dialog = DBProjLibrary(self.__maria_hosting, self.__main_window)
+            ok = dialog.exec()
+            if ok == QDialog.DialogCode.Rejected:
+                return
+
+            selected_id:int = dialog.proj_id()
+            if selected_id == -1:
+                dialog = NewProjectDialog(self.__main_window)
+                if dialog.exec() == QDialog.DialogCode.Rejected:
+                    return
+
+                info = SourceInfo(Name(dialog.name()), Description(dialog.description()))
+                manipulator = HostingManipulator.make_scenario_in_db(self.__maria_hosting, info)
+                
+                scene_ctrl = self.__open_project(manipulator)
+
+            else: # if selected_id != -1:
+                for proj in self.__projects.values():
+                    if proj.manipulator.in_db() and proj.manipulator.id() == selected_id:
+                        QMessageBox.warning(self.__main_window, "Невозможно выполнить!", "Проект уже открыт!")
+                        return
+                    
+                manipulator = HostingManipulator.open_scenario_from_db(self.__maria_hosting, selected_id)
+                scene_ctrl = self.__open_project(manipulator)
 
     def __on_vector_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
         try:
@@ -623,3 +636,45 @@ class ProjectManager:
             raise Warning('по модели набора синонимов группа синонимов не найдена')
         
         return group_name
+
+class DBProjLibrary(QDialog):
+    __table: QTableWidget
+    __selected_id: int
+    
+    def __init__(self, manipulator: HostingMaria, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Dialog) -> None:
+        super().__init__(parent, f)
+
+        self.setWindowTitle("Открыть проект из БД")
+        data = manipulator.sources()
+
+        self.__selected_id = -1
+        self.__table = QTableWidget(len(data), 3, self)
+        self.__table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.__table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.__table.setHorizontalHeaderLabels(["id", "Название", "Описание"])
+        self.__table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        self.__table.verticalHeader().hide()
+
+        for row, _data in enumerate(data):
+            for col in range(3):
+                model_index = self.__table.model().index(row, col)
+                self.__table.model().setData(model_index, _data[col], Qt.ItemDataRole.DisplayRole)
+                item = self.__table.itemAt(row, col)
+                item.setFlags(item.flags() & (~Qt.ItemFlag.ItemIsEditable))
+
+        self.__table.doubleClicked.connect(self.selected)
+
+        add_btn = QPushButton("Создать новый", self)
+        add_btn.clicked.connect(lambda: self.accept())
+
+        main_lay = QVBoxLayout(self)
+        main_lay.addWidget(self.__table)
+        main_lay.addWidget(add_btn)
+
+    @Slot(QModelIndex)
+    def selected(self, index: QModelIndex):
+        self.__selected_id = self.__table.model().data(self.__table.model().index(index.row(), 0), Qt.ItemDataRole.DisplayRole)
+        super().accept()
+
+    def proj_id(self):
+        return self.__selected_id
