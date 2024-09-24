@@ -293,6 +293,8 @@ class ProjectManager:
             # add_enter_callback: Callable[[QModelIndex], tuple[bool, Optional[SynonymsSetModel]]]
             lambda state_index: self.__on_enter_created_from_gui(manipulator, proj, state_index),
 
+            lambda node, pos: self.__save_lay(manipulator, scene_controll, node, pos),
+
             # states_model:StatesModel
             states_model,
 
@@ -434,7 +436,7 @@ class ProjectManager:
                 return
 
             selected_id:int = dialog.proj_id()
-            if selected_id == -1:
+            if selected_id == -1: # create new
                 dialog = NewProjectDialog(self.__main_window)
                 if dialog.exec() == QDialog.DialogCode.Rejected:
                     return
@@ -444,7 +446,28 @@ class ProjectManager:
                 
                 scene_ctrl = self.__open_project(manipulator)
 
-            else: # if selected_id != -1:
+            elif selected_id == -2: # load from file
+                path, filetype = QFileDialog.getOpenFileName(self.__main_window, 'Выбрать файл для загрузки в БД')
+
+                if not path:
+                    return
+
+                data:str
+                with open(path, "r") as file:
+                    data = "".join(file.readlines())
+
+                map = dict[int, int]()
+                manipulator = HostingManipulator.open_scenario(self.__maria_hosting, data, map)
+                scene_ctrl = self.__open_project(manipulator)
+                
+                lay_path = path + ".lay"
+                if os.path.exists(lay_path):
+                    with open(path + ".lay", "r") as lay_file:
+                        scene_ctrl.load_layout("".join(lay_file.readlines()), map)
+                else:
+                    QMessageBox.warning(self.__main_window, 'Не удалось найти файл .lay', 'Не удалось найти файл .lay')
+
+            else: # if selected_id >= 0:
                 for proj in self.__projects.values():
                     if proj.manipulator.in_db() and proj.manipulator.id() == selected_id:
                         QMessageBox.warning(self.__main_window, "Невозможно выполнить!", "Проект уже открыт!")
@@ -452,6 +475,7 @@ class ProjectManager:
                     
                 manipulator = HostingManipulator.open_scenario_from_db(self.__maria_hosting, selected_id)
                 scene_ctrl = self.__open_project(manipulator)
+                scene_ctrl.load_layout(manipulator.get_layouts())
 
     def __on_vector_remove_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
         try:
@@ -538,6 +562,14 @@ class ProjectManager:
         self.__connect_synonym_changes_from_gui(project, manipulator, s_model)
 
         return True, s_model
+    
+    def __save_lay(self, manipulator: ScenarioManipulator, ctrl: SceneControll, node: SceneNode, pos: QPointF):
+        try:
+            index = ctrl.find_in_model(node)
+            manipulator.save_lay(index.data(CustomDataRole.Id), pos.x(), pos.y())
+
+        except:
+            return
 
     def __on_step_created_from_gui(self, manipulator: ScenarioManipulator, project:Project, from_state_index: QModelIndex, to_state_item: ItemData, input: SynonymsSetModel) -> bool:
         try:
@@ -708,17 +740,29 @@ class DBProjLibrary(QDialog):
 
         self.__table.doubleClicked.connect(self.selected)
 
-        add_btn = QPushButton("Создать новый", self)
-        add_btn.clicked.connect(lambda: self.accept())
+        create_btn = QPushButton("Создать пустой", self)
+        create_btn.clicked.connect(lambda: self.__select_new())
+
+        load_btn = QPushButton("Загрузить из файла", self)
+        load_btn.clicked.connect(lambda: self.__select_load())
 
         main_lay = QVBoxLayout(self)
         main_lay.addWidget(self.__table)
-        main_lay.addWidget(add_btn)
+        main_lay.addWidget(create_btn)
+        main_lay.addWidget(load_btn)
 
     @Slot(QModelIndex)
     def selected(self, index: QModelIndex):
         self.__selected_id = self.__table.model().data(self.__table.model().index(index.row(), 0), Qt.ItemDataRole.DisplayRole)
-        super().accept()
+        self.accept()
+
+    def __select_new(self):
+        self.__selected_id = -1
+        self.accept()
+
+    def __select_load(self):
+        self.__selected_id = -2
+        self.accept()
 
     def proj_id(self):
         return self.__selected_id

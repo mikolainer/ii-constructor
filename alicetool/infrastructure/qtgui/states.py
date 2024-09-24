@@ -11,6 +11,7 @@ from PySide6.QtCore import (
     QModelIndex,
     QPersistentModelIndex,
     QRect,
+    QPointF,
 )
 
 from PySide6.QtGui import (
@@ -54,6 +55,7 @@ class SceneControll:
     __select_input_callback: Callable[[],Optional[SynonymsSetModel]]
     __add_enter_callback: Callable[[QModelIndex], tuple[bool, Optional[SynonymsSetModel]]]
     __step_remove_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool] # state_from, state_to, input -> ok
+    __update_lay_callback: Callable[['SceneNode', QPointF], None]
 
     __states_model: StatesModel
     __flows_model: FlowsModel
@@ -70,6 +72,7 @@ class SceneControll:
                  step_remove_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool],
                  new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool],
                  add_enter_callback: Callable[[QModelIndex], tuple[bool, Optional[SynonymsSetModel]]],
+                 update_lay_callback: Callable[['SceneNode', QPointF], None],
                  states_model:StatesModel, 
                  flows_model: FlowsModel,
                  main_window: QWidget,
@@ -81,6 +84,7 @@ class SceneControll:
         self.__step_remove_callback = step_remove_callback
         self.__new_state_callback = new_state_callback
         self.__add_enter_callback = add_enter_callback
+        self.__update_lay_callback = update_lay_callback
 
         self.__states_model = states_model
         self.__flows_model = flows_model
@@ -144,7 +148,7 @@ class SceneControll:
         node.wrapper_widget().delete_request.connect(lambda node: self.on_remove_node(node))
         node.wrapper_widget().chosen.connect(lambda node: self.on_node_chosen(node))
         node.wrapper_widget().open_settings.connect(lambda: self.state_settings(node))
-        node.set_handlers(lambda from_node, to_node: self.__new_step_request(from_node, to_node), lambda from_node, to_pos: self.__new_state_request(from_node, to_pos))
+        node.set_handlers(lambda from_node, to_node: self.__new_step_request(from_node, to_node), lambda from_node, to_pos: self.__new_state_request(from_node, to_pos), lambda node, to_pos: self.__update_lay_callback(node, to_pos))
         content.setText(state_text)
         node.set_title(state_name)
 
@@ -197,7 +201,7 @@ class SceneControll:
     def on_remove_node(self, node:SceneNode):
         ''' по изменениям в сценарии изменить модель и удалить элемент сцены '''
         scene = node.scene()
-        state_index = self.__find_in_model(node)
+        state_index = self.find_in_model(node)
         if not state_index.isValid():
             return # вообще-то не норм ситуация
 
@@ -211,10 +215,10 @@ class SceneControll:
         ''' удаляет связь между объектами сцены и вектором перехода '''
         model:StepModel = step_index.model()
         step_index.data(CustomDataRole.SynonymsSet)
-        self.__find_in_model(model.node_from())
+        self.find_in_model(model.node_from())
         if not self.__step_remove_callback(
-                    self.__find_in_model(model.node_from()),
-                    self.__find_in_model(model.node_to()),
+                    self.find_in_model(model.node_from()),
+                    self.find_in_model(model.node_to()),
                     step_index.data(CustomDataRole.SynonymsSet)
                 ):
             return False
@@ -226,7 +230,7 @@ class SceneControll:
 
     def on_set_data(self, node:SceneNode, value:Any, role:int):
         ''' по изменениям в сценарии изменить модель и сцену '''
-        model_index = self.__find_in_model(node)
+        model_index = self.find_in_model(node)
         if not model_index.isValid():
             return
         
@@ -239,7 +243,7 @@ class SceneControll:
         self.__states_model.setData(model_index, value, role)
 
     def on_node_chosen(self, node:SceneNode):
-        state_item_index = self.__find_in_model(node)
+        state_item_index = self.find_in_model(node)
 
         ok, s_model = self.__add_enter_callback(state_item_index)
         if not ok: return
@@ -253,7 +257,7 @@ class SceneControll:
 
         self.on_add_enter(input_item)
 
-    def load_layout(self, data:str):
+    def load_layout(self, data:str, id_map = None):
         for line in data.split(';\n'):
             line = line.replace(' ', '')
             id_sep = line.index(":")
@@ -262,10 +266,11 @@ class SceneControll:
             x = float(line[id_sep+3 : dir_sep])
             y = float(line[dir_sep+3 : -1])
 
-            state_index = self.__states_model.index(id)
-            node = self.__states_model.data(state_index, CustomDataRole.Node)
-            node: SceneNode = node
-            node.setPos(x, y)
+            item = self.__states_model.get_item_by(CustomDataRole.Id, id if id_map is None else id_map[id])
+            if not item is None:
+                node: SceneNode = item.on[CustomDataRole.Node]
+                node.setPos(x, y)
+                node.update_arrows()
 
     def serialize_layout(self) -> str:
         ''' сертализует информацию об отображении элементов сцены '''
@@ -293,7 +298,7 @@ class SceneControll:
                 
         return None
 
-    def __find_in_model(self, node:SceneNode) -> QModelIndex:
+    def find_in_model(self, node:SceneNode) -> QModelIndex:
         for row in range(self.__states_model.rowCount()):
             if self.__states_model.data(self.__states_model.index(row), CustomDataRole.Node) is node:
                 return self.__states_model.index(row)
@@ -302,7 +307,7 @@ class SceneControll:
 
     def __state_content_changed_handler(self, node:SceneNode):
         ''' по изменениям на сцене изменить модель '''
-        model_index = self.__find_in_model(node)
+        model_index = self.find_in_model(node)
         if not model_index.isValid():
             return
         
@@ -315,7 +320,7 @@ class SceneControll:
 
     def __state_title_changed_handler(self, node:SceneNode, new_title:str) -> bool:
         ''' по изменениям на сцене изменить модель '''
-        model_index = self.__find_in_model(node)
+        model_index = self.find_in_model(node)
         if not model_index.isValid():
             return False
         
@@ -326,8 +331,8 @@ class SceneControll:
         return ok
 
     def __new_step_request(self, from_node:SceneNode, to_node:SceneNode):
-        state_index_from = self.__find_in_model(from_node)
-        state_index_to = self.__find_in_model(to_node)
+        state_index_from = self.find_in_model(from_node)
+        state_index_to = self.find_in_model(to_node)
         if state_index_from.isValid() and state_index_to.isValid():
             input = self.__select_input_callback()
             if input is None:
@@ -337,7 +342,7 @@ class SceneControll:
                 self.on_add_step(from_node.scene(), input, from_node, to_node)
     
     def __new_state_request(self, from_node:SceneNode, to_pos: Optional[QPoint] = None):
-        state_index_from = self.__find_in_model(from_node)
+        state_index_from = self.find_in_model(from_node)
         if state_index_from.isValid():
             new_state_item = ItemData()
             name, ok = QInputDialog.getText(None, 'Ввод имени', 'Имя нового состояния')

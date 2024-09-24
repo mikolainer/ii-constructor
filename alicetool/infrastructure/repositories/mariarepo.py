@@ -38,6 +38,23 @@ class SourceMariaDB(Source):
         cur.execute(query, data)
         conn.commit()
 
+    def get_layouts(self) -> str:
+        query = f"SELECT id, x, y FROM `states` WHERE project_id = {self.id.value}"
+
+        conn: mariadb.Connection = self.__db_connection
+        cur = conn.cursor()
+        cur.execute(query)
+        conn.commit()
+
+        result = list[str]()
+        for (id, x, y) in cur:
+            result.append(f'{id}: x={x}, y={y};')
+
+        return '\n'.join(result)
+
+    def save_lay(self, id: StateID, x: float, y: float):
+        self.__do("UPDATE `states` SET `x` = ?, `y` = ? WHERE `states`.`project_id` = ? AND `states`.`id` = ?", (x, y, self.id.value, id.value))
+
     def delete_state(self, state_id:StateID):
         self.__do("DELETE FROM `states` WHERE `project_id` = ? AND `id` = ?", (self.id.value, state_id.value))
 
@@ -254,10 +271,6 @@ class SourceMariaDB(Source):
         conn.commit()
         (answer,) = cur.fetchone()
         return answer
-
-    def add_state(self, id:StateID, name:Name, output:Output):
-        ''' не используется (достаточно подключиться) '''
-        return
 
     def create_state(self, attributes:StateAttributes, required:bool = False) -> State:
         conn: mariadb.Connection = self.__db_connection

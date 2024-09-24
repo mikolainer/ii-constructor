@@ -649,9 +649,10 @@ class SceneNode(QGraphicsProxyWidget):
 
         self.scene().addItem(add_btn)
 
-    def set_handlers(self, new_step_handler: Callable[['SceneNode', 'SceneNode'], None], new_state_handler: Callable[['SceneNode', QPoint], None]):
+    def set_handlers(self, new_step_handler: Callable[['SceneNode', 'SceneNode'], None], new_state_handler: Callable[['SceneNode', QPoint], None], save_lay: Callable[['SceneNode', QPointF], None]):
         self.__new_step_callback = new_step_handler
         self.__new_state_callback = new_state_handler
+        self.__save_layout_callback = save_lay
         self.__have_callbacks = True
 
     def __add_connection_request(self, btn:AddConnectionBtn):
@@ -704,6 +705,9 @@ class SceneNode(QGraphicsProxyWidget):
 
         for arrow in self.__arrows['from']:
             arrow.set_start_point(self.scenePos() + center)
+
+        if self.__have_callbacks:
+            self.__save_layout_callback(self, self.scenePos())
 
 class NodeWidget(QWidget):
     @verify(UNIQUE)

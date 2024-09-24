@@ -7,7 +7,7 @@ from alicetool.infrastructure.repositories.inmemory import HostingInmem
 from alicetool.infrastructure.repositories.mariarepo import HostingMaria, SourceMariaDB
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
-from alicetool.domain.core.bot import Scenario, Connection, Source, InputDescription, Step, State
+from alicetool.domain.core.bot import Scenario, Connection, Source, InputDescription, Step, State, Hosting
 from alicetool.domain.core.porst import ScenarioInterface
 from alicetool.domain.core.exceptions import Exists, CoreException
 
@@ -56,9 +56,13 @@ class HostingManipulator:
         
         return ScenarioManipulator(new_scenario)
 
-    def open_scenario(hosting: HostingInmem, data:str) -> 'ScenarioManipulator':
+    def open_scenario(hosting: Hosting, data:str, id_map: dict[int, int] = dict[int, int]()) -> 'ScenarioManipulator':
+        ''' id_map: key - orig, val - new '''
+
         root: Element = fromstring(data)
-        scenario = hosting.get_scenario(hosting.add_source(SourceInfo(Name(root.attrib['Название']), Description(root.attrib['Краткое_описание']))))
+
+        info = SourceInfo(Name(root.attrib['Название']), Description(root.attrib['Краткое_описание']))
+        scenario = hosting.get_scenario(hosting.add_source(info))
 
         # добавляем векторы
         for elem in root.find('Управляющие_воздействия').findall('Описание'):
@@ -70,24 +74,25 @@ class HostingManipulator:
 
         # добавляем состояния
         for elem in root.find('Состояния').findall('Состояние'):
-            scenario.source().add_state(StateID(int(elem.attrib['Идентификатор'])), Name(elem.attrib['Название']), Output(Answer(elem.text)))
+            state:State = scenario.source().create_state(StateAttributes(Output(Answer(elem.text)), Name(elem.attrib['Название']), Description('')))
+            id_map[int(elem.attrib['Идентификатор'])] = state.id().value
 
         # добавляем входы
         for elem in root.find('Входы').findall('Точка_входа'):
-            scenario.make_enter(StateID(int(elem.attrib['Состояние'])))
+            scenario.make_enter(StateID(id_map[int(elem.attrib['Состояние'])]))
 
         # добавляем переходы
         for elem in root.find('Переходы').findall('Связи'):
-            state_from_id = StateID(int(elem.attrib['Состояние']))
+            state_from_id = StateID(id_map[int(elem.attrib['Состояние'])])
             for step in elem.findall('Переход'):
-                state_to_id = StateID(int(step.attrib['В_состояние']))
+                state_to_id = StateID(id_map[int(step.attrib['В_состояние'])])
                 for input in step.findall('Управляющее_воздействие'):
                     _vector = scenario.get_vector(Name(input.attrib['Название']))
                     scenario.create_step(state_from_id, state_to_id, _vector)
 
         return ScenarioManipulator(scenario)
 
-    def open_scenario_from_db(hosting: HostingMaria, id: int):
+    def open_scenario_from_db(hosting: HostingMaria, id: int) -> 'ScenarioManipulator':
         return ScenarioManipulator(hosting.get_scenario(ScenarioID(id)))
 
     def make_scenario_in_db(hosting: HostingMaria, info: SourceInfo) -> 'ScenarioManipulator':
@@ -152,6 +157,12 @@ class ScenarioManipulator:
     def interface(self) -> ScenarioInterface:
         return self.__scenario
     
+    def get_layouts(self) -> str:
+        return self.__scenario.get_layouts()
+    
+    def save_lay(self, id: int, x: float, y: float):
+        self.__scenario.save_lay(StateID(id), x, y)
+
     def create_state(self, name:str) -> dict:
         state: State = self.__scenario.source().create_state(StateAttributes(None, Name(name), None))
 

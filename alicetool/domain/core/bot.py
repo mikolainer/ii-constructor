@@ -158,6 +158,12 @@ class Source():
         self.id = id
         self.info = info
 
+    def get_layouts(self) -> str:
+        ''' получить данные отображения '''
+
+    def save_lay(self, id: StateID, x: float, y: float):
+        ''' сохранить положение состояния '''
+
     def delete_state(self, state_id:StateID):
         ''' удалить состояние '''
 
@@ -211,9 +217,6 @@ class Source():
         '''
 
 # Scenario private
-    def add_state(self, id:StateID, name:Name, output:Output):
-        ''' только для открытия из файла '''
-
     def create_state(self, attributes:StateAttributes, required:bool = False) -> State:
         ''' Создать состояние '''
 
@@ -253,6 +256,9 @@ class Source():
         ''' переименовывает группу синонимов '''
 
 class Hosting:
+    def add_source(self, info:SourceInfo) -> ScenarioID:
+        ''' Создать пустой проект '''
+
     def get_scenario(self, id:ScenarioID) -> ScenarioInterface:
         ''' Получить сценарий по id '''
 
@@ -266,6 +272,12 @@ class Scenario(ScenarioInterface):
 
     def source(self) -> Source:
         return self.__src
+    
+    def get_layouts(self) -> str:
+        return self.__src.get_layouts()
+    
+    def save_lay(self, id: StateID, x: float, y: float):
+        self.__src.save_lay(id, x, y)
 
     # создание сущностей
     def create_enter_state(self, input:InputDescription, required: bool = False):

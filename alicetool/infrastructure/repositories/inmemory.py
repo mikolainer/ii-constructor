@@ -23,6 +23,12 @@ class SourceInMemory(Source):
         self.__connections = {'from':{}, 'to':{}}
         self.__input_vectors = PossibleInputs()
 
+    def get_layouts(self) -> str:
+        ''' - '''
+
+    def save_lay(self, id: StateID, x: float, y: float):
+        ''' - '''
+
     def delete_state(self, state_id:StateID):
         self.__states.pop(state_id)
 
@@ -119,14 +125,6 @@ class SourceInMemory(Source):
         return self.__input_vectors.exists(name)
 
 # Scenario private
-    def add_state(self, id:StateID, name:Name, output:Output):
-        ''' только для открытия из файла '''
-        if self.__new_state_id <= id.value:
-            self.__new_state_id = id.value + 1
-
-        state = State(id, StateAttributes(output, name, None))
-        self.__states[state.id()] = state
-
     def create_state(self, attributes:StateAttributes, required:bool = False) -> State:
         new_state = State(StateID(self.__new_state_id), attributes, required)
         self.__new_state_id = self.__new_state_id + 1

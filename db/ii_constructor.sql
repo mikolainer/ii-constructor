@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost
--- Время создания: Сен 20 2024 г., 01:30
+-- Время создания: Сен 25 2024 г., 01:19
 -- Версия сервера: 10.11.6-MariaDB
 -- Версия PHP: 8.0.28
 
@@ -45,7 +45,9 @@ CREATE TABLE `states` (
   `name` varchar(100) DEFAULT NULL,
   `descr` varchar(255) NOT NULL DEFAULT '',
   `answer` varchar(1024) NOT NULL DEFAULT 'текст ответа',
-  `required` tinyint(1) NOT NULL DEFAULT 0
+  `required` tinyint(1) NOT NULL DEFAULT 0,
+  `x` double NOT NULL DEFAULT 0,
+  `y` double NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 
 -- --------------------------------------------------------
