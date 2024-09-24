@@ -10,19 +10,19 @@ def get_type_name(obj:Any) -> str:
 
     _obj_type = "Объект"
 
-    if issubclass(obj, (Scenario)):
+    if issubclass(type(obj), Scenario):
         _obj_type = "Сценарий"
 
-    elif issubclass(obj, (State)):
+    elif issubclass(type(obj), State):
         _obj_type = "Состояние"
 
-    elif issubclass(obj, (Connection)):
+    elif issubclass(type(obj), Connection):
         _obj_type = "Связь"
 
-    elif issubclass(obj, (Step)):
+    elif issubclass(type(obj), Step):
         _obj_type = "Переход"
 
-    elif issubclass(obj, (InputDescription)):
+    elif issubclass(type(obj), InputDescription):
         _obj_type = "Вектор"
 
     return _obj_type

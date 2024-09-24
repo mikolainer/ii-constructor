@@ -1,7 +1,7 @@
 from typing import Optional
 from xml.etree.ElementTree import ElementTree, Element, tostring, fromstring, indent
 
-from PySide6.QtWidgets import QMessageBox 
+from PySide6.QtWidgets import QMessageBox, QWidget
 
 from alicetool.infrastructure.repositories.inmemory import HostingInmem
 from alicetool.infrastructure.repositories.mariarepo import HostingMaria, SourceMariaDB
@@ -152,6 +152,15 @@ class ScenarioManipulator:
     def interface(self) -> ScenarioInterface:
         return self.__scenario
     
+    def create_state(self, name:str) -> dict:
+        state: State = self.__scenario.source().create_state(StateAttributes(None, Name(name), None))
+
+        return {
+            'id': state.id().value,
+            'name': state.attributes.name.value,
+            'text': state.attributes.output.value.text,
+        }
+
     def remove_synonym(self, input_name: str, synonym: str):
         ''' удаляет синоним '''
         vector:LevenshtainVector = self.__scenario.get_vector(Name(input_name))
@@ -196,7 +205,7 @@ class ScenarioManipulator:
         ''' создаёт вектор '''
         self.__scenario.add_vector(LevenshtainVector(Name(input_name)))
         
-    def make_enter(self, state_id: int) -> str:
+    def make_enter(self, main_window:QWidget, state_id: int, ask: bool = True) -> str:
         ''' делает состояние точкой входа, возвращает имя вектора '''
         state_id_d = StateID(state_id)
         state:State = self.__scenario.states([state_id_d])[state_id_d]
@@ -209,13 +218,16 @@ class ScenarioManipulator:
             
         except Exists as err:
             # если вектор уже существует - спрашиваем продолжать ли с ним
-            ask_result = QMessageBox.information(
-                None,
-                'Подтверждение',
-                f'{err.ui_text} Продолжить с существующим вектором?',
-                QMessageBox.StandardButton.Apply,
-                QMessageBox.StandardButton.Abort
-            )
+            ask_result = QMessageBox.StandardButton.Apply
+
+            if ask:
+                ask_result = QMessageBox.information(
+                    None,
+                    'Подтверждение',
+                    f'{err.ui_text} Продолжить с существующим вектором?',
+                    QMessageBox.StandardButton.Apply,
+                    QMessageBox.StandardButton.Abort
+                )
 
             # если пользователь отказался - завершаем операцию
             if ask_result == QMessageBox.StandardButton.Abort:
@@ -357,6 +369,30 @@ class ScenarioManipulator:
 
         indent(root)
         return tostring(root, 'unicode')
+    
+    def check_can_create_enter_state(self, name: str):
+        ''' проверяет условия для создания точки входа в новое состояние '''
+        _name = Name(name)
+
+        # должно подняться исключение если не существует
+        self.__scenario.get_vector(_name)
+
+        if len(self.__scenario.get_states_by_name(_name)) >0:
+            raise CoreException(f'Состояние с именем "{name}" уже существует!')
+
+    def create_enter_state(self, name: str) -> dict:
+        ''' создаёт состояние-вход и вектор
+            возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
+        '''
+        vector = self.__scenario.get_vector(Name(name))
+        new_enter_state_id:StateID = self.__scenario.create_enter_state(vector)
+        new_enter_state = self.__scenario.states([new_enter_state_id])[new_enter_state_id]
+
+        return {
+            'id': new_enter_state.id().value,
+            'name': new_enter_state.attributes.name.value,
+            'text': new_enter_state.attributes.output.value.text,
+        }
 
     @staticmethod
     def save_project(scenario:Scenario):

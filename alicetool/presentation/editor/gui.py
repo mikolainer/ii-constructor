@@ -4,7 +4,7 @@ import os.path
 
 from PySide6.QtGui import QShortcut, QIcon, QShortcut
 from PySide6.QtWidgets import QGraphicsView, QWidget, QDialog, QInputDialog, QMessageBox, QFileDialog, QTableWidget, QPushButton, QVBoxLayout, QAbstractItemView, QHeaderView
-from PySide6.QtCore import Slot, Qt, QModelIndex, Slot
+from PySide6.QtCore import Slot, Qt, QModelIndex, Slot, QPointF
 
 from alicetool.infrastructure.repositories.inmemory import HostingInmem
 from alicetool.infrastructure.repositories.mariarepo import HostingMaria
@@ -145,7 +145,11 @@ class ProjectManager:
     __inmem_hosting: HostingInmem
     __maria_hosting: HostingMaria
 
+    __is_enter_create_mode: bool
+
     def __init__(self) -> None:
+        self.__is_enter_create_mode = False
+
         self.__maria_hosting = HostingMaria()
         self.__inmem_hosting = HostingInmem()
         self.__workspaces = Workspaces()
@@ -217,22 +221,26 @@ class ProjectManager:
     def __set_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(True)
 
-        scene = proj = self.__current().scene()
+        scene = self.__current().scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
 
             item.set_choose_mode(True)
 
+        self.__is_enter_create_mode = True
+
     def __reset_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(False)
 
-        scene = proj = self.__current().scene()
+        scene = self.__current().scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
 
             item.set_choose_mode(False)
+
+        self.__is_enter_create_mode = False
 
     def __save_scenario_handler(self, manipulator: ScenarioManipulator, scene_ctrl: SceneControll):
         path, filetype = QFileDialog.getSaveFileName(self.__main_window, 'Сохранить в файл', 'Новый сценарий')
@@ -254,7 +262,8 @@ class ProjectManager:
         content_wgt = FlowListWidget(content_view)
         self.__flow_list.setWidget(content_wgt, True)
 
-        editor = QGraphicsView(Editor(self.__main_window), self.__workspaces)
+        proj_scene = Editor(self.__main_window)
+        editor = QGraphicsView(proj_scene, self.__workspaces)
         editor.centerOn(0, 0)
         editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
@@ -293,6 +302,7 @@ class ProjectManager:
             # main_window: QWidget
             self.__main_window
         )
+        proj_scene.doubleClicked.connect(lambda pos: self.__add_enter_to_new_state(proj_scene, scene_controll, proj, manipulator, pos))
         
         # создание объекта взаимодействий с проектом
         proj = Project(
@@ -459,6 +469,40 @@ class ProjectManager:
         
         return True
     
+    def __add_enter_to_new_state(self, scene: Editor, scene_ctrl:SceneControll, proj:Project, manipulator: ScenarioManipulator, pos: QPointF):
+        if not self.__is_enter_create_mode:
+            return
+        
+        s_model = proj.choose_input()
+        if s_model is None: return
+
+        new_state_item = ItemData()
+        try:
+            name = self.__get_vector_name_by_synonyms_model(proj, manipulator, s_model)
+
+            manipulator.check_can_create_enter_state(name)
+            new_state_info = manipulator.create_state(name)
+            manipulator.make_enter(self.__main_window, new_state_info['id'], False)
+
+            new_state_item.on[CustomDataRole.Id] = new_state_info['id']
+            new_state_item.on[CustomDataRole.Name] = new_state_info['name']
+            new_state_item.on[CustomDataRole.Text] = new_state_info['text']
+
+        except CoreException as e:
+            QMessageBox.warning(self.__main_window, "Невозможно выполнить!", e.ui_text)
+            return
+
+        except Exception as e:
+            return
+        
+        enter_item = ItemData()
+        enter_item.on[CustomDataRole.Name] = new_state_item.on[CustomDataRole.Name]
+        enter_item.on[CustomDataRole.Description] = ""
+        enter_item.on[CustomDataRole.SynonymsSet] = s_model
+        enter_item.on[CustomDataRole.EnterStateId] = new_state_item.on[CustomDataRole.Id]
+        enter_item.on[CustomDataRole.SliderVisability] = False
+        to_node = scene_ctrl.on_insert_node(scene, new_state_item, [enter_item], pos)
+    
     def __on_state_removed_from_gui(self, manipulator: ScenarioManipulator, index: QModelIndex) -> bool:
         try:
             manipulator.remove_state(index.data(CustomDataRole.Id))
@@ -471,7 +515,7 @@ class ProjectManager:
         vector_name:str
         
         try:
-            vector_name = manipulator.make_enter(to_state_index.data(CustomDataRole.Id))
+            vector_name = manipulator.make_enter(self.__main_window, to_state_index.data(CustomDataRole.Id))
         
         except CoreException as e:
             QMessageBox.warning(self.__main_window, "Невозможно выполнить!", e.ui_text)

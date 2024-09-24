@@ -855,6 +855,8 @@ class Editor(QGraphicsScene):
     __START_SIZE = QRect(0, 0, 2000, 2000)
     START_SPACINS = 30
 
+    doubleClicked = Signal(QPointF)
+
     def __init__(self, parent: Optional[QObject]):
         super().__init__(parent)
         self.setSceneRect(self.__START_SIZE)
@@ -877,3 +879,9 @@ class Editor(QGraphicsScene):
         node.setPos(x, y)
 
         return node
+
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.doubleClicked.emit(event.scenePos())
+
+        return super().mouseDoubleClickEvent(event)
