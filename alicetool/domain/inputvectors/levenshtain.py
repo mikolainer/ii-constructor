@@ -3,8 +3,11 @@ from typing import Any, Optional, Union
 
 from alicetool.infrastructure.qtgui.data import SynonymsSetModel, ItemData, CustomDataRole
 from alicetool.domain.core.primitives import Input, Name, StateID
-from alicetool.domain.core.bot import InputDescription
+from alicetool.domain.core.bot import InputDescription, StepVectorBaseClassificator, State, Step
 from alicetool.application.data import BaseSerializer
+from alicetool.domain.core.porst import ScenarioInterface
+from alicetool.domain.core.exceptions import NotExists
+import Levenshtein
 
 @dataclass
 class Synonym:
@@ -67,7 +70,29 @@ class LevenshtainVectorSerializer(BaseSerializer):
 
         return vector
     
-#class LevenshtainClassificator(StepVectorBaseClassificator):
-#    @staticmethod
-#    def get_next_state(cmd: Input, cur_state: StateID) -> State:
-#        return super().get_next_state(cmd, cur_state)
+class LevenshtainClassificator(StepVectorBaseClassificator):
+    def __init__(self, project: ScenarioInterface) -> None:
+        super().__init__(project)
+
+    @staticmethod
+    def calc(cur_input: Input, possible_inputs: dict[InputDescription, State]) -> Optional[State]:
+        best_score = 0
+        best: State = None
+
+        for key, val in possible_inputs.items():
+            if not isinstance(key, LevenshtainVector):
+                continue
+            
+            best_distance: int
+            for synonym in key.synonyms.synonyms:
+                distance = Levenshtein.distance(synonym.value.lower(), cur_input.value.lower())
+
+                if best is None or distance < best_distance:
+                    best_distance = distance
+                    best = val
+                    continue
+
+        if best_distance >= len(cur_input.value) / 2:
+            raise NotExists(cur_input, "Подходящий вектор")
+
+        return best

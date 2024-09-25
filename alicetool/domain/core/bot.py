@@ -145,10 +145,37 @@ class Connection:
     to_state: Optional[State]
     steps: list[Step]
 
-#class StepVectorBaseClassificator:
-#    @staticmethod
-#    def get_next_state(cmd:Input, cur_state:StateID) -> State:
-#        raise NotImplementedError('Использование абстрактного класса')
+class StepVectorBaseClassificator:
+    __project: ScenarioInterface
+    
+    def __init__(self, project: ScenarioInterface) -> None:
+        self.__project = project
+
+    @staticmethod
+    def calc(cur_input: Input, possible_inputs: dict[InputDescription, State]) -> Optional[State]:
+        ''' Вычисления '''
+        raise NotImplementedError()
+
+    def get_next_state(self, cmd: Input, cur_state_id: StateID) -> State:
+        inputs = dict[InputDescription, State]()
+
+        cur_state: State = None
+
+        for step in self.__project.steps(cur_state_id):
+            step: Step = step
+            
+            cur_state = step.connection.from_state
+            if cur_state is None or cur_state.id() != cur_state_id:
+                continue
+
+            inputs[step.input] = step.connection.to_state
+
+        try:
+            result = self.calc(cmd, inputs)
+        except:
+            result = cur_state
+
+        return result
 
 class Source():
     id: Optional[ScenarioID]
