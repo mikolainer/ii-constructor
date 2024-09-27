@@ -63,7 +63,8 @@ class MainToolButton(QPushButton):
         self.setStatusTip(self.status_tip)
         self.setWhatsThis(self.whats_this)
         self.setFixedSize(self.__size)
-        self.setIcon(self.icon)
+        if not self.icon is None:
+            self.setIcon(self.icon)
         self.setIconSize(self.icon_size)
 
 class MainWindow(QMainWindow):

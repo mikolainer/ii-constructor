@@ -151,15 +151,13 @@ class StepVectorBaseClassificator:
     def __init__(self, project: ScenarioInterface) -> None:
         self.__project = project
 
-    @staticmethod
-    def calc(cur_input: Input, possible_inputs: dict[InputDescription, State]) -> Optional[State]:
+    def calc(self, cur_input: Input, possible_inputs: dict[str, State]) -> Optional[State]:
         ''' Вычисления '''
         raise NotImplementedError()
 
     def get_next_state(self, cmd: Input, cur_state_id: StateID) -> State:
-        inputs = dict[InputDescription, State]()
+        inputs = dict[str, State]()
 
-        cur_state: State = None
 
         for step in self.__project.steps(cur_state_id):
             step: Step = step
@@ -168,12 +166,12 @@ class StepVectorBaseClassificator:
             if cur_state is None or cur_state.id() != cur_state_id:
                 continue
 
-            inputs[step.input] = step.connection.to_state
+            inputs[step.input.name().value] = step.connection.to_state
 
         try:
             result = self.calc(cmd, inputs)
-        except:
-            result = cur_state
+        except Exception as e:
+            result = self.__project.states([cur_state_id])[cur_state_id]
 
         return result
 

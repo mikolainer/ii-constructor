@@ -7,7 +7,7 @@ from alicetool.infrastructure.repositories.inmemory import HostingInmem
 from alicetool.infrastructure.repositories.mariarepo import HostingMaria, SourceMariaDB
 from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
-from alicetool.domain.core.bot import Scenario, Connection, Source, InputDescription, Step, State, Hosting
+from alicetool.domain.core.bot import Scenario, Connection, InputDescription, Step, State, Hosting
 from alicetool.domain.core.porst import ScenarioInterface
 from alicetool.domain.core.exceptions import Exists, CoreException
 
@@ -404,11 +404,3 @@ class ScenarioManipulator:
             'name': new_enter_state.attributes.name.value,
             'text': new_enter_state.attributes.output.value.text,
         }
-
-    @staticmethod
-    def save_project(scenario:Scenario):
-        ''' сохранить в БД '''
-
-    @staticmethod
-    def get_project(host, ids:list[ScenarioID] = None) -> list[Scenario]:
-        ''' достать из БД '''

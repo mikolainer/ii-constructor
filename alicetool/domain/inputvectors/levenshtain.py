@@ -74,17 +74,17 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
     def __init__(self, project: ScenarioInterface) -> None:
         super().__init__(project)
 
-    @staticmethod
-    def calc(cur_input: Input, possible_inputs: dict[InputDescription, State]) -> Optional[State]:
+    def calc(self, cur_input: Input, possible_inputs: dict[str, State]) -> Optional[State]:
         best_score = 0
         best: State = None
 
         for key, val in possible_inputs.items():
-            if not isinstance(key, LevenshtainVector):
+            vector = self._StepVectorBaseClassificator__project.get_vector(Name(key))
+            if not isinstance(vector, LevenshtainVector):
                 continue
             
             best_distance: int
-            for synonym in key.synonyms.synonyms:
+            for synonym in vector.synonyms.synonyms:
                 distance = Levenshtein.distance(synonym.value.lower(), cur_input.value.lower())
 
                 if best is None or distance < best_distance:

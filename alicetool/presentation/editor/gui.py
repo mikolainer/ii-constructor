@@ -2,9 +2,25 @@ from io import TextIOWrapper
 from typing import Callable, Any, Optional
 import os.path
 
-from PySide6.QtGui import QShortcut, QIcon, QShortcut
-from PySide6.QtWidgets import QGraphicsView, QWidget, QDialog, QInputDialog, QMessageBox, QFileDialog, QTableWidget, QPushButton, QVBoxLayout, QAbstractItemView, QHeaderView
-from PySide6.QtCore import Slot, Qt, QModelIndex, Slot, QPointF
+from PySide6.QtGui import QShortcut, QIcon, QShortcut, QColor, QKeyEvent
+from PySide6.QtCore import QEvent, QObject, Slot, Qt, QModelIndex, Slot, QPointF
+from PySide6.QtWidgets import (
+    QGraphicsView,
+    QWidget,
+    QDialog,
+    QInputDialog,
+    QMessageBox,
+    QFileDialog,
+    QTableWidget,
+    QPushButton,
+    QVBoxLayout,
+    QAbstractItemView,
+    QHeaderView,
+    QLineEdit,
+    QListWidget,
+    QHBoxLayout,
+    QListWidgetItem,
+)
 
 from alicetool.infrastructure.repositories.inmemory import HostingInmem
 from alicetool.infrastructure.repositories.mariarepo import HostingMaria
@@ -15,9 +31,10 @@ from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEd
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
 from alicetool.application.editor import HostingManipulator, ScenarioManipulator
-from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo
+from alicetool.domain.core.primitives import Name, Description, SourceInfo, Input
+from alicetool.domain.core.bot import State
 from alicetool.domain.core.exceptions import Exists, CoreException
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, LevenshtainVectorSerializer
+from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, LevenshtainVectorSerializer, LevenshtainClassificator
 from alicetool.infrastructure.qtgui.primitives.widgets import DBConnectWidget
 
 class Project:
@@ -54,6 +71,10 @@ class Project:
         self.__synonyms_group_create_callback = synonyms_group_create_callback
         self.__connect_synonym_changes_callback = connect_synonym_changes_callback
         self.__save_callback = save_callback
+
+    def open_test_window(self):
+        self.__wgt = TestDialog(self.manipulator)
+        self.__wgt.show()
 
     def editor(self) -> QGraphicsView:
         return self.__editor
@@ -166,6 +187,13 @@ class ProjectManager:
         self.__esc_sqortcut.activated.connect(lambda: self.__reset_enter_create_mode())
 
     def __setup_main_toolbar(self):
+        btn = MainToolButton('Текстировать', None, self.__main_window)
+        btn.status_tip = 'Открыть демо-режим'
+        btn.whats_this = 'Кнопка открытия демонстрационного режима'
+        btn.apply_options()
+        btn.clicked.connect(lambda: self.__current().open_test_window())
+        self.__main_window.insert_button(btn)
+
         btn = MainToolButton('Список синонимов', QIcon(":/icons/synonyms_list_norm.svg"), self.__main_window)
         btn.status_tip = 'Открыть редактор синонимов'
         btn.whats_this = 'Кнопка открытия редактора синонимов'
@@ -334,7 +362,6 @@ class ProjectManager:
 
             if isinstance(vector, LevenshtainVector):
                 vector_item = serialiser.to_data(vector)
-                vector_item.on[CustomDataRole.Description] = ''
                 proj.vectors_model.prepare_item(vector_item)
                 proj.vectors_model.insertRow()
 
@@ -712,6 +739,60 @@ class ProjectManager:
             raise Warning('по модели набора синонимов группа синонимов не найдена')
         
         return group_name
+
+class TestDialog(QWidget):
+    __chat_history: QListWidget
+    __input: QLineEdit
+    __manipulator: ScenarioManipulator
+    __classif: LevenshtainClassificator
+    __cur_state: State
+
+    def __init__(self, manipulator: ScenarioManipulator, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Демонстрация")
+
+        self.__classif = LevenshtainClassificator(manipulator.interface())
+        self.__manipulator = manipulator
+        self.__chat_history = QListWidget(self)
+        self.__cur_state = manipulator.interface().get_states_by_name(Name("Старт"))[0]
+        self.__chat_history.insertItem(0, self.__cur_state.attributes.output.value.text)
+
+        self.__chat_history.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.__chat_history.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+
+        main_lay = QVBoxLayout(self)
+        main_lay.addWidget(self.__chat_history)
+
+        self.__input = QLineEdit(self)
+        send_btn = QPushButton(">", self)
+        send_btn.setFixedWidth(30)
+        enter_lay = QHBoxLayout(self)
+        enter_lay.addWidget(self.__input, 0)
+        enter_lay.addWidget(send_btn, 1)
+        main_lay.addLayout(enter_lay)
+
+        send_btn.clicked.connect(self.__on_send_pressed)
+        self.__input.returnPressed.connect(self.__on_send_pressed)
+
+    @Slot()
+    def __on_send_pressed(self):
+        req = self.__input.text()
+        prev_state = self.__cur_state.id()
+        self.__cur_state = self.__classif.get_next_state(Input(req), self.__cur_state.id())
+        new_row = self.__chat_history.count()
+        in_item = QListWidgetItem(req)
+        in_item.setBackground(QColor(200, 200, 255))
+        in_item.setTextAlignment(Qt.AlignmentFlag.AlignRight)
+        self.__chat_history.insertItem(new_row, in_item)
+
+        if prev_state == self.__cur_state.id():
+            answer = "Запрос не понятен"
+        else:
+            answer = self.__cur_state.attributes.output.value.text
+
+        self.__chat_history.insertItem(new_row+1, answer)
+        self.__chat_history.scrollToItem(self.__chat_history.item(new_row+1))
+        self.__input.clear()
 
 class DBProjLibrary(QDialog):
     __table: QTableWidget
