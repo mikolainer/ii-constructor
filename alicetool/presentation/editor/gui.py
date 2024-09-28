@@ -30,7 +30,7 @@ from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, Flow
 from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
 from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
 from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
-from alicetool.application.editor import HostingManipulator, ScenarioManipulator
+from alicetool.application.editor import HostingManipulator, ScenarioManipulator, ScenarioInterface
 from alicetool.domain.core.primitives import Name, Description, SourceInfo, Input
 from alicetool.domain.core.bot import State
 from alicetool.domain.core.exceptions import Exists, CoreException
@@ -740,22 +740,51 @@ class ProjectManager:
         
         return group_name
 
+class Request:
+    text: str
+class Response:
+    text: str
+class Engine:
+    __classif: LevenshtainClassificator
+    __cur_state: State
+
+    def __init__(self, scenario: ScenarioInterface, start_state: State) -> None:
+        self.__classif = LevenshtainClassificator(scenario)
+        self.__cur_state = start_state
+
+    def handle(self, request:Request) -> Response:
+        req = request.text
+        prev_state = self.__cur_state.id()
+
+        self.__cur_state = self.__classif.get_next_state(Input(req), self.__cur_state.id())
+
+        result = Response()
+        
+        if prev_state == self.__cur_state.id():
+            result.text = "Запрос не понятен"
+        else:
+            result.text = self.__cur_state.attributes.output.value.text
+
+        return result
+    
+    def set_current_state(self, state: State):
+        self.__cur_state = state
+    
 class TestDialog(QWidget):
     __chat_history: QListWidget
     __input: QLineEdit
-    __manipulator: ScenarioManipulator
-    __classif: LevenshtainClassificator
-    __cur_state: State
+    __engine: Engine
 
     def __init__(self, manipulator: ScenarioManipulator, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Демонстрация")
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
 
-        self.__classif = LevenshtainClassificator(manipulator.interface())
-        self.__manipulator = manipulator
+        start_state: State = manipulator.interface().get_states_by_name(Name("Старт"))[0]
+        self.__engine = Engine(manipulator.interface(), start_state)
+
         self.__chat_history = QListWidget(self)
-        self.__cur_state = manipulator.interface().get_states_by_name(Name("Старт"))[0]
-        self.__chat_history.insertItem(0, self.__cur_state.attributes.output.value.text)
+        self.__chat_history.insertItem(0, start_state.attributes.output.value.text)
 
         self.__chat_history.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.__chat_history.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -776,21 +805,20 @@ class TestDialog(QWidget):
 
     @Slot()
     def __on_send_pressed(self):
-        req = self.__input.text()
-        prev_state = self.__cur_state.id()
-        self.__cur_state = self.__classif.get_next_state(Input(req), self.__cur_state.id())
+        input_text = self.__input.text()
+        if len(input_text) == 0:
+            return
+
+        req = Request()
+        req.text = input_text
+        resp = self.__engine.handle(req)
+
         new_row = self.__chat_history.count()
-        in_item = QListWidgetItem(req)
+        in_item = QListWidgetItem(req.text)
         in_item.setBackground(QColor(200, 200, 255))
         in_item.setTextAlignment(Qt.AlignmentFlag.AlignRight)
         self.__chat_history.insertItem(new_row, in_item)
-
-        if prev_state == self.__cur_state.id():
-            answer = "Запрос не понятен"
-        else:
-            answer = self.__cur_state.attributes.output.value.text
-
-        self.__chat_history.insertItem(new_row+1, answer)
+        self.__chat_history.insertItem(new_row+1, resp.text)
         self.__chat_history.scrollToItem(self.__chat_history.item(new_row+1))
         self.__input.clear()
 

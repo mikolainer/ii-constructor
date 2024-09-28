@@ -154,11 +154,9 @@ class StepVectorBaseClassificator:
     def calc(self, cur_input: Input, possible_inputs: dict[str, State]) -> Optional[State]:
         ''' Вычисления '''
         raise NotImplementedError()
-
-    def get_next_state(self, cmd: Input, cur_state_id: StateID) -> State:
+    
+    def __prepare_to_step_detect(self, cur_state_id: StateID) -> dict[str, State]:
         inputs = dict[str, State]()
-
-
         for step in self.__project.steps(cur_state_id):
             step: Step = step
             
@@ -168,10 +166,34 @@ class StepVectorBaseClassificator:
 
             inputs[step.input.name().value] = step.connection.to_state
 
-        try:
-            result = self.calc(cmd, inputs)
-        except Exception as e:
-            result = self.__project.states([cur_state_id])[cur_state_id]
+        return inputs
+    
+    def __prepare_to_enter_detect(self) -> dict[str, State]:
+        inputs = dict[str, State]()
+
+        for conn in self.__project.source().get_all_connections()["to"].values():
+            conn: Connection = conn
+            to:State = conn.to_state
+
+            for step in conn.steps:
+                inputs[step.input.name().value] = to
+
+        return inputs
+
+    def get_next_state(self, cmd: Input, cur_state_id: StateID) -> State:
+        cur_state = self.__project.states([cur_state_id])[cur_state_id]
+
+        callable_list = [
+            lambda: self.__prepare_to_step_detect(cur_state_id),
+            lambda: self.__prepare_to_enter_detect()
+        ]
+
+        for get_inputs in callable_list:
+            inputs = get_inputs()
+            try:
+                return self.calc(cmd, inputs)
+            except Exception as e:
+                result = cur_state
 
         return result
 
