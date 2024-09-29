@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
-from alicetool.infrastructure.qtgui.data import SynonymsSetModel, ItemData, CustomDataRole
-from alicetool.domain.core.primitives import Input, Name, StateID
-from alicetool.domain.core.bot import InputDescription, StepVectorBaseClassificator, State, Step
-from alicetool.application.data import BaseSerializer
-from alicetool.domain.core.porst import ScenarioInterface
-from alicetool.domain.core.exceptions import NotExists
+from ii_constructor.infrastructure.qtgui.data import SynonymsSetModel, ItemData, CustomDataRole
+from ii_constructor.domain.core.primitives import Input, Name, StateID
+from ii_constructor.domain.core.bot import InputDescription, StepVectorBaseClassificator, State, Step
+from ii_constructor.application.data import BaseSerializer
+from ii_constructor.domain.core.porst import ScenarioInterface
+from ii_constructor.domain.core.exceptions import NotExists
 import Levenshtein
 
 @dataclass

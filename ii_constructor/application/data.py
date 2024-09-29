@@ -1,7 +1,7 @@
 from typing import Any
 
 import json
-from alicetool.infrastructure.qtgui.data import ItemData
+from ii_constructor.infrastructure.qtgui.data import ItemData
 class BaseSerializer():
     type = Any
 

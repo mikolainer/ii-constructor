@@ -1,6 +1,6 @@
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QApplication
-from alicetool.presentation.editor.gui import ProjectManager
+from ii_constructor.presentation.editor.gui import ProjectManager
 
 if __name__ == "__main__":
     QCoreApplication.setOrganizationName("ii_constructor")

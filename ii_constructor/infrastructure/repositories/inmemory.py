@@ -1,9 +1,9 @@
 from typing import Optional, Any
 
-from alicetool.domain.core.primitives import Name, StateID, ScenarioID, Output, StateAttributes, SourceInfo
-from alicetool.domain.core.bot import Source, Hosting, State, PossibleInputs, ScenarioInterface, Scenario, Step, InputDescription, Connection
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
-from alicetool.domain.core.exceptions import *
+from ii_constructor.domain.core.primitives import Name, StateID, ScenarioID, Output, StateAttributes, SourceInfo
+from ii_constructor.domain.core.bot import Source, Hosting, State, PossibleInputs, ScenarioInterface, Scenario, Step, InputDescription, Connection
+from ii_constructor.domain.inputvectors.levenshtain import LevenshtainVector, Synonym
+from ii_constructor.domain.core.exceptions import *
 
 class SourceInMemory(Source):
     __new_state_id: int

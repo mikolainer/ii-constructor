@@ -29,9 +29,9 @@ from PySide6.QtWidgets import (
     QHeaderView,
 )
 
-from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode
-from alicetool.infrastructure.qtgui.synonyms import SynonymsSetView
+from ii_constructor.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
+from ii_constructor.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode
+from ii_constructor.infrastructure.qtgui.synonyms import SynonymsSetView
 
 class StepModel(BaseModel):
     __arrow: Arrow

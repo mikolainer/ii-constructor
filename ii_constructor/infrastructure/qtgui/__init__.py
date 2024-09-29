@@ -5,4 +5,4 @@
 и в слое домена для использования DTO основанного на ролях (ItemData из .data)
 '''
 
-import alicetool.resources.icons_rc
+import ii_constructor.resources.icons_rc

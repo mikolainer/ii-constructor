@@ -1,7 +1,7 @@
 from typing import Optional, Callable, Any
 from dataclasses import dataclass
-from alicetool.application.editor import ScenarioManipulator
-from alicetool.infrastructure.qtgui.synonyms import SynonymsGroupsModel
+from ii_constructor.application.editor import ScenarioManipulator
+from ii_constructor.infrastructure.qtgui.synonyms import SynonymsGroupsModel
 
 from PySide6.QtCore import (
     Qt,
@@ -27,10 +27,10 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
-from alicetool.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
-from alicetool.infrastructure.qtgui.flows import FlowsModel
-from alicetool.infrastructure.qtgui.steps import StepModel, StepEditor
+from ii_constructor.infrastructure.qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
+from ii_constructor.infrastructure.qtgui.data import ItemData, CustomDataRole, BaseModel, SynonymsSetModel
+from ii_constructor.infrastructure.qtgui.flows import FlowsModel
+from ii_constructor.infrastructure.qtgui.steps import StepModel, StepEditor
 
 class StatesModel(BaseModel):
     ''' Модель состояний. Для обработки сценой (Editor) '''

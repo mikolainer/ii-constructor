@@ -2,10 +2,10 @@ import mariadb
 
 from typing import Optional, Any, Sequence
 
-from alicetool.domain.core.primitives import Name, Description, StateID, ScenarioID, Answer, Output, StateAttributes, SourceInfo
-from alicetool.domain.core.bot import Source, Hosting, State, ScenarioInterface, Scenario, Step, InputDescription, Connection
-from alicetool.domain.core.exceptions import *
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, SynonymsGroup, Synonym
+from ii_constructor.domain.core.primitives import Name, Description, StateID, ScenarioID, Answer, Output, StateAttributes, SourceInfo
+from ii_constructor.domain.core.bot import Source, Hosting, State, ScenarioInterface, Scenario, Step, InputDescription, Connection
+from ii_constructor.domain.core.exceptions import *
+from ii_constructor.domain.inputvectors.levenshtain import LevenshtainVector, SynonymsGroup, Synonym
 
 class SourceMariaDB(Source):
     __db_connection: mariadb.Connection

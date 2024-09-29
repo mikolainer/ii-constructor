@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 
-from alicetool.domain.core.primitives import Name, Description, StateID, ScenarioID, Answer, Output, StateAttributes, Input, SourceInfo
-from alicetool.domain.core.exceptions import *
-from alicetool.domain.core.porst import ScenarioInterface
+from ii_constructor.domain.core.primitives import Name, Description, StateID, ScenarioID, Answer, Output, StateAttributes, Input, SourceInfo
+from ii_constructor.domain.core.exceptions import *
+from ii_constructor.domain.core.porst import ScenarioInterface
 
 def get_type_name(obj:Any) -> str:
     ''' Определение названия объекта доменной области, для короткого использования инсключений '''

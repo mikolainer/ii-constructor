@@ -22,20 +22,20 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
 )
 
-from alicetool.infrastructure.repositories.inmemory import HostingInmem
-from alicetool.infrastructure.repositories.mariarepo import HostingMaria
-from alicetool.infrastructure.qtgui.primitives.sceneitems import Editor, SceneNode
-from alicetool.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
-from alicetool.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
-from alicetool.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
-from alicetool.infrastructure.qtgui.states import StatesModel, SceneControll
-from alicetool.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
-from alicetool.application.editor import HostingManipulator, ScenarioManipulator, ScenarioInterface
-from alicetool.domain.core.primitives import Name, Description, SourceInfo, Input
-from alicetool.domain.core.bot import State
-from alicetool.domain.core.exceptions import Exists, CoreException
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, LevenshtainVectorSerializer, LevenshtainClassificator
-from alicetool.infrastructure.qtgui.primitives.widgets import DBConnectWidget
+from ii_constructor.infrastructure.repositories.inmemory import HostingInmem
+from ii_constructor.infrastructure.repositories.mariarepo import HostingMaria
+from ii_constructor.infrastructure.qtgui.primitives.sceneitems import Editor, SceneNode
+from ii_constructor.infrastructure.qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
+from ii_constructor.infrastructure.qtgui.flows import FlowsView, FlowListWidget, FlowsModel
+from ii_constructor.infrastructure.qtgui.synonyms import SynonymsSelector, SynonymsEditor, SynonymsGroupsModel
+from ii_constructor.infrastructure.qtgui.states import StatesModel, SceneControll
+from ii_constructor.infrastructure.qtgui.main_w import FlowList, MainWindow, Workspaces, NewProjectDialog, MainToolButton
+from ii_constructor.application.editor import HostingManipulator, ScenarioManipulator, ScenarioInterface
+from ii_constructor.domain.core.primitives import Name, Description, SourceInfo, Input
+from ii_constructor.domain.core.bot import State
+from ii_constructor.domain.core.exceptions import Exists, CoreException
+from ii_constructor.domain.inputvectors.levenshtain import LevenshtainVector, LevenshtainVectorSerializer, LevenshtainClassificator
+from ii_constructor.infrastructure.qtgui.primitives.widgets import DBConnectWidget
 
 class Project:
     __synonym_create_callback: Callable
@@ -769,7 +769,10 @@ class Engine:
     
     def set_current_state(self, state: State):
         self.__cur_state = state
-    
+
+    def current_state(self) -> State:
+        return self.__cur_state
+        
 class TestDialog(QWidget):
     __chat_history: QListWidget
     __input: QLineEdit

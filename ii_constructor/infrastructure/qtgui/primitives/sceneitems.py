@@ -52,7 +52,7 @@ from PySide6.QtWidgets import (
     QInputDialog,
 )
 
-from alicetool.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
+from ii_constructor.infrastructure.qtgui.primitives.buttons import EnterDetectionButton
 
 class Arrow(QGraphicsItem):
     ''' Ребро графа на сцене '''

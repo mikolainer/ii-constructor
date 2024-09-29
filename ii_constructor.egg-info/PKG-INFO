@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: ii_constructor
+Version: 0.0
+Summary: Tool to create a skills for YandexAlice with GUI
+Author: Nikolay Ivantsov
+Author-email: mikolainer@mail.ru
+Requires-Dist: pyside6
+Requires-Dist: Levenshtein
+Requires-Dist: pymysql
+
+# ya-alice-instruction-engine
+РґРІРёР¶РѕРє РЅР°РІС‹РєРѕРІ РґР»СЏ СЏРЅРґРµРєСЃ Р°Р»РёСЃС‹ РІ С„РѕСЂРјР°С‚Р° "РёРЅС‚РµСЂР°РєС‚РёРІРЅР°СЏ РёРЅСЃС‚СЂСѓРєС†РёСЏ"

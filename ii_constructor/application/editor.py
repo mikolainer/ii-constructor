@@ -3,13 +3,13 @@ from xml.etree.ElementTree import ElementTree, Element, tostring, fromstring, in
 
 from PySide6.QtWidgets import QMessageBox, QWidget
 
-from alicetool.infrastructure.repositories.inmemory import HostingInmem
-from alicetool.infrastructure.repositories.mariarepo import HostingMaria, SourceMariaDB
-from alicetool.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
-from alicetool.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
-from alicetool.domain.core.bot import Scenario, Connection, InputDescription, Step, State, Hosting
-from alicetool.domain.core.porst import ScenarioInterface
-from alicetool.domain.core.exceptions import Exists, CoreException
+from ii_constructor.infrastructure.repositories.inmemory import HostingInmem
+from ii_constructor.infrastructure.repositories.mariarepo import HostingMaria, SourceMariaDB
+from ii_constructor.domain.inputvectors.levenshtain import LevenshtainVector, Synonym, SynonymsGroup
+from ii_constructor.domain.core.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
+from ii_constructor.domain.core.bot import Scenario, Connection, InputDescription, Step, State, Hosting
+from ii_constructor.domain.core.porst import ScenarioInterface
+from ii_constructor.domain.core.exceptions import Exists, CoreException
 
 class HostingManipulator:
     @staticmethod

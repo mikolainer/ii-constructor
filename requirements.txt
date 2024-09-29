@@ -1,3 +1,4 @@
 pyside6
-Levenshtein
 pymysql
+mariadb
+Levenshtein

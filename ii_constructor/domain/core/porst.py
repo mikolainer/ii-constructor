@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from alicetool.domain.core.primitives import Name, StateID, Output, StateAttributes
+from ii_constructor.domain.core.primitives import Name, StateID, Output, StateAttributes
 
 class ScenarioInterface:
     def get_layouts(self) -> str:
