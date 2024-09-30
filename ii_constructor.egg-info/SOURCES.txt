@@ -1,9 +1,0 @@
-README.md
-setup.py
-ii_constructor/__init__.py
-ii_constructor/main.py
-ii_constructor.egg-info/PKG-INFO
-ii_constructor.egg-info/SOURCES.txt
-ii_constructor.egg-info/dependency_links.txt
-ii_constructor.egg-info/requires.txt
-ii_constructor.egg-info/top_level.txt

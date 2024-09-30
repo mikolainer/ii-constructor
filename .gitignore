@@ -1,9 +1,9 @@
 *.pyc
-alicetool.egg-info/*
+*.egg-info*
 .vscode/launch.json
 .vscode/settings.json
-venv/
-env/
+venv/*
+env/*
 .env
 build/*
 dist/*
