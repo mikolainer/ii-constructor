@@ -5,7 +5,7 @@ from typing import Optional, Any, Sequence
 from iiconstructor_core.domain import Source, Hosting, State, ScenarioInterface, Scenario, Step, InputDescription, Connection
 from iiconstructor_core.domain.primitives import Name, Description, StateID, ScenarioID, Answer, Output, StateAttributes, SourceInfo
 from iiconstructor_core.domain.exceptions import *
-from iiconstructor_levenshtain.inputs import LevenshtainVector, SynonymsGroup, Synonym
+from iiconstructor_levenshtain import LevenshtainVector, SynonymsGroup, Synonym
 
 class SourceMariaDB(Source):
     __db_connection: mariadb.Connection

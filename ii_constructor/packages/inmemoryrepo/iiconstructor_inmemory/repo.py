@@ -3,7 +3,7 @@ from typing import Optional, Any
 from iiconstructor_core.domain import Source, Hosting, State, PossibleInputs, ScenarioInterface, Scenario, Step, InputDescription, Connection
 from iiconstructor_core.domain.primitives import Name, StateID, ScenarioID, Output, StateAttributes, SourceInfo
 from iiconstructor_core.domain.exceptions import *
-from iiconstructor_levenshtain.inputs import LevenshtainVector, Synonym
+from iiconstructor_levenshtain import LevenshtainVector, Synonym
 
 class SourceInMemory(Source):
     __new_state_id: int

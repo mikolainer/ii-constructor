@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from iiconstructor_levenshtain.inputs import LevenshtainClassificator
+from iiconstructor_levenshtain import LevenshtainClassificator
 from iiconstructor_inmemory.repo import HostingInmem
 from iiconstructor_maria.repo import HostingMaria
 from iiconstructor_qtgui.primitives.sceneitems import Editor, SceneNode
@@ -53,7 +53,7 @@ from iiconstructor_qtgui.main_w import FlowList, MainWindow, Workspaces, NewProj
 from iiconstructor_core.domain import State, Engine
 from iiconstructor_core.domain.primitives import Name, Description, SourceInfo, Request
 from iiconstructor_core.domain.exceptions import Exists, CoreException
-from iiconstructor_levenshtain.inputs import LevenshtainVector
+from iiconstructor_levenshtain import LevenshtainVector
 from iiconstructor_qtgui.synonyms import SynonymsGroupsModel
 from iiconstructor_qtgui.primitives.sceneitems import Arrow, SceneNode, NodeWidget, Editor
 from iiconstructor_qtgui.data import ItemData, CustomDataRole, SynonymsSetModel

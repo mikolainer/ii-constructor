@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 
 from iiconstructor_inmemory.repo import HostingInmem
 from iiconstructor_maria.repo import HostingMaria, SourceMariaDB
-from iiconstructor_levenshtain.inputs import LevenshtainVector, Synonym, SynonymsGroup
+from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from iiconstructor_core.domain import Scenario, Connection, InputDescription, Step, State, Hosting
 from iiconstructor_core.domain.primitives import Name, Description, ScenarioID, SourceInfo, StateID, Output, Answer, StateAttributes
 from iiconstructor_core.domain.porst import ScenarioInterface

@@ -1,4 +1,4 @@
-from iiconstructor_levenshtain.inputs import LevenshtainVector, Synonym, SynonymsGroup
+from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from iiconstructor_core.infrastructure.data import BaseSerializer, ItemData
 from iiconstructor_core.domain.primitives import Name
 from iiconstructor_qtgui.data import SynonymsSetModel, CustomDataRole
