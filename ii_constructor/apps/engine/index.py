@@ -18,6 +18,21 @@ start_state: State = scenario.get_states_by_name(Name("Старт"))[0]
 engine = Engine(LevenshtainClassificator(scenario), start_state)
 
 def handler(event, context):
+    if  'request' in event and \
+        'original_utterance' in event['request'] and \
+        event['request']['original_utterance'] != '' and\
+        event['request']['original_utterance'] == "ping":
+
+        return  {
+                    'version': 1,
+                    'session': 1,
+                    'response': {
+                        'text': "pong",
+                        'end_session': True
+                    }
+                }
+
+
     session_store = event['state']['session']
 
     resp = Response()
@@ -32,13 +47,14 @@ def handler(event, context):
         }
 
     else:
-        cur_state = scenario.states(StateID(event['state']['session']['state']))
+        cur_state_id = StateID(event['state']['session']['state'])
+        cur_state = scenario.states([cur_state_id])[cur_state_id]
         engine.set_current_state(cur_state)
 
         req = Request()
         req.text = event['request']['command']
         resp = engine.handle(req)
-        session_store['state'] = engine.current_state().id()
+        session_store['state'] = engine.current_state().id().value
 
     return{
             'version': event['version'],
