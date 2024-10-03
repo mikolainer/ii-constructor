@@ -19,7 +19,7 @@ class SynonymEditorWidget(QWidget):
     def __init__(self, value:str, parent: QWidget = None):
         super().__init__(parent)
         self.__edit = QLineEdit(value, self)
-        self.__edit.setStyleSheet('QLineEdit{background-color: #FFFFFF; border: 2px solid black; border-radius: 5px;}')
+        self.__edit.setProperty("SynonymEditor", True)
         main_lay = QVBoxLayout(self)
         main_lay.setContentsMargins(0,0,0,0)
         main_lay.setSpacing(0)

@@ -40,21 +40,19 @@ class MainToolButton(QPushButton):
     icon_size : QSize
 
     __size : QSize
-    __style : str
+    #__style : str
 
     def __init__(self, text: str, icon: Optional[QWidget] = None, parent: Optional[QWidget] = None):
         super().__init__(icon, '', parent)
 
         self.__size = QSize(64, 64)
-        self.__style = "background-color: #59A5FF; border-radius:32px;"
+        #self.__style = "background-color: #59A5FF; border-radius:32px;"
 
         self.icon = icon
         self.tool_tip = text
         self.status_tip = text
         self.whats_this = text
         self.icon_size = self.__size
-
-        self.setStyleSheet(self.__style)
         self.apply_options()
 
     def apply_options(self):
@@ -77,7 +75,6 @@ class MainWindow(QMainWindow):
 
     def __init__(self, flow_list: QWidget, workspaces: QTabWidget, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
-        self.setStyleSheet("MainWindow{background-color: #74869C;}")
 
         self.__oldPos = None
         self.__flow_list = flow_list
@@ -92,7 +89,6 @@ class MainWindow(QMainWindow):
         self.show()
 
     def set_only_editor_enabled(self, only_editor: bool):
-        #self.__tool_bar.setEnabled(not only_editor)
         toolbar_layout: QHBoxLayout = self.__tool_bar.layout()
         for index in range(toolbar_layout.count()):
             item: QLayoutItem = toolbar_layout.itemAt(index)
@@ -119,9 +115,9 @@ class MainWindow(QMainWindow):
         main_lay.setSpacing(0)
 
         self.__tool_bar = QWidget(self)
+        self.__tool_bar.setProperty("isWindowTitle", True)
         self.__tool_bar.setMinimumHeight(64)
         main_lay.addWidget(self.__tool_bar, 0)
-        self.__tool_bar.setStyleSheet('background-color : #666;')
 
         tool_bar_layout = QHBoxLayout(self.__tool_bar)
         tool_bar_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -153,7 +149,7 @@ class MainWindow(QMainWindow):
         )
 
         self.__close_btn = MainToolButton('Выйти', QIcon(":/icons/exit_norm.svg"), self)
-        self.__close_btn.setStyleSheet("background-color: #FF3131; border: none;")
+        self.__close_btn.setObjectName("Close")
         
         self.__close_btn.status_tip = 'Закрыть программу'
         self.__close_btn.whats_this = 'Кнопка завершения программы'
@@ -229,7 +225,6 @@ class FlowList(QStackedWidget):
     def addWidget(self, w: QWidget = None) -> int:
         area = QScrollArea(self)
         area.setWidgetResizable(True)
-        area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
         area.setWidget(w)
         return super().addWidget(area)
     

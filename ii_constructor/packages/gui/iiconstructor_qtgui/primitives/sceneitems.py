@@ -740,53 +740,37 @@ class NodeWidget(QWidget):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
+        title_wrapper = QWidget(self)
+        title_wrapper.setProperty("isNodeTitle", True)
+
         self.__choose_mode = False
         self.__item_on_scene = None
-        self.__title = NodeTitle(title, self)
+        self.__title = NodeTitle(title, title_wrapper)
         self.__title.open_settings.connect(lambda: self.open_settings.emit())
         font = self.__title.font()
         font.setWeight(QFont.Weight.ExtraBold)
         self.__title.setFont(font)
         self.__title.setFixedHeight(self.TITLE_HEIGHT)
-        self.__close_btn = EnterDetectionButton(self)
-#       self.__close_btn.setFlat(True)
+        self.__close_btn = EnterDetectionButton(title_wrapper)
         self.__close_btn.setFixedHeight(self.BUTTON_SIZE)
         self.__close_btn.setFixedWidth(self.BUTTON_SIZE)
         self.set_close_btn_style(self.CloseBtnStyle.Add)
         
         self.__content = QScrollArea(self)
         self.__content.setWidgetResizable(True)
-        self.__content.setStyleSheet(
-                "QScrollArea{"
-                "   border: 0px;"
-                "   border-top: 1px solid #59A5FF;"
-                "   border-bottom-right-radius: 10px;"
-                "   border-bottom-left-radius: 10px;"
-                "   background-color: #FFFFFF;"
-                "}"
-            )
+        self.__content.setProperty("isNodeContent", True)
 
         main_lay = QVBoxLayout(self)
         main_lay.setContentsMargins(0,0,0,0)
         main_lay.setSpacing(0)
 
-        title = QWidget(self)
-        title.setStyleSheet(
-            "QWidget{"
-            "   border: 0px;"
-            "   border-top-right-radius: 10px;"
-            "   border-top-left-radius: 10px;"
-            "   background-color: #666666;"
-            "   color: #FFFFFF;"
-            "}"
-        )
-        title_lay = QHBoxLayout(title)
+        title_lay = QHBoxLayout(title_wrapper)
         title_lay.setContentsMargins(5,2,2,2)
 
         title_lay.addWidget(self.__title)
         title_lay.addWidget(self.__close_btn)
         
-        main_lay.addWidget(title)
+        main_lay.addWidget(title_wrapper)
         main_lay.addWidget(self.__content)
 
         self.resize(self.START_WIDTH, self.START_WIDTH)
@@ -797,10 +781,10 @@ class NodeWidget(QWidget):
 
     def set_close_btn_style(self, style: CloseBtnStyle):
         if style == self.CloseBtnStyle.Add:
-            pixmap = QPixmap(":/icons/plus_btn.svg")
+            pixmap = QPixmap(":/icons/plus_btn.svg").scaled(QSize(20, 20))
             
         elif style == self.CloseBtnStyle.Close:
-            pixmap = QPixmap(":icons/delete_btn.svg")
+            pixmap = QPixmap(":icons/delete_btn.svg").scaled(QSize(20, 20))
 
         self.__close_btn.setIcon(pixmap.scaled(self.BUTTON_SIZE, self.BUTTON_SIZE))
 

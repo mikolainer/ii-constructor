@@ -74,7 +74,6 @@ class FlowWidget(QWidget):
                  parent = None
                 ):
         super().__init__(parent)
-        self.setStyleSheet("border: 1px solid black; background-color: #DDDDDD;")
         self.__title = QLabel(name, self)
         self.__title.setWordWrap(True)
         self.__description = QLabel(description, self)

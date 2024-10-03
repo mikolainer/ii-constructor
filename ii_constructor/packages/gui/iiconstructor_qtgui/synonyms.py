@@ -90,8 +90,6 @@ class SynonymsGroupWidget(QWidget):
 
     def __init__(self, name:str, description: str, parent: QWidget = None):
         super().__init__(parent)
-
-        self.setStyleSheet('QWidget{background-color: #FFFFFF; border: 2px solid #FFFFFF;}')
         main_lay = QVBoxLayout(self)
 
         self.__title = QLabel(name, self)
@@ -307,7 +305,6 @@ class SynonymsList(QStackedWidget):
 
         area = QScrollArea(self)
         area.setWidgetResizable(True)
-        area.setStyleSheet('QScrollArea{background-color: #FFFFFF; border: none;}')
         area.setWidget(wrapper)
         return super().addWidget(area)
     
@@ -368,7 +365,6 @@ class SynonymsEditor(QDialog):
         self.__tool_bar = QWidget(self)
         self.__tool_bar.setMinimumHeight(24)
         main_lay.addWidget(self.__tool_bar, 0)
-        self.__tool_bar.setStyleSheet('background-color : #666;')
         self.__oldPos = None
 
         tool_bar_layout = QHBoxLayout(self.__tool_bar)
@@ -505,7 +501,7 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
             data.on[CustomDataRole.Name],
             data.on[CustomDataRole.SynonymsSet]
         )
-        wgt.setStyleSheet('background-color: #666;')
+        wgt.setProperty("isWindowTitle", True)
         wgt.adjustSize()
         return wgt.size()
     

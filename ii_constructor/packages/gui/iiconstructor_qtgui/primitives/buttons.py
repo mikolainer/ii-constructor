@@ -28,4 +28,3 @@ class CloseButton(QPushButton):
         size = QSize(20,20)
         self.setIconSize(size)
         self.setFixedSize(size)
-        self.setStyleSheet("background-color: #FF3131; border: 0px; border-radius: 10px")

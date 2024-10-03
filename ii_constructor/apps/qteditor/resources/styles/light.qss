@@ -1,0 +1,64 @@
+MainWindow{
+    background-color: #74869C;
+}
+
+MainToolButton{
+    background-color: #59A5FF;
+    border-radius: 32px;
+}
+
+MainToolButton#Close{
+    background-color: #FF3131;
+    border-radius: 4px;
+    border: none;
+}
+
+CloseButton{
+    background-color: #FF3131;
+    border: 0px;
+    border-radius: 10px;
+}
+
+FlowWidget {
+    background-color: #DDDDDD;
+    border: 1px solid black;
+}
+
+QScrollArea{
+    background-color: #FFFFFF;
+    border: none;
+}
+
+QScrollArea[isNodeContent=true]{
+   border: 0px;
+   border-top: 1px solid #59A5FF;
+   border-bottom-right-radius: 10px;
+   border-bottom-left-radius: 10px;
+   background-color: #FFFFFF;
+}
+
+QWidget[isWindowTitle=true]{
+    background-color : #666;
+}
+
+QWidget[isNodeTitle=true]{
+   border: 0px;
+   border-top-right-radius: 10px;
+   border-top-left-radius: 10px;
+   background-color: #666666;
+}
+
+NodeTitle{
+   color: #FFFFFF;
+}
+
+SynonymsGroupWidget{
+    background-color: #FFFFFF;
+    border: 2px solid #FFFFFF;
+}
+
+QLineEdit[SynonymEditor=true]{
+    background-color: #FFFFFF;
+    border: 2px solid black;
+    border-radius: 5px;
+}
