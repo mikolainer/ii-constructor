@@ -212,7 +212,7 @@ class ProjectManager:
         self.__esc_sqortcut.activated.connect(lambda: self.__reset_enter_create_mode())
 
     def __setup_main_toolbar(self):
-        btn = MainToolButton('Текстировать', None, self.__main_window)
+        btn = MainToolButton('Тестировать', None, self.__main_window)
         btn.status_tip = 'Открыть демо-режим'
         btn.whats_this = 'Кнопка открытия демонстрационного режима'
         btn.apply_options()

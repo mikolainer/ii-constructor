@@ -560,6 +560,7 @@ class SynonymsSelector(QDialog):
 
     def __init__(self, g_model:SynonymsGroupsModel, create_group_handler:Callable[[SynonymsGroupsModel], None], parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setWindowTitle("Выбор синонима")
         
         self.__selected_name = None
         self.__g_model = g_model

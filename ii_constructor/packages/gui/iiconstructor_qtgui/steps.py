@@ -133,6 +133,7 @@ class StepEditor(QDialog):
     __model: StepModel
     def __init__(self, model:StepModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setWindowTitle("Просмотр связи")
 
         self.__model = model
 
