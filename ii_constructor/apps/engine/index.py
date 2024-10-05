@@ -19,6 +19,7 @@
 
 import os
 
+
 from iiconstructor_core.domain import Engine, State
 from iiconstructor_core.domain.primitives import Request, Response, Name, ScenarioID, StateID
 from iiconstructor_levenshtain import LevenshtainClassificator
