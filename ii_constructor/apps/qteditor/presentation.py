@@ -230,7 +230,24 @@ class ProjectManager:
         self.__esc_sqortcut.setKey(Qt.Key.Key_Escape)
         self.__esc_sqortcut.activated.connect(lambda: self.__reset_enter_create_mode())
 
+    def __about(self):
+        infotext = 'Контакты разработчика: @mikolainer (vk, Telegram, WhatsApp) или mikolainer@mail.ru\nGitHub: <https://github.com/mikolainer/ii-constructor>\n\nКонструктор интерактивных инструкций — свободная программа: вы можете перераспространять ее и/или изменять ее на условиях Стандартной общественной лицензии GNU в том виде, в каком она была опубликована Фондом свободного программного обеспечения; либо версии 3 лицензии, либо (по вашему выбору) любой более поздней версии.\n\nКонструктор интерактивных инструкций распространяется в надежде, что она будет полезной, но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Стандартной общественной лицензии GNU.\n\nВы должны были получить копию Стандартной общественной лицензии GNU вместе с этой программой. Если это не так, см. <https://www.gnu.org/licenses/>.'
+        QMessageBox.about(self.__main_window, "Информация о приложении", infotext)
+        QMessageBox.aboutQt(self.__main_window, "Информация о Qt")
+        QMessageBox.about(self.__main_window, "Другие зависимости:",
+                          "- Levenshtein <https://github.com/rapidfuzz/Levenshtein>: GNU General Public License (GPLv2 or later)\n"
+                          "- MariaDB Connector/Python as module: GNU Lesser General Public License v2.1\n"
+                          "- MySQL Connector/Python Community as module: GNU General Public License (GPLv2)\n"
+                          )
+
     def __setup_main_toolbar(self):
+        btn = MainToolButton('О программе', None, self.__main_window)
+        btn.status_tip = 'Информация'
+        btn.whats_this = 'Кнопка открытия справки о программе'
+        btn.apply_options()
+        btn.clicked.connect(lambda: self.__about())
+        self.__main_window.insert_button(btn)
+
         btn = MainToolButton('Тестировать', None, self.__main_window)
         btn.status_tip = 'Открыть демо-режим'
         btn.whats_this = 'Кнопка открытия демонстрационного режима'
