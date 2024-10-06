@@ -866,7 +866,7 @@ class Editor(QGraphicsScene):
 
     def __init__(self, parent: Optional[QObject]):
         super().__init__(parent)
-        self.setSceneRect(self.__START_SIZE)
+        #self.setSceneRect(self.__START_SIZE)
         self.setBackgroundBrush(QColor("#DDDDDD"))
 
     def addNode(self, pos:QPoint, content:QWidget = None) -> SceneNode:
