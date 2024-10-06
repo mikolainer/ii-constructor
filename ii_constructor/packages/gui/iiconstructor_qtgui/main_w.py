@@ -247,6 +247,7 @@ class Workspaces(QTabWidget):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
+        self.setTabsClosable(True)
         #self.currentChanged.connect(lambda index: self.activated.emit(index))
 
 class FlowList(QStackedWidget):

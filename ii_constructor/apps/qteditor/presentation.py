@@ -225,6 +225,7 @@ class ProjectManager:
         self.__projects = {}
 
         self.__workspaces.currentChanged.connect(self.on_cur_changed)
+        self.__workspaces.tabCloseRequested.connect(lambda index: self.__close_tab(index))
 
         self.__esc_sqortcut = QShortcut(self.__main_window)
         self.__esc_sqortcut.setKey(Qt.Key.Key_Escape)
@@ -339,6 +340,18 @@ class ProjectManager:
 
         with open(path + ".lay", "w") as lay_file:
             lay_file.write(scene_ctrl.serialize_layout())
+
+    def __close_tab(self, index: int):
+        if len(self.__projects) <= 1:
+            QMessageBox.warning(self.__main_window, "Невозможно выполнить!", "Нельзя закрыть последний проект")
+            return
+
+        project: Project = self.__projects[self.__workspaces.widget(index)]
+        self.__workspaces.removeTab(index)
+        self.__flow_list.removeWidget(project.content())
+        self.__projects.pop(project.editor())
+
+        self.__workspaces.setCurrentIndex(0)
 
     def __open_project(self, manipulator: ScenarioManipulator) -> 'SceneControll':
         content_view = FlowsView(self.__flow_list)
