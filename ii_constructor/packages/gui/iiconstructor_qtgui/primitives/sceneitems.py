@@ -48,6 +48,7 @@ from PySide6.QtGui import (
     QKeyEvent,
     QPolygon,
     QPixmap,
+    QWheelEvent,
 )
 
 from PySide6.QtWidgets import (
@@ -69,6 +70,7 @@ from PySide6.QtWidgets import (
     QGraphicsSceneMouseEvent,
     QGraphicsSceneMouseEvent,
     QInputDialog,
+    QGraphicsView,
 )
 
 from .buttons import EnterDetectionButton
@@ -857,6 +859,22 @@ class NodeTitle(QLabel):
         result = menu.exec_(self.mapToGlobal(event.pos()))
         if action == result:
             self.open_settings.emit()
+
+class EditorView(QGraphicsView):
+    def __init__(self, scene: QGraphicsScene, parent: QWidget = None) -> None:
+        super().__init__(scene, parent)
+        self.centerOn(0, 0)
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        modifiers = event.modifiers()
+        if modifiers & Qt.KeyboardModifier.ControlModifier:
+            scale_factor = 1 + (0.1 * (1 if event.angleDelta().y() > 0 else -1))
+            self.scale(scale_factor, scale_factor)
+            event.accept()
+
+        else:
+            return super().wheelEvent(event)
 
 class Editor(QGraphicsScene):
     __START_SIZE = QRect(0, 0, 2000, 2000)

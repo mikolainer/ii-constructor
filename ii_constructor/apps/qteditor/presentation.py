@@ -62,7 +62,7 @@ from PySide6.QtWidgets import (
 from iiconstructor_levenshtain import LevenshtainClassificator
 from iiconstructor_inmemory.repo import HostingInmem
 from iiconstructor_maria.repo import HostingMaria
-from iiconstructor_qtgui.primitives.sceneitems import Editor, SceneNode
+from iiconstructor_qtgui.primitives.sceneitems import Editor, SceneNode, EditorView
 from iiconstructor_qtgui.primitives.widgets import DBConnectWidget
 from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from iiconstructor_qtgui.flows import FlowsView, FlowListWidget, FlowsModel
@@ -349,9 +349,7 @@ class ProjectManager:
         self.__flow_list.setWidget(content_wgt, True)
 
         proj_scene = Editor(self.__main_window)
-        editor = QGraphicsView(proj_scene, self.__workspaces)
-        editor.centerOn(0, 0)
-        editor.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        editor = EditorView(proj_scene, self.__workspaces)
 
         # создание обработчика изменений на сцене
         states_model = StatesModel(self.__main_window)
