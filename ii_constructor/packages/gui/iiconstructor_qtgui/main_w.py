@@ -28,6 +28,8 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QIcon,
+    QShortcut,
+    QKeySequence,
 )
 
 from PySide6.QtWidgets import (
@@ -95,6 +97,10 @@ class MainWindow(QMainWindow):
     def __init__(self, flow_list: QWidget, workspaces: QTabWidget, parent: QWidget = None):
         super().__init__(None, Qt.WindowType.FramelessWindowHint)
 
+        fullscreen_shortcut = QShortcut(self)
+        fullscreen_shortcut.setKey(Qt.Key.Key_F11)
+        fullscreen_shortcut.activated.connect(lambda: self.__fullscreen_toggle())
+
         self.__oldPos = None
         self.__flow_list = flow_list
         self.__workspaces = workspaces
@@ -106,6 +112,12 @@ class MainWindow(QMainWindow):
         self.__setup_toolbar()
 
         self.show()
+
+    def __fullscreen_toggle(self):
+        if self.isFullScreen():
+            self.showNormal()
+        else:
+            self.showFullScreen()
 
     def set_only_editor_enabled(self, only_editor: bool):
         toolbar_layout: QHBoxLayout = self.__tool_bar.layout()
@@ -134,6 +146,7 @@ class MainWindow(QMainWindow):
         main_lay.setSpacing(0)
 
         self.__tool_bar = QWidget(self)
+
         self.__tool_bar.setProperty("isWindowTitle", True)
         self.__tool_bar.setMinimumHeight(64)
         main_lay.addWidget(self.__tool_bar, 0)
