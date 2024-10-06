@@ -803,7 +803,10 @@ class TestDialog(QWidget):
 
     def __init__(self, manipulator: ScenarioManipulator, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Демонстрация")
+        title = "Демонстрация"
+        if manipulator.in_db():
+            title += f" [id={manipulator.id()}]"
+        self.setWindowTitle(title)
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
 
         start_state: State = manipulator.interface().get_states_by_name(Name("Старт"))[0]
