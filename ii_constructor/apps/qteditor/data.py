@@ -40,17 +40,3 @@ class LevenshtainVectorSerializer(BaseSerializer):
         item.on[CustomDataRole.Description] = ''
         
         return item
-    
-    def from_data(self, data: ItemData) -> LevenshtainVector:
-        name = Name(data.on[CustomDataRole.Name])
-        vector = LevenshtainVector(name, SynonymsGroup())
-
-        synonyms_set = list[Synonym]()
-        model:SynonymsSetModel = data.on[CustomDataRole.SynonymsSet]
-        val_cnt = model.rowCount()
-        for index in range(val_cnt):
-            synonyms_set.append(Synonym(model.get_item(index).on[CustomDataRole.Text]))
-
-        vector.synonyms.synonyms = synonyms_set
-
-        return vector
