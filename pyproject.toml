@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ii_constructor"
+version = "0.0.0"  # TODO: Сделать динамичным?
+requires-python = ">=3.10"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/mikolainer/ii-constructor"
+
+[tool.ruff]
+line-length = 88
+lint.select = [
+  "F", # Pyflakes
+  "E", # pycodestyle
+  "W", # pycodestyle
+  "UP", # pyupgrade
+  "ANN", # flake8-annotations
+  "ASYNC1", # flake8-trio
+  "BLE", # flake8-blind-except
+  "B", # flake8-bugbear
+  "COM", # flake8-commas
+  "C4", # flake8-comprehensions
+  "PLC", # Pylint
+  "ISC", # flake8-implicit-str-concat
+  "INP", # flake8-no-pep420
+  "PIE", # flake8-pie
+  "Q", # flake8-quotes
+  "RSE", # flake8-raise
+  "RET", # flake8-return
+  "SLF", # flake8-self
+  "SIM", # flake8-simplify
+  "FLY", # flynt
+  "PERF", # Perflint
+  "RUF", # Ruff-specific rules
+  "T10", # flake8-debugger
+  "T20", # flake8-print
+]
+lint.ignore = [
+  "ANN101", # missing-type-self | Missing type annotation for {name} in method
+  "ANN102", # missing-type-cls | Missing type annotation for {name} in classmethod
+  "ANN401", # any-type | Dynamically typed expressions (typing.Any) are disallowed in {name}
+  "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+  "B905", # `zip()` without an explicit `strict=` parameter
+  "RUF001", # ambiguous-unicode-character-string | String contains ambiguous {}. Did you mean {}?
+  "RUF002", # ambiguous-unicode-character-docstring | Docstring contains ambiguous {}. Did you mean {}?
+  "RUF003", # ambiguous-unicode-character-comment | Comment contains ambiguous {}. Did you mean {}?
+  "UP042", # Class StrEnum inherits from both `str` and `enum.Enum`
+  "UP007", # Use `X | Y` for type annotations
+  "UP006", # Use `dict` instead of `Dict` for type annotation
+  "SIM102", # Use a single `if` statement instead of nested `if` statements
+]
+src = ["ii_constructor"]
+exclude = [
+  ".git",
+  "build",
+  "dist",
+  "venv",
+  ".venv",
+  "*.egg-info",
+]
+target-version = "py310"
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.black]
+line-length = 88
+target-version = ["py310", "py311", "py312"]
+exclude = '''
+(
+    \.eggs
+  | \.git
+  | build
+  | dist
+  | venv
+)
+'''
+
+[tool.isort]
+profile = "black"
+src = ["ii_constructor"]
+
+
+
+
