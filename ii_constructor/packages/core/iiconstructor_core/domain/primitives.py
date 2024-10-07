@@ -21,6 +21,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Name:
+    ''' Аттрибут названия для именуемых объектов '''
     value:str
 
     __MIN_LEN:int = 0
@@ -35,6 +36,7 @@ class Name:
 
 @dataclass(frozen=True)
 class Description:
+    ''' Атрибут описания для объектов '''
     value:str
 
     __MIN_LEN:int = 0
@@ -46,6 +48,7 @@ class Description:
 
 @dataclass#(frozen=True)
 class Input:
+    ''' Класс "сырого" представления входящего управляющего воздействия '''
     value:str
 
     __MIN_LEN:int = 1
@@ -57,14 +60,17 @@ class Input:
 
 @dataclass(frozen=True)
 class ScenarioID:
+    ''' Идентификатор сценария '''
     value: int
 
 @dataclass(frozen=True)
 class StateID:
+    ''' Идентификатор состояния '''
     value: int
 
 @dataclass(frozen=True)
 class Answer:
+    ''' Базовый класс описания ответа '''
     text: str
     __MIN_LEN:int = 1
     __MAX_LEN:int = 1024
@@ -75,21 +81,26 @@ class Answer:
     
 @dataclass(frozen=True)
 class Output:
+    ''' Описание ответа - аттрибут состояния '''
     value: Answer
 
 @dataclass
 class StateAttributes:
+    ''' Класс, инкапсулирующий аттрибуты состояния '''
     output: Output
     name: Name
     description: Description
 
 @dataclass
 class SourceInfo:
+    ''' Класс, инкапсулирующий аттрибуты сценария '''
     name: Name
     description: Description
 
 class Request:
+    ''' Базовый класс представления запроса от платформы '''
     text: str
 
 class Response:
+    ''' Базовый класс представления ответа для платформы '''
     text: str
