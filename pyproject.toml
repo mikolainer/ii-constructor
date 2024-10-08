@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ii_constructor"
 version = "0.0.0"  # TODO: Сделать динамичным?
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
 license = {file = "LICENSE"}
 
@@ -50,8 +50,6 @@ lint.ignore = [
   "RUF002", # ambiguous-unicode-character-docstring | Docstring contains ambiguous {}. Did you mean {}?
   "RUF003", # ambiguous-unicode-character-comment | Comment contains ambiguous {}. Did you mean {}?
   "UP042", # Class StrEnum inherits from both `str` and `enum.Enum`
-  "UP007", # Use `X | Y` for type annotations
-  "UP006", # Use `dict` instead of `Dict` for type annotation
   "SIM102", # Use a single `if` statement instead of nested `if` statements
 ]
 src = ["ii_constructor"]
@@ -63,7 +61,7 @@ exclude = [
   ".venv",
   "*.egg-info",
 ]
-target-version = "py310"
+target-version = "py311"
 indent-width = 4
 
 [tool.ruff.format]
@@ -74,7 +72,7 @@ line-ending = "auto"
 
 [tool.black]
 line-length = 88
-target-version = ["py310", "py311", "py312"]
+target-version = ["py311", "py312"]
 exclude = '''
 (
     \.eggs
@@ -87,8 +85,3 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
-src = ["ii_constructor"]
-
-
-
-
