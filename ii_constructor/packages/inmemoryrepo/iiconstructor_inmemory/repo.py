@@ -1,3 +1,6 @@
+# Copyright 2024 Николай Иванцов (tg/vk/wa: <@mikolainer> | <mikolainer@mail.ru>)
+# Copyright 2024 Kirill Lesovoy
+#
 # Этот файл — часть "Конструктора интерактивных инструкций".
 #
 # Конструктор интерактивных инструкций — свободная программа:
@@ -14,6 +17,7 @@
 # Вы должны были получить копию Стандартной общественной лицензии GNU
 # вместе с этой программой. Если это не так,
 # см. <https://www.gnu.org/licenses/>.
+
 
 from iiconstructor_core.domain import (
     Connection,
