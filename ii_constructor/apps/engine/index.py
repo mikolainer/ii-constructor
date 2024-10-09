@@ -16,9 +16,9 @@
 # см. <https://www.gnu.org/licenses/>.
 
 
+import os
 
 from iiconstructor_core.domain import Engine, State
-import os
 from iiconstructor_core.domain.primitives import (
     Name,
     Request,
