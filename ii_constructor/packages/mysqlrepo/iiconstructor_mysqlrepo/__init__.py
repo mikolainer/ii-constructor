@@ -125,7 +125,7 @@ class SourceMySQL(Source):
         return result
 
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
-        if not ids:
+        if not ids and ids is not None:
             return dict[StateID, State]()
 
         query = f"SELECT id, IFNULL( name, id ) AS name, descr, answer, required FROM `states` WHERE project_id = {self.id.value}"
@@ -262,12 +262,13 @@ class SourceMySQL(Source):
         self,
         names: list[Name] | None = None,
     ) -> list["InputDescription"]:
+        if not names and names is not None:
+            return list["InputDescription"]()
+        
         conn: pymysql.Connection = self.__db_connection
         cur = conn.cursor()
         result = list[InputDescription]()
-
-        if not names:
-            return list["InputDescription"]()
+        
         if names is not None:
             _names = names
         else:

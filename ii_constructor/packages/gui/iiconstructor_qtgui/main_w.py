@@ -65,7 +65,7 @@ class MainToolButton(QPushButton):
         self.tool_tip = text
         self.status_tip = text
         self.whats_this = text
-        self.icon_size = self.__size
+        self.icon_size = QSize(self.__size)
         self.apply_options()
 
     def apply_options(self):
