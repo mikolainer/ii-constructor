@@ -28,7 +28,9 @@ class ScenarioInterface:
     def save_lay(self, id: StateID, x: float, y: float):
         """сохраняет положение состояни"""
 
-    def create_enter_state(self, input: InputDescription, required: bool = False):
+    def create_enter_state(
+        self, input: InputDescription, required: bool = False
+    ):
         """добавляет вектор и новое состояние-вход с таким-же именем"""
 
     def create_enter_vector(self, input: InputDescription, state_id: StateID):

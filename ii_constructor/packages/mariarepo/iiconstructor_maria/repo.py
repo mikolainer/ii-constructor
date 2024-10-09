@@ -48,12 +48,16 @@ class SourceMariaDB(Source):
 
     def __init__(self, conn: mariadb.Connection, id: ScenarioID) -> None:
         if not conn.open:
-            raise CoreException("подключение не открыто", "Не удалось открыть ")
+            raise CoreException(
+                "подключение не открыто", "Не удалось открыть "
+            )
 
         self.__db_connection = conn
 
         cur = conn.cursor()
-        cur.execute("SELECT name, description FROM projects WHERE id=?", (id.value,))
+        cur.execute(
+            "SELECT name, description FROM projects WHERE id=?", (id.value,)
+        )
         conn.commit()
         name, descr = cur.fetchone()
 
@@ -61,7 +65,9 @@ class SourceMariaDB(Source):
         super().__init__(id, info)
 
     @staticmethod
-    def __find_vector(list: list[InputDescription], name: Name) -> InputDescription:
+    def __find_vector(
+        list: list[InputDescription], name: Name
+    ) -> InputDescription:
         for vector in list:
             if vector.name() == name:
                 return vector
@@ -75,7 +81,9 @@ class SourceMariaDB(Source):
         conn.commit()
 
     def get_layouts(self) -> str:
-        query = f"SELECT id, x, y FROM `states` WHERE project_id = {self.id.value}"
+        query = (
+            f"SELECT id, x, y FROM `states` WHERE project_id = {self.id.value}"
+        )
 
         conn: mariadb.Connection = self.__db_connection
         cur = conn.cursor()
@@ -203,7 +211,10 @@ class SourceMariaDB(Source):
         # получить state_mid
         state_mid = self.states([state_id])[state_id]
 
-        conns = {"from": dict[StateID, Connection](), "to": dict[StateID, Connection]()}
+        conns = {
+            "from": dict[StateID, Connection](),
+            "to": dict[StateID, Connection](),
+        }
         # сформировать все Connection
         for pair in pairs_to:
             if pair is None:
@@ -233,7 +244,9 @@ class SourceMariaDB(Source):
                 __state_id = StateID(_from_state)
 
             _conn = conns[d_key][__state_id]
-            step = Step(self.__find_vector(f_vectors, Name(_vector_name)), _conn)
+            step = Step(
+                self.__find_vector(f_vectors, Name(_vector_name)), _conn
+            )
             _conn.steps.append(step)
             result.append(step)
 
@@ -374,7 +387,10 @@ class SourceMariaDB(Source):
         if attributes.description is not None:
             _descr = f"'{attributes.description.value}'"
         _answ = "DEFAULT"
-        if attributes.output is not None and attributes.output.value is not None:
+        if (
+            attributes.output is not None
+            and attributes.output.value is not None
+        ):
             _answ = f"'{attributes.output.value.text}'"
 
         query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (?, {_name}, {_descr}, {_answ}, ?) RETURNING `id`, `answer`, `name`, `descr`, `required`"
@@ -383,7 +399,9 @@ class SourceMariaDB(Source):
         id, answer, name, descr, required = cur.fetchone()
         return State(
             StateID(id),
-            StateAttributes(Output(Answer(answer)), Name(name), Description(descr)),
+            StateAttributes(
+                Output(Answer(answer)), Name(name), Description(descr)
+            ),
             required,
         )
 
@@ -434,7 +452,9 @@ class SourceMariaDB(Source):
         for _from_state, _to_state, _vector_name in db_result:
             if _from_state is not None:
                 _conn = conns[StateID(_from_state)]
-                step = Step(self.__find_vector(f_vectors, Name(_vector_name)), _conn)
+                step = Step(
+                    self.__find_vector(f_vectors, Name(_vector_name)), _conn
+                )
                 _conn.steps.append(step)
 
         result = list[Connection]()
@@ -489,12 +509,16 @@ class SourceMariaDB(Source):
         __to_id = StateID(to_id)
         states = self.states([__from_id, __to_id])
         state_from = (
-            states[StateID(from_id)] if StateID(from_id) in states.keys() else None
+            states[StateID(from_id)]
+            if StateID(from_id) in states.keys()
+            else None
         )
         state_to = states[StateID(to_id)]
         input: LevenshtainVector = self.get_vector(Name(in_name))
 
-        return Step(input, Connection(state_from, state_to, input.synonyms.synonyms))
+        return Step(
+            input, Connection(state_from, state_to, input.synonyms.synonyms)
+        )
 
     def delete_step(
         self,
@@ -568,7 +592,9 @@ class SourceMariaDB(Source):
             if __to_state_id in result["to"].keys():
                 continue
 
-            result["to"][__to_state_id] = Connection(None, f_states[__to_state_id], [])
+            result["to"][__to_state_id] = Connection(
+                None, f_states[__to_state_id], []
+            )
 
         f_vectors = self.select_vectors()
 
@@ -583,19 +609,25 @@ class SourceMariaDB(Source):
                     _conn = __conn
                     break
 
-            step = Step(self.__find_vector(f_vectors, Name(_vector_name)), _conn)
+            step = Step(
+                self.__find_vector(f_vectors, Name(_vector_name)), _conn
+            )
             _conn.steps.append(step)  # вроде должны быть уникальными
 
         for _from_state, _to_state, _vector_name in db_result_to:
             __from_state_id = None  # always is None
             __to_state_id = StateID(_to_state)
             _conn = result["to"][__to_state_id]
-            step = Step(self.__find_vector(f_vectors, Name(_vector_name)), _conn)
+            step = Step(
+                self.__find_vector(f_vectors, Name(_vector_name)), _conn
+            )
             _conn.steps.append(step)  # вроде должны быть уникальными
 
         return result
 
-    def set_synonym_value(self, input_name: str, old_synonym: str, new_synonym: str):
+    def set_synonym_value(
+        self, input_name: str, old_synonym: str, new_synonym: str
+    ):
         self.__do(
             "UPDATE `synonyms` SET `value`= ? WHERE `project_id`= ? AND `group_name`= ? AND `value` = ?",
             (new_synonym, self.id.value, input_name, old_synonym),

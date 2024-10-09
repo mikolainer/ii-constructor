@@ -18,7 +18,13 @@
 
 from xml.etree.ElementTree import Element, fromstring, indent, tostring
 
-from iiconstructor_core.domain import Connection, Hosting, InputDescription, State, Step
+from iiconstructor_core.domain import (
+    Connection,
+    Hosting,
+    InputDescription,
+    State,
+    Step,
+)
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.porst import ScenarioInterface
 from iiconstructor_core.domain.primitives import (
@@ -39,7 +45,9 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 
 class HostingManipulator:
     @staticmethod
-    def make_scenario(hosting: HostingInmem, info: SourceInfo) -> "ScenarioManipulator":
+    def make_scenario(
+        hosting: HostingInmem, info: SourceInfo
+    ) -> "ScenarioManipulator":
         """создаёт заготовку сценария для алисы"""
         new_scenario = hosting.get_scenario(hosting.add_source(info))
 
@@ -137,13 +145,17 @@ class HostingManipulator:
             for step in elem.findall("Переход"):
                 state_to_id = StateID(id_map[int(step.attrib["В_состояние"])])
                 for input in step.findall("Управляющее_воздействие"):
-                    _vector = scenario.get_vector(Name(input.attrib["Название"]))
+                    _vector = scenario.get_vector(
+                        Name(input.attrib["Название"])
+                    )
                     scenario.create_step(state_from_id, state_to_id, _vector)
 
         return ScenarioManipulator(scenario)
 
     @staticmethod
-    def open_scenario_from_db(hosting: HostingMaria, id: int) -> "ScenarioManipulator":
+    def open_scenario_from_db(
+        hosting: HostingMaria, id: int
+    ) -> "ScenarioManipulator":
         return ScenarioManipulator(hosting.get_scenario(ScenarioID(id)))
 
     @staticmethod
@@ -238,7 +250,9 @@ class ScenarioManipulator:
 
     def remove_synonym(self, input_name: str, synonym: str):
         """удаляет синоним"""
-        vector: LevenshtainVector = self.__scenario.get_vector(Name(input_name))
+        vector: LevenshtainVector = self.__scenario.get_vector(
+            Name(input_name)
+        )
         if not isinstance(vector, LevenshtainVector):
             raise Warning("ошибка получения вектора перехода")
 
@@ -265,14 +279,18 @@ class ScenarioManipulator:
 
     def create_synonym(self, input_name: str, new_synonym: str):
         """создаёт синоним"""
-        vector: LevenshtainVector = self.__scenario.get_vector(Name(input_name))
+        vector: LevenshtainVector = self.__scenario.get_vector(
+            Name(input_name)
+        )
         if not isinstance(vector, LevenshtainVector):
             raise Warning("ошибка получения вектора перехода")
 
         synonym = Synonym(new_synonym)
 
         if synonym in vector.synonyms.synonyms:
-            raise Exists(synonym, f'Синоним "{new_synonym}" группы "{input_name}"')
+            raise Exists(
+                synonym, f'Синоним "{new_synonym}" группы "{input_name}"'
+            )
 
         self.__scenario.create_synonym(input_name, new_synonym)
 
@@ -280,7 +298,9 @@ class ScenarioManipulator:
         """создаёт вектор"""
         self.__scenario.add_vector(LevenshtainVector(Name(input_name)))
 
-    def make_enter(self, main_window: QWidget, state_id: int, ask: bool = True) -> str:
+    def make_enter(
+        self, main_window: QWidget, state_id: int, ask: bool = True
+    ) -> str:
         """делает состояние точкой входа, возвращает имя вектора"""
         state_id_d = StateID(state_id)
         state: State = self.__scenario.states([state_id_d])[state_id_d]
@@ -315,7 +335,9 @@ class ScenarioManipulator:
 
         return vector_name.value
 
-    def create_step(self, from_state_id: int, to_state_id: int, input_name: str):
+    def create_step(
+        self, from_state_id: int, to_state_id: int, input_name: str
+    ):
         """создаёт переход"""
         vector = self.__scenario.get_vector(Name(input_name))
         self.__scenario.create_step(
@@ -353,7 +375,9 @@ class ScenarioManipulator:
 
     def set_state_answer(self, state_id: int, new_value: str):
         """изменяет ответ состояния"""
-        self.__scenario.set_answer(StateID(state_id), Output(Answer(new_value)))
+        self.__scenario.set_answer(
+            StateID(state_id), Output(Answer(new_value))
+        )
 
     def rename_state(self, state_id: int, new_name: str):
         """изменяет имя состояния"""
@@ -365,7 +389,9 @@ class ScenarioManipulator:
 
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         """изменяет значение синонима"""
-        vector: LevenshtainVector = self.__scenario.get_vector(Name(input_name))
+        vector: LevenshtainVector = self.__scenario.get_vector(
+            Name(input_name)
+        )
         if not isinstance(vector, LevenshtainVector):
             raise Warning("ошибка получения вектора перехода")
 
@@ -425,7 +451,10 @@ class ScenarioManipulator:
             if isinstance(vector, LevenshtainVector):
                 _vector = Element(
                     "Описание",
-                    {"Название": vector.name().value, "Тип": "Группа синонимов"},
+                    {
+                        "Название": vector.name().value,
+                        "Тип": "Группа синонимов",
+                    },
                 )
                 for synonym in vector.synonyms.synonyms:
                     _synonym = Element("Синоним")
@@ -448,14 +477,19 @@ class ScenarioManipulator:
         connections = self.__scenario.source().get_all_connections()
         for enter_state_id in connections["to"].keys():
             enter_conn: Connection = connections["to"][enter_state_id]
-            _enter = Element("Точка_входа", {"Состояние": str(enter_state_id.value)})
+            _enter = Element(
+                "Точка_входа", {"Состояние": str(enter_state_id.value)}
+            )
 
             for step in enter_conn.steps:
                 vector: LevenshtainVector = step.input
                 if isinstance(vector, LevenshtainVector):
                     _vector = Element(
                         "Управляющее_воздействие",
-                        {"Название": vector.name().value, "Тип": "Группа синонимов"},
+                        {
+                            "Название": vector.name().value,
+                            "Тип": "Группа синонимов",
+                        },
                     )
                     for synonym in vector.synonyms.synonyms:
                         _synonym = Element("Синоним")
@@ -511,7 +545,9 @@ class ScenarioManipulator:
         возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         """
         vector = self.__scenario.get_vector(Name(name))
-        new_enter_state_id: StateID = self.__scenario.create_enter_state(vector)
+        new_enter_state_id: StateID = self.__scenario.create_enter_state(
+            vector
+        )
         new_enter_state = self.__scenario.states([new_enter_state_id])[
             new_enter_state_id
         ]

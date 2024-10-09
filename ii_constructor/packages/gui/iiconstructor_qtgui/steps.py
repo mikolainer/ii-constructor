@@ -16,7 +16,13 @@
 # см. <https://www.gnu.org/licenses/>.
 
 
-from PySide6.QtCore import QModelIndex, QObject, QPersistentModelIndex, QSize, Qt
+from PySide6.QtCore import (
+    QModelIndex,
+    QObject,
+    QPersistentModelIndex,
+    QSize,
+    Qt,
+)
 from PySide6.QtGui import QKeySequence, QPainter, QShortcut
 from PySide6.QtWidgets import (
     QDialog,
@@ -94,7 +100,8 @@ class StepInputWidget(QWidget):
     def sizeHint(self) -> QSize:
         size = super().sizeHint()
         size.setHeight(
-            self.__name_label.height() + self.__synonyms_set.sizeHint().height(),
+            self.__name_label.height()
+            + self.__synonyms_set.sizeHint().height(),
         )
         return size
 
@@ -144,7 +151,9 @@ class StepInputSetView(QTableView):
         self.setItemDelegate(self.__delegate)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self.horizontalHeader().hide()
 
         self.verticalHeader().setSectionResizeMode(
@@ -163,7 +172,9 @@ class StepInputSetView(QTableView):
 class StepEditor(QDialog):
     __model: StepModel
 
-    def __init__(self, model: StepModel, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, model: StepModel, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Просмотр связи")
 

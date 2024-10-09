@@ -60,7 +60,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .data import BaseModel, CustomDataRole, ProxyModelReadOnly, SynonymsSetModel
+from .data import (
+    BaseModel,
+    CustomDataRole,
+    ProxyModelReadOnly,
+    SynonymsSetModel,
+)
 from .primitives.buttons import CloseButton
 from .primitives.widgets import SynonymEditorWidget
 
@@ -91,7 +96,9 @@ class SynonymsGroupWidget(QWidget):
     def description(self) -> str:
         return self.__description.text()
 
-    def __init__(self, name: str, description: str, parent: QWidget = None) -> None:
+    def __init__(
+        self, name: str, description: str, parent: QWidget = None
+    ) -> None:
         super().__init__(parent)
         main_lay = QVBoxLayout(self)
 
@@ -458,7 +465,9 @@ class SynonymsEditor(QDialog):
         tool_bar_layout.setSpacing(10)
         tool_bar_layout.setContentsMargins(2, 2, 2, 2)
         tool_bar_layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum),
+            QSpacerItem(
+                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+            ),
         )
 
         self.__close_btn = CloseButton(self)
@@ -544,7 +553,9 @@ class SynonymsGroupWidgetToSelect(QWidget):
         main_lay.addWidget(title)
 
         synonyms_list = QListView(self)
-        synonyms_list.setVerticalScrollMode(QListView.ScrollMode.ScrollPerPixel)
+        synonyms_list.setVerticalScrollMode(
+            QListView.ScrollMode.ScrollPerPixel
+        )
         model = ProxyModelReadOnly(self)
         model.setSourceModel(synonyms_set_model)
         synonyms_list.setModel(model)
@@ -702,7 +713,9 @@ class SynonymsSelector(QDialog):
         main_lay.addWidget(view, 1)
 
         create_btn = QPushButton("Новое значение", self)
-        create_btn.clicked.connect(lambda: self.__create_group_handler(view.model()))
+        create_btn.clicked.connect(
+            lambda: self.__create_group_handler(view.model())
+        )
         main_lay.addWidget(create_btn, 1)
 
         view.item_selected.connect(self.__selected)
@@ -715,7 +728,9 @@ class SynonymsSelector(QDialog):
         self.accept()
 
     def selected_item(self) -> SynonymsSetModel | None:
-        g_item = self.__g_model.get_item_by(CustomDataRole.Name, self.__selected_name)
+        g_item = self.__g_model.get_item_by(
+            CustomDataRole.Name, self.__selected_name
+        )
 
         if g_item is None:
             return None

@@ -24,9 +24,17 @@ from application import HostingManipulator, ScenarioManipulator
 from data import LevenshtainVectorSerializer
 from iiconstructor_core.domain import Engine, State
 from iiconstructor_core.domain.exceptions import CoreException, Exists
-from iiconstructor_core.domain.primitives import Description, Name, Request, SourceInfo
+from iiconstructor_core.domain.primitives import (
+    Description,
+    Name,
+    Request,
+    SourceInfo,
+)
 from iiconstructor_inmemory.repo import HostingInmem
-from iiconstructor_levenshtain import LevenshtainClassificator, LevenshtainVector
+from iiconstructor_levenshtain import (
+    LevenshtainClassificator,
+    LevenshtainVector,
+)
 from iiconstructor_maria.repo import HostingMaria
 from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from iiconstructor_qtgui.flows import FlowListWidget, FlowsModel, FlowsView
@@ -109,7 +117,9 @@ class Project:
 
         self.__synonym_create_callback = synonym_create_callback
         self.__synonyms_group_create_callback = synonyms_group_create_callback
-        self.__connect_synonym_changes_callback = connect_synonym_changes_callback
+        self.__connect_synonym_changes_callback = (
+            connect_synonym_changes_callback
+        )
         self.__save_callback = save_callback
 
     def open_test_window(self):
@@ -183,7 +193,9 @@ class Project:
         model.prepare_item(item)
         model.insertRow()
 
-        self.__connect_synonym_changes_callback(item.on[CustomDataRole.SynonymsSet])
+        self.__connect_synonym_changes_callback(
+            item.on[CustomDataRole.SynonymsSet]
+        )
 
     def __create_synonym(self, model: SynonymsSetModel):
         default_value = "значение"
@@ -235,11 +247,15 @@ class ProjectManager:
 
         self.__esc_sqortcut = QShortcut(self.__main_window)
         self.__esc_sqortcut.setKey(Qt.Key.Key_Escape)
-        self.__esc_sqortcut.activated.connect(lambda: self.__reset_enter_create_mode())
+        self.__esc_sqortcut.activated.connect(
+            lambda: self.__reset_enter_create_mode()
+        )
 
     def __about(self):
         infotext = "Контакты разработчика: @mikolainer (vk, Telegram, WhatsApp) или mikolainer@mail.ru\nGitHub: <https://github.com/mikolainer/ii-constructor>\n\nКонструктор интерактивных инструкций — свободная программа: вы можете перераспространять ее и/или изменять ее на условиях Стандартной общественной лицензии GNU в том виде, в каком она была опубликована Фондом свободного программного обеспечения; либо версии 3 лицензии, либо (по вашему выбору) любой более поздней версии.\n\nКонструктор интерактивных инструкций распространяется в надежде, что она будет полезной, но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Стандартной общественной лицензии GNU.\n\nВы должны были получить копию Стандартной общественной лицензии GNU вместе с этой программой. Если это не так, см. <https://www.gnu.org/licenses/>."
-        QMessageBox.about(self.__main_window, "Информация о приложении", infotext)
+        QMessageBox.about(
+            self.__main_window, "Информация о приложении", infotext
+        )
         QMessageBox.aboutQt(self.__main_window, "Информация о Qt")
         QMessageBox.about(
             self.__main_window,
@@ -330,7 +346,9 @@ class ProjectManager:
     def __current(self) -> Project:
         return self.__projects[self.__workspaces.currentWidget()]
 
-    def __create_enter_handler(self, flows_model: FlowsModel, project: Project):
+    def __create_enter_handler(
+        self, flows_model: FlowsModel, project: Project
+    ):
         self.__set_enter_create_mode()
 
     def __set_enter_create_mode(self):
@@ -393,7 +411,9 @@ class ProjectManager:
 
         self.__workspaces.setCurrentIndex(0)
 
-    def __open_project(self, manipulator: ScenarioManipulator) -> "SceneControll":
+    def __open_project(
+        self, manipulator: ScenarioManipulator
+    ) -> "SceneControll":
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
         flows_model.set_edit_callback(lambda i, r, o, n: True)
@@ -453,7 +473,9 @@ class ProjectManager:
                 proj,
                 state_index,
             ),
-            lambda node, pos: self.__save_lay(manipulator, scene_controll, node, pos),
+            lambda node, pos: self.__save_lay(
+                manipulator, scene_controll, node, pos
+            ),
             # states_model:StatesModel
             states_model,
             # flows_model: FlowsModel
@@ -555,12 +577,16 @@ class ProjectManager:
                 if step.connection.from_state is None:
                     # формирование элемента модели содержания
                     input_item = ItemData()
-                    input_item.on[CustomDataRole.Name] = state.attributes.name.value
+                    input_item.on[CustomDataRole.Name] = (
+                        state.attributes.name.value
+                    )
                     input_item.on[CustomDataRole.Description] = (
                         state.attributes.description.value
                     )
                     input_item.on[CustomDataRole.SynonymsSet] = s_model
-                    input_item.on[CustomDataRole.EnterStateId] = state.id().value
+                    input_item.on[CustomDataRole.EnterStateId] = (
+                        state.id().value
+                    )
                     input_item.on[CustomDataRole.SliderVisability] = False
                     input_items.append(input_item)
 
@@ -582,10 +608,14 @@ class ProjectManager:
         if dialog.exec() == QDialog.DialogCode.Rejected:
             return
 
-        info = SourceInfo(Name(dialog.name()), Description(dialog.description()))
+        info = SourceInfo(
+            Name(dialog.name()), Description(dialog.description())
+        )
 
         # создание проекта
-        manipulator = HostingManipulator.make_scenario(self.__inmem_hosting, info)
+        manipulator = HostingManipulator.make_scenario(
+            self.__inmem_hosting, info
+        )
         self.__open_project(manipulator)
 
     def open_project(self) -> Project:
@@ -602,7 +632,9 @@ class ProjectManager:
             data = "".join(file.readlines())
 
         # создание проекта
-        manipulator = HostingManipulator.open_scenario(self.__inmem_hosting, data)
+        manipulator = HostingManipulator.open_scenario(
+            self.__inmem_hosting, data
+        )
         scene_ctrl = self.__open_project(manipulator)
 
         lay_path = path + ".lay"
@@ -684,7 +716,9 @@ class ProjectManager:
                 lay_path = path + ".lay"
                 if os.path.exists(lay_path):
                     with open(path + ".lay") as lay_file:
-                        scene_ctrl.load_layout("".join(lay_file.readlines()), map)
+                        scene_ctrl.load_layout(
+                            "".join(lay_file.readlines()), map
+                        )
                 else:
                     QMessageBox.warning(
                         self.__main_window,
@@ -753,32 +787,42 @@ class ProjectManager:
 
         new_state_item = ItemData()
         try:
-            name = self.__get_vector_name_by_synonyms_model(proj, manipulator, s_model)
+            name = self.__get_vector_name_by_synonyms_model(
+                proj, manipulator, s_model
+            )
 
             manipulator.check_can_create_enter_state(name)
             new_state_info = manipulator.create_state(name)
-            manipulator.make_enter(self.__main_window, new_state_info["id"], False)
+            manipulator.make_enter(
+                self.__main_window, new_state_info["id"], False
+            )
 
             new_state_item.on[CustomDataRole.Id] = new_state_info["id"]
             new_state_item.on[CustomDataRole.Name] = new_state_info["name"]
             new_state_item.on[CustomDataRole.Text] = new_state_info["text"]
 
         except CoreException as e:
-            QMessageBox.warning(self.__main_window, "Невозможно выполнить!", e.ui_text)
+            QMessageBox.warning(
+                self.__main_window, "Невозможно выполнить!", e.ui_text
+            )
             return
 
         except Exception:
             return
 
         enter_item = ItemData()
-        enter_item.on[CustomDataRole.Name] = new_state_item.on[CustomDataRole.Name]
+        enter_item.on[CustomDataRole.Name] = new_state_item.on[
+            CustomDataRole.Name
+        ]
         enter_item.on[CustomDataRole.Description] = ""
         enter_item.on[CustomDataRole.SynonymsSet] = s_model
         enter_item.on[CustomDataRole.EnterStateId] = new_state_item.on[
             CustomDataRole.Id
         ]
         enter_item.on[CustomDataRole.SliderVisability] = False
-        to_node = scene_ctrl.on_insert_node(scene, new_state_item, [enter_item], pos)
+        to_node = scene_ctrl.on_insert_node(
+            scene, new_state_item, [enter_item], pos
+        )
 
     def __on_state_removed_from_gui(
         self,
@@ -807,13 +851,17 @@ class ProjectManager:
             )
 
         except CoreException as e:
-            QMessageBox.warning(self.__main_window, "Невозможно выполнить!", e.ui_text)
+            QMessageBox.warning(
+                self.__main_window, "Невозможно выполнить!", e.ui_text
+            )
             return False, None
 
         except Exception:
             return False, None
 
-        g_item = project.vectors_model.get_item_by(CustomDataRole.Name, vector_name)
+        g_item = project.vectors_model.get_item_by(
+            CustomDataRole.Name, vector_name
+        )
         if isinstance(g_item, ItemData):
             return True, g_item.on[CustomDataRole.SynonymsSet]
 
@@ -837,7 +885,9 @@ class ProjectManager:
     ):
         try:
             index = ctrl.find_in_model(node)
-            manipulator.save_lay(index.data(CustomDataRole.Id), pos.x(), pos.y())
+            manipulator.save_lay(
+                index.data(CustomDataRole.Id), pos.x(), pos.y()
+            )
 
         except Exception:
             return
@@ -868,7 +918,9 @@ class ProjectManager:
             to_state_item.on[CustomDataRole.Text] = new_state_info["text"]
 
         except CoreException as e:
-            QMessageBox.warning(self.__main_window, "Невозможно выполнить!", e.ui_text)
+            QMessageBox.warning(
+                self.__main_window, "Невозможно выполнить!", e.ui_text
+            )
             return False
 
         except Exception:
@@ -950,7 +1002,9 @@ class ProjectManager:
                 manipulator.rename_state(state_id, new_value)
 
         except CoreException as e:
-            QMessageBox.warning(self.__main_window, "Невозможно выполнить", e.ui_text)
+            QMessageBox.warning(
+                self.__main_window, "Невозможно выполнить", e.ui_text
+            )
             return False
 
         except Exception:
@@ -968,12 +1022,16 @@ class ProjectManager:
     ) -> bool:
         try:
             manipulator.create_synonym(
-                self.__get_vector_name_by_synonyms_model(proj, manipulator, model),
+                self.__get_vector_name_by_synonyms_model(
+                    proj, manipulator, model
+                ),
                 data.on[CustomDataRole.Text],
             )
 
         except Exists as e:
-            QMessageBox.critical(self.__main_window, "Невозможно выполнить", e.ui_text)
+            QMessageBox.critical(
+                self.__main_window, "Невозможно выполнить", e.ui_text
+            )
             return False
 
         except Exception:
@@ -994,7 +1052,9 @@ class ProjectManager:
             manipulator.rename_vector(old_name, new_name)
 
         except CoreException as e:
-            QMessageBox.warning(self.__main_window, "Невозможно выполнить", e.ui_text)
+            QMessageBox.warning(
+                self.__main_window, "Невозможно выполнить", e.ui_text
+            )
             return False
 
         except Exception:
@@ -1080,16 +1140,22 @@ class ProjectManager:
         for vector_model_row in range(input_vectors_count):
             vector_index = proj.vectors_model.index(vector_model_row)
             if (
-                proj.vectors_model.data(vector_index, CustomDataRole.SynonymsSet)
+                proj.vectors_model.data(
+                    vector_index, CustomDataRole.SynonymsSet
+                )
                 is not model
             ):
                 continue
 
-            group_name = proj.vectors_model.data(vector_index, CustomDataRole.Name)
+            group_name = proj.vectors_model.data(
+                vector_index, CustomDataRole.Name
+            )
             break
 
         if group_name is None:
-            raise Warning("по модели набора синонимов группа синонимов не найдена")
+            raise Warning(
+                "по модели набора синонимов группа синонимов не найдена"
+            )
 
         return group_name
 
@@ -1111,16 +1177,18 @@ class TestDialog(QWidget):
         self.setWindowTitle(title)
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
 
-        start_state: State = manipulator.interface().get_states_by_name(Name("Старт"))[
-            0
-        ]
+        start_state: State = manipulator.interface().get_states_by_name(
+            Name("Старт")
+        )[0]
         self.__engine = Engine(
             LevenshtainClassificator(manipulator.interface()),
             start_state,
         )
 
         self.__chat_history = QListWidget(self)
-        self.__chat_history.insertItem(0, start_state.attributes.output.value.text)
+        self.__chat_history.insertItem(
+            0, start_state.attributes.output.value.text
+        )
 
         self.__chat_history.setSelectionMode(
             QAbstractItemView.SelectionMode.SingleSelection,
@@ -1180,7 +1248,9 @@ class DBProjLibrary(QDialog):
 
         self.__selected_id = -1
         self.__table = QTableWidget(len(data), 3, self)
-        self.__table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.__table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
         self.__table.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows,
         )
@@ -1237,8 +1307,12 @@ class DBProjLibrary(QDialog):
 
 class SceneControll:
     __node_insert_index: int
-    __new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool]
-    __new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool]
+    __new_step_callback: Callable[
+        [QModelIndex, QModelIndex, SynonymsSetModel], bool
+    ]
+    __new_state_callback: Callable[
+        [QModelIndex, ItemData, SynonymsSetModel], bool
+    ]
     __select_input_callback: Callable[[], SynonymsSetModel | None]
     __add_enter_callback: Callable[
         [QModelIndex],
@@ -1262,12 +1336,16 @@ class SceneControll:
         self,
         manipulator: ScenarioManipulator,
         select_input_callback: Callable[[], SynonymsSetModel | None],
-        new_step_callback: Callable[[QModelIndex, QModelIndex, SynonymsSetModel], bool],
+        new_step_callback: Callable[
+            [QModelIndex, QModelIndex, SynonymsSetModel], bool
+        ],
         step_remove_callback: Callable[
             [QModelIndex, QModelIndex, SynonymsSetModel],
             bool,
         ],
-        new_state_callback: Callable[[QModelIndex, ItemData, SynonymsSetModel], bool],
+        new_state_callback: Callable[
+            [QModelIndex, ItemData, SynonymsSetModel], bool
+        ],
         add_enter_callback: Callable[
             [QModelIndex],
             tuple[bool, SynonymsSetModel | None],
@@ -1320,9 +1398,9 @@ class SceneControll:
                 ).on[CustomDataRole.Node]
 
                 for input_name in inputs_to[state_id]:
-                    s_model = v_model.get_item_by(CustomDataRole.Name, input_name).on[
-                        CustomDataRole.SynonymsSet
-                    ]
+                    s_model = v_model.get_item_by(
+                        CustomDataRole.Name, input_name
+                    ).on[CustomDataRole.SynonymsSet]
                     self.on_add_step(scene, s_model, node_from, node_to)
 
     def on_insert_node(
@@ -1366,11 +1444,19 @@ class SceneControll:
         node.wrapper_widget().delete_request.connect(
             lambda node: self.on_remove_node(node),
         )
-        node.wrapper_widget().chosen.connect(lambda node: self.on_node_chosen(node))
-        node.wrapper_widget().open_settings.connect(lambda: self.state_settings(node))
+        node.wrapper_widget().chosen.connect(
+            lambda node: self.on_node_chosen(node)
+        )
+        node.wrapper_widget().open_settings.connect(
+            lambda: self.state_settings(node)
+        )
         node.set_handlers(
-            lambda from_node, to_node: self.__new_step_request(from_node, to_node),
-            lambda from_node, to_pos: self.__new_state_request(from_node, to_pos),
+            lambda from_node, to_node: self.__new_step_request(
+                from_node, to_node
+            ),
+            lambda from_node, to_pos: self.__new_state_request(
+                from_node, to_pos
+            ),
             lambda node, to_pos: self.__update_lay_callback(node, to_pos),
         )
         content.setText(state_text)
@@ -1383,7 +1469,9 @@ class SceneControll:
         self.__states_model.prepare_item(data)
         self.__states_model.insertRow()
 
-        content.textChanged.connect(lambda: self.__state_content_changed_handler(node))
+        content.textChanged.connect(
+            lambda: self.__state_content_changed_handler(node)
+        )
         node.wrapper_widget().set_change_title_handler(
             lambda title: self.__state_title_changed_handler(node, title),
         )
@@ -1409,7 +1497,9 @@ class SceneControll:
             step_model.set_edit_callback(lambda i, r, o, n: True)
             self.__arrows[arrow] = step_model
 
-            step_model.set_remove_callback(lambda index: self.on_remove_step(index))
+            step_model.set_remove_callback(
+                lambda index: self.on_remove_step(index)
+            )
             arrow.set_edit_connection_handler(
                 lambda: self.__edit_connection(step_model),
             )
@@ -1417,9 +1507,14 @@ class SceneControll:
         else:
             step_model = self.__arrows[arrow]
 
-        if step_model.get_item_by(CustomDataRole.SynonymsSet, input) is not None:
+        if (
+            step_model.get_item_by(CustomDataRole.SynonymsSet, input)
+            is not None
+        ):
             # вообще-то не норм ситуация (должно обрабатываться ядром)
-            QMessageBox.warning(self.__main_window, "Ошибка", "Шаг уже существует")
+            QMessageBox.warning(
+                self.__main_window, "Ошибка", "Шаг уже существует"
+            )
             return
 
         step_item = ItemData()
@@ -1488,7 +1583,9 @@ class SceneControll:
             return
 
         input_item = ItemData()
-        input_item.on[CustomDataRole.Name] = state_item_index.data(CustomDataRole.Name)
+        input_item.on[CustomDataRole.Name] = state_item_index.data(
+            CustomDataRole.Name
+        )
         input_item.on[CustomDataRole.Description] = ""
         input_item.on[CustomDataRole.SynonymsSet] = s_model
         input_item.on[CustomDataRole.EnterStateId] = state_item_index.data(
@@ -1524,7 +1621,9 @@ class SceneControll:
         for row in range(items_num):
             index = self.__states_model.index(row)
             id: int = self.__states_model.data(index, CustomDataRole.Id)
-            node: SceneNode = self.__states_model.data(index, CustomDataRole.Node)
+            node: SceneNode = self.__states_model.data(
+                index, CustomDataRole.Node
+            )
 
             if node is None:
                 continue
@@ -1534,10 +1633,15 @@ class SceneControll:
 
         return "\n".join(result)
 
-    def __find_arrow(self, from_node: SceneNode, to_node: SceneNode) -> Arrow | None:
+    def __find_arrow(
+        self, from_node: SceneNode, to_node: SceneNode
+    ) -> Arrow | None:
         """ищет связь между элементами сцены"""
         for step_model in self.__arrows.values():
-            if step_model.node_from() == from_node and step_model.node_to() == to_node:
+            if (
+                step_model.node_from() == from_node
+                and step_model.node_to() == to_node
+            ):
                 return step_model.arrow()
 
         return None
@@ -1568,7 +1672,9 @@ class SceneControll:
         new_value = editor.toPlainText()
         self.__states_model.setData(model_index, new_value, role)
 
-    def __state_title_changed_handler(self, node: SceneNode, new_title: str) -> bool:
+    def __state_title_changed_handler(
+        self, node: SceneNode, new_title: str
+    ) -> bool:
         """по изменениям на сцене изменить модель"""
         model_index = self.find_in_model(node)
         if not model_index.isValid():
@@ -1588,7 +1694,9 @@ class SceneControll:
             if input is None:
                 return
 
-            if self.__new_step_callback(state_index_from, state_index_to, input):
+            if self.__new_step_callback(
+                state_index_from, state_index_to, input
+            ):
                 self.on_add_step(from_node.scene(), input, from_node, to_node)
 
     def __new_state_request(
@@ -1599,7 +1707,9 @@ class SceneControll:
         state_index_from = self.find_in_model(from_node)
         if state_index_from.isValid():
             new_state_item = ItemData()
-            name, ok = QInputDialog.getText(None, "Ввод имени", "Имя нового состояния")
+            name, ok = QInputDialog.getText(
+                None, "Ввод имени", "Имя нового состояния"
+            )
             if not ok:
                 return
             new_state_item.on[CustomDataRole.Name] = name
@@ -1608,7 +1718,9 @@ class SceneControll:
             if input is None:
                 return
 
-            if self.__new_state_callback(state_index_from, new_state_item, input):
+            if self.__new_state_callback(
+                state_index_from, new_state_item, input
+            ):
                 to_node = self.on_insert_node(
                     from_node.scene(),
                     new_state_item,

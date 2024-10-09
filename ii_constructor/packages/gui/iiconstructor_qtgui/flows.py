@@ -96,7 +96,9 @@ class FlowWidget(QWidget):
         self.__description = QLabel(description, self)
         self.__description.setWordWrap(True)
         self.__synonyms_name = QLabel("синонимы", self)
-        self.__synonyms_list = FlowSynonymsSetView(self)  # FlowSynonymsSetView(self)
+        self.__synonyms_list = FlowSynonymsSetView(
+            self
+        )  # FlowSynonymsSetView(self)
         self.__synonyms_list.hide()
         self.__synonyms_list.setModel(synonyms)
 
@@ -217,7 +219,9 @@ class FlowsDelegate(QStyledItemDelegate):
         editor.set_slider_visible(index.data(CustomDataRole.SliderVisability))
 
         editor.slider_visible_changed.connect(
-            lambda visible: self.__on_slider_visible_changed(visible, index, editor),
+            lambda visible: self.__on_slider_visible_changed(
+                visible, index, editor
+            ),
         )
 
         return editor
@@ -296,7 +300,9 @@ class FlowsView(QTableView):
         self.__delegate = FlowsDelegate(self)
         self.setItemDelegate(self.__delegate)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self.verticalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents,
         )

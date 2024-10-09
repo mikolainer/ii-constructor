@@ -13,7 +13,7 @@ license = {file = "LICENSE"}
 Repository = "https://github.com/mikolainer/ii-constructor"
 
 [tool.ruff]
-line-length = 88
+line-length = 79
 lint.select = [
   "F", # Pyflakes
   "E", # pycodestyle
@@ -60,6 +60,7 @@ exclude = [
   "venv",
   ".venv",
   "*.egg-info",
+  "*resources",
 ]
 target-version = "py311"
 indent-width = 4
@@ -71,7 +72,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.black]
-line-length = 88
+line-length = 79
 target-version = ["py311", "py312"]
 exclude = '''
 (
@@ -80,8 +81,10 @@ exclude = '''
   | build
   | dist
   | venv
+  | resources
 )
 '''
 
 [tool.isort]
 profile = "black"
+line_length = 79

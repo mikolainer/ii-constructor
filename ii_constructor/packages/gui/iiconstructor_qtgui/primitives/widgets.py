@@ -74,7 +74,9 @@ class AuthWidget(QWidget):
         if init_checkbox_state:
             user = settings.value("auth/last_user")
             self.__username_editor.setText(user)
-            self.__password_editor.setText(settings.value(f"auth/passwords/{user}"))
+            self.__password_editor.setText(
+                settings.value(f"auth/passwords/{user}")
+            )
 
         main_lay = QVBoxLayout(self)
 

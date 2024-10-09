@@ -39,9 +39,13 @@ class CustomDataRole(IntEnum):
     Name: "CustomDataRole" = (Qt.ItemDataRole.UserRole + 2,)  # str
     Description: "CustomDataRole" = (Qt.ItemDataRole.UserRole + 3,)  # str
     Text: "CustomDataRole" = (Qt.ItemDataRole.UserRole + 4,)  # str
-    SynonymsSet: "CustomDataRole" = (Qt.ItemDataRole.UserRole + 5,)  # SynonymsSetModel
+    SynonymsSet: "CustomDataRole" = (
+        Qt.ItemDataRole.UserRole + 5,
+    )  # SynonymsSetModel
     EnterStateId: "CustomDataRole" = (Qt.ItemDataRole.UserRole + 6,)  # int
-    SliderVisability: "CustomDataRole" = (Qt.ItemDataRole.UserRole + 7,)  # bool
+    SliderVisability: "CustomDataRole" = (
+        Qt.ItemDataRole.UserRole + 7,
+    )  # bool
     Node: "CustomDataRole" = (Qt.ItemDataRole.UserRole + 8,)  # SceneNode
 
 
@@ -161,7 +165,9 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         """callback обработки изменений из пользовательского интерфейса"""
         self.__remove_callback = callback
 
-    def set_edit_callback(self, callback: Callable[[QModelIndex, int, Any, Any], bool]):
+    def set_edit_callback(
+        self, callback: Callable[[QModelIndex, int, Any, Any], bool]
+    ):
         """callback обработки изменений из пользовательского интерфейса"""
         self.__edit_callback = callback
 
@@ -177,7 +183,9 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         """Подготовить элемент для вставки в модель"""
         self.__prepared_item = item
 
-    def parent(self, child: QModelIndex | QPersistentModelIndex) -> QModelIndex:
+    def parent(
+        self, child: QModelIndex | QPersistentModelIndex
+    ) -> QModelIndex:
         """Модель плоская. Возвращается QModelIndex()"""
         return QModelIndex()
 
@@ -190,11 +198,15 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         """возвращает индекс по строке (аргумент `column` игнорируется, всегда 0)"""
         return self.createIndex(row, column, self.get_item(row))
 
-    def rowCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
+    def rowCount(
+        self, parent: QModelIndex | QPersistentModelIndex = None
+    ) -> int:
         """Возвращает количество элементов в модели"""
         return len(self)
 
-    def columnCount(self, parent: QModelIndex | QPersistentModelIndex = None) -> int:
+    def columnCount(
+        self, parent: QModelIndex | QPersistentModelIndex = None
+    ) -> int:
         """Всегда возвращает 1 (список представляется таблицей с единствоенный мтолбцом)"""
         return 1
 
@@ -210,7 +222,8 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
 
         if (
             role == Qt.ItemDataRole.EditRole
-            and Qt.ItemDataRole.DisplayRole in self.__map_custom_as_qt_role.keys()
+            and Qt.ItemDataRole.DisplayRole
+            in self.__map_custom_as_qt_role.keys()
         ):
             self.get_item(index.row()).on[
                 self.__map_custom_as_qt_role[Qt.ItemDataRole.DisplayRole]
@@ -230,7 +243,9 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         """Возвращает значение роли у элемента, с индексом `index.row()`"""
         if role < Qt.ItemDataRole.UserRole:
             if role in self.__map_custom_as_qt_role.keys():
-                return self.get_item(index.row()).on[self.__map_custom_as_qt_role[role]]
+                return self.get_item(index.row()).on[
+                    self.__map_custom_as_qt_role[role]
+                ]
             return None
         return self.get_item(index.row()).on[role]
 
@@ -308,7 +323,11 @@ class SynonymsSetModel(BaseModel):
         value: Any,
         role: int = CustomDataRole.Text,
     ) -> bool:
-        if role == CustomDataRole.Text and isinstance(value, str) and value == "":
+        if (
+            role == CustomDataRole.Text
+            and isinstance(value, str)
+            and value == ""
+        ):
             return self.removeRow(index.row())
 
         return super().setData(index, value, role)

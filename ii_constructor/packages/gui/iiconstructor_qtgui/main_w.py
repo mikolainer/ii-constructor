@@ -98,7 +98,9 @@ class MainWindow(QMainWindow):
 
         fullscreen_shortcut = QShortcut(self)
         fullscreen_shortcut.setKey(Qt.Key.Key_F11)
-        fullscreen_shortcut.activated.connect(lambda: self.__fullscreen_toggle())
+        fullscreen_shortcut.activated.connect(
+            lambda: self.__fullscreen_toggle()
+        )
 
         self.__oldPos = None
         self.__flow_list = flow_list
@@ -169,10 +171,14 @@ class MainWindow(QMainWindow):
 
         # добавление крестика
         layout.addSpacerItem(
-            QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum),
+            QSpacerItem(
+                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+            ),
         )
 
-        self.__close_btn = MainToolButton("Выйти", QIcon(":/icons/exit_norm.svg"), self)
+        self.__close_btn = MainToolButton(
+            "Выйти", QIcon(":/icons/exit_norm.svg"), self
+        )
         self.__close_btn.setObjectName("Close")
 
         self.__close_btn.status_tip = "Закрыть программу"

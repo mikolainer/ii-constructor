@@ -141,7 +141,9 @@ class Arrow(QGraphicsItem):
         self.__edit_connection_callback()
         return super().mouseDoubleClickEvent(event)
 
-    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value: Any) -> Any:
+    def itemChange(
+        self, change: QGraphicsItem.GraphicsItemChange, value: Any
+    ) -> Any:
         if change == QGraphicsItem.GraphicsItemChange.ItemSelectedChange:
             if value:
                 self.__pen_color = QColor("blue")
@@ -182,7 +184,9 @@ class Arrow(QGraphicsItem):
         pen.setWidth(self.__pen_width)
         painter.setPen(pen)
 
-        pointer_left_pos, pointer_pos, pointer_right_pos = self.__get_pointer_pos()
+        pointer_left_pos, pointer_pos, pointer_right_pos = (
+            self.__get_pointer_pos()
+        )
         painter.drawLine(
             self.mapFromScene(pointer_pos),
             self.mapFromScene(pointer_left_pos),
@@ -208,7 +212,9 @@ class Arrow(QGraphicsItem):
         # painter.drawPolygon(self.mapFromScene(self.__boundingPolygon()))
 
     def __get_pointer_pos(self) -> tuple[QPoint, QPoint, QPoint]:
-        k = self.__arrow_directions()  # в уравнении прямой 'y=kx' k = tg угла наклона
+        k = (
+            self.__arrow_directions()
+        )  # в уравнении прямой 'y=kx' k = tg угла наклона
 
         # локальный алиас для короткого обращения к значению
         h_ptr = self.__dir_pointer_half()
@@ -281,7 +287,8 @@ class Arrow(QGraphicsItem):
         ptr_end_vector = self.__end_point - self.__start_point
 
         half_len = sqrt(
-            self.__dir_pointer_half().x() ** 2 + self.__dir_pointer_half().y() ** 2,
+            self.__dir_pointer_half().x() ** 2
+            + self.__dir_pointer_half().y() ** 2,
         )
 
         ptr_left_vector_c = self.__pen_width / half_len
@@ -296,17 +303,29 @@ class Arrow(QGraphicsItem):
         end_pos_ = end_pos_ + ptr_end_vector * ptr_end_vector_c
 
         end_between_vector = end_right_pos_ - end_left_pos_
-        to_center_coef = float(self.__pen_width) / self.__dir_pointer_half().x()
+        to_center_coef = (
+            float(self.__pen_width) / self.__dir_pointer_half().x()
+        )
         end_left_pos_ -= end_between_vector / 2.0 * to_center_coef
         end_right_pos_ += end_between_vector / 2.0 * to_center_coef
         # конец магии
 
         end_between_vector = end_right_pos_ - end_left_pos_
-        to_center_coef = float(self.__pen_width) / self.__dir_pointer_half().x()
-        end_left_center_pos = end_left_pos_ + end_between_vector / 2 * to_center_coef
-        end_right_center_pos = end_right_pos_ - end_between_vector / 2 * to_center_coef
-        start_left = self.__start_point - end_between_vector / 2 * to_center_coef
-        start_right = self.__start_point + end_between_vector / 2 * to_center_coef
+        to_center_coef = (
+            float(self.__pen_width) / self.__dir_pointer_half().x()
+        )
+        end_left_center_pos = (
+            end_left_pos_ + end_between_vector / 2 * to_center_coef
+        )
+        end_right_center_pos = (
+            end_right_pos_ - end_between_vector / 2 * to_center_coef
+        )
+        start_left = (
+            self.__start_point - end_between_vector / 2 * to_center_coef
+        )
+        start_right = (
+            self.__start_point + end_between_vector / 2 * to_center_coef
+        )
 
         polygon_points = list[QPoint]()
 
@@ -652,7 +671,9 @@ class SceneNode(QGraphicsProxyWidget):
         scene.addItem(self.__controll)
 
         self.setParentItem(self.__controll)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
+        self.setFlag(
+            QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True
+        )
         self.installSceneEventFilter(self.__controll)
 
         # обратная связь для управления дополнительными элементами
@@ -716,7 +737,9 @@ class SceneNode(QGraphicsProxyWidget):
         add_btn = AddConnectionBtn(self)
         add_btn.setParentItem(self)
         add_btn.setPos(pos)
-        add_btn.connection_added.connect(lambda: self.__add_connection_request(add_btn))
+        add_btn.connection_added.connect(
+            lambda: self.__add_connection_request(add_btn)
+        )
         self.__add_btns.append(add_btn)
 
         self.scene().addItem(add_btn)
@@ -864,11 +887,15 @@ class NodeWidget(QWidget):
         elif style == self.CloseBtnStyle.Close:
             pixmap = QPixmap(":icons/delete_btn.svg").scaled(QSize(20, 20))
 
-        self.__close_btn.setIcon(pixmap.scaled(self.BUTTON_SIZE, self.BUTTON_SIZE))
+        self.__close_btn.setIcon(
+            pixmap.scaled(self.BUTTON_SIZE, self.BUTTON_SIZE)
+        )
 
     def set_title(self, text: str):
         """Устанавливает заголовок. Прямое использование не ожидается (обрабатывается в SceneNode)"""
-        if self.__change_title_handler is None or self.__change_title_handler(text):
+        if self.__change_title_handler is None or self.__change_title_handler(
+            text
+        ):
             self.__title.setText(text)
             self.__title.setToolTip(text)
 
@@ -928,7 +955,9 @@ class EditorView(QGraphicsView):
     def wheelEvent(self, event: QWheelEvent) -> None:
         modifiers = event.modifiers()
         if modifiers & Qt.KeyboardModifier.ControlModifier:
-            scale_factor = 1 + (0.1 * (1 if event.angleDelta().y() > 0 else -1))
+            scale_factor = 1 + (
+                0.1 * (1 if event.angleDelta().y() > 0 else -1)
+            )
             self.scale(scale_factor, scale_factor)
             event.accept()
 

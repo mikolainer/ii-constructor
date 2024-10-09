@@ -78,7 +78,9 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
         best: State | None = None
 
         for key, val in possible_inputs.items():
-            vector = self._StepVectorBaseClassificator__project.get_vector(Name(key))
+            vector = self._StepVectorBaseClassificator__project.get_vector(
+                Name(key)
+            )
             if not isinstance(vector, LevenshtainVector):
                 continue
 

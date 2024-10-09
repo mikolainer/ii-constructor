@@ -106,7 +106,9 @@ class PossibleInputs:
 
         return self.__inputs[name]
 
-    def select(self, names: list[Name] | None = None) -> list["InputDescription"]:
+    def select(
+        self, names: list[Name] | None = None
+    ) -> list["InputDescription"]:
         """
         Возвращает список векторов управляющих воздействий по указанным именам
         @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
@@ -172,7 +174,9 @@ class InputDescription:
         self.__name = new_name
 
     def __eq__(self, value: object) -> bool:
-        return isinstance(value, InputDescription) and value.name() == self.__name
+        return (
+            isinstance(value, InputDescription) and value.name() == self.__name
+        )
 
 
 @dataclass
@@ -202,7 +206,9 @@ class StepVectorBaseClassificator:
         """Вычисления"""
         raise NotImplementedError
 
-    def __prepare_to_step_detect(self, cur_state_id: StateID) -> dict[str, State]:
+    def __prepare_to_step_detect(
+        self, cur_state_id: StateID
+    ) -> dict[str, State]:
         inputs = dict[str, State]()
         for step in self.__project.steps(cur_state_id):
             step: Step = step
@@ -218,7 +224,9 @@ class StepVectorBaseClassificator:
     def __prepare_to_enter_detect(self) -> dict[str, State]:
         inputs = dict[str, State]()
 
-        for conn in self.__project.source().get_all_connections()["to"].values():
+        for conn in (
+            self.__project.source().get_all_connections()["to"].values()
+        ):
             conn: Connection = conn
             to: State = conn.to_state
 
@@ -352,7 +360,9 @@ class Source:
         """
         # TODO: оптимизировать API. (фактически в память выгружается вся база)
 
-    def set_synonym_value(self, input_name: str, old_synonym: str, new_synonym: str):
+    def set_synonym_value(
+        self, input_name: str, old_synonym: str, new_synonym: str
+    ):
         """изменяет значение синонима"""
 
     def create_synonym(self, input_name: str, new_synonym: str):
@@ -394,7 +404,9 @@ class Scenario(ScenarioInterface):
         self.__src.save_lay(id, x, y)
 
     # создание сущностей
-    def create_enter_state(self, input: InputDescription, required: bool = False):
+    def create_enter_state(
+        self, input: InputDescription, required: bool = False
+    ):
         """добавляет вектор и новое состояние-вход с таким-же именем"""
 
         # создаём вектор
@@ -418,7 +430,9 @@ class Scenario(ScenarioInterface):
                 _state.attributes.name == state_to.attributes.name
                 and _state.id() != state_to.id()
             ):
-                raise CoreException("Состояние-вход должно иметь уникальное имя!")
+                raise CoreException(
+                    "Состояние-вход должно иметь уникальное имя!"
+                )
 
         # проверяем существование вектора c именем состояния входа
         vector_name: Name = self.states([state_id])[state_id].attributes.name
@@ -434,7 +448,9 @@ class Scenario(ScenarioInterface):
 
         # проверяем является ли входом
         if self.is_enter(state_to):
-            raise Exists(state_to, f'Точка входа в состояние "{state_to.id().value}"')
+            raise Exists(
+                state_to, f'Точка входа в состояние "{state_to.id().value}"'
+            )
 
         input_name = state_to.attributes.name
         self.__src.new_step(None, state_to.id(), input_name)
@@ -459,7 +475,9 @@ class Scenario(ScenarioInterface):
         elif isinstance(to_state, StateAttributes):
             _states = self.states()
             for _state in _states.values():
-                if _state.attributes.name == to_state.name and self.is_enter(_state):
+                if _state.attributes.name == to_state.name and self.is_enter(
+                    _state
+                ):
                     raise CoreException(
                         f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.',
                     )
@@ -567,7 +585,9 @@ class Scenario(ScenarioInterface):
         """
         return self.__src.check_vector_exists(name)
 
-    def set_synonym_value(self, input_name: str, old_synonym: str, new_synonym: str):
+    def set_synonym_value(
+        self, input_name: str, old_synonym: str, new_synonym: str
+    ):
         """изменяет значение синонима"""
         self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
 
@@ -613,7 +633,9 @@ class Scenario(ScenarioInterface):
 
         try:
             self.get_vector(new_name)
-            raise CoreException(f'Вектор с именем "{new_name.value}" уже существует!')
+            raise CoreException(
+                f'Вектор с именем "{new_name.value}" уже существует!'
+            )
 
         except NotExists:
             self.__src.rename_vector(old_name, new_name)
