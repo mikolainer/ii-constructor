@@ -5,7 +5,9 @@
 venv/*
 env/*
 .env
+build
 build/*
 dist/*
 main.spec
 engine
+.idea

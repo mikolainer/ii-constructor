@@ -1,113 +1,107 @@
 # Этот файл — часть "Конструктора интерактивных инструкций".
-# 
-# Конструктор интерактивных инструкций — свободная программа: 
-# вы можете перераспространять ее и/или изменять ее на условиях 
-# Стандартной общественной лицензии GNU в том виде, 
+#
+# Конструктор интерактивных инструкций — свободная программа:
+# вы можете перераспространять ее и/или изменять ее на условиях
+# Стандартной общественной лицензии GNU в том виде,
 # в каком она была опубликована Фондом свободного программного обеспечения;
 # либо версии 3 лицензии, либо (по вашему выбору) любой более поздней версии.
 # Конструктор интерактивных инструкций распространяется в надежде,
-# что она будет полезной, но БЕЗО ВСЯКИХ ГАРАНТИЙ; 
+# что она будет полезной, но БЕЗО ВСЯКИХ ГАРАНТИЙ;
 # даже без неявной гарантии ТОВАРНОГО ВИДА
-# или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. 
+# или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ.
 # Подробнее см. в Стандартной общественной лицензии GNU.
-# 
+#
 # Вы должны были получить копию Стандартной общественной лицензии GNU
 # вместе с этой программой. Если это не так,
 # см. <https://www.gnu.org/licenses/>.
 
 
-
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from PySide6.QtCore import (
-    Qt,
-    QPoint,
-    Slot,
-    Signal,
     QAbstractItemModel,
     QItemSelection,
     QModelIndex,
     QObject,
     QPersistentModelIndex,
+    QPoint,
     QSize,
+    Qt,
     Signal,
     Slot,
-    Qt,
 )
-
 from PySide6.QtGui import (
     QContextMenuEvent,
+    QFont,
     QKeyEvent,
-    QResizeEvent,
-    QMouseEvent,
+    QKeySequence,
     QMouseEvent,
     QPainter,
-    QFont,
-    QAction,
-    QKeySequence,
+    QResizeEvent,
     QShortcut,
 )
-
 from PySide6.QtWidgets import (
-    QInputDialog,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QSizePolicy,
-    QSplitter,
-    QSpacerItem,
-    QSpacerItem,
     QDialog,
+    QHBoxLayout,
+    QInputDialog,
     QLabel,
-    QLineEdit,
-    QScrollArea,
-    QStackedWidget,
-    QStyleOptionViewItem,
-    QWidget,
-    QStyledItemDelegate,
     QListView,
-    QTableView,
-    QHeaderView,
+    QMenu,
     QMessageBox,
     QPushButton,
-    QListView,
-    QHBoxLayout,
-    QLabel,
+    QScrollArea,
+    QSizePolicy,
+    QSpacerItem,
+    QSplitter,
+    QStackedWidget,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
     QVBoxLayout,
-    QMenu,
+    QWidget,
 )
 
-from .data import CustomDataRole, BaseModel, SynonymsSetModel, ProxyModelReadOnly
+from .data import (
+    BaseModel,
+    CustomDataRole,
+    ProxyModelReadOnly,
+    SynonymsSetModel,
+)
 from .primitives.buttons import CloseButton
 from .primitives.widgets import SynonymEditorWidget
 
+
 class SynonymsGroupsModel(BaseModel):
-    ''' Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов '''
-    def __init__( self, parent: QObject | None = None) -> None:
+    """Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов"""
+
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._data_init(
             index_roles=[CustomDataRole.Name],
-            required_roles=[
-                CustomDataRole.Name,
-                CustomDataRole.SynonymsSet
-            ]
+            required_roles=[CustomDataRole.Name, CustomDataRole.SynonymsSet],
         )
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
+
 class SynonymsGroupWidget(QWidget):
-    ''' Единица списка групп синонимов. Отображение элемента модели групп синонимов '''
+    """Единица списка групп синонимов. Отображение элемента модели групп синонимов"""
+
     __title: QLabel
     __description: QLabel
-    
+
     def name(self) -> str:
         return self.__title.text()
-    
+
     def description(self) -> str:
         return self.__description.text()
 
-    def __init__(self, name:str, description: str, parent: QWidget = None):
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        parent: QWidget = None,
+    ) -> None:
         super().__init__(parent)
         main_lay = QVBoxLayout(self)
 
@@ -122,16 +116,26 @@ class SynonymsGroupWidget(QWidget):
         self.__description.setMinimumHeight(30)
         main_lay.addWidget(self.__description)
 
-        main_lay.setContentsMargins(5,0,5,0)
-    
+        main_lay.setContentsMargins(5, 0, 5, 0)
+
+
 class SynonymsGroupsDelegate(QStyledItemDelegate):
-    ''' Реализация части MVC фреймворка Qt для групп синонимов '''
+    """Реализация части MVC фреймворка Qt для групп синонимов"""
+
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+    def paint(
+        self,
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
         data = index.internalPointer()
-        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Description])
+        wgt = SynonymsGroupWidget(
+            data.on[CustomDataRole.Name],
+            data.on[CustomDataRole.Description],
+        )
         wgt.resize(option.rect.size())
 
         painter.setClipRect(option.rect)
@@ -142,14 +146,23 @@ class SynonymsGroupsDelegate(QStyledItemDelegate):
 
         super().paint(painter, option, index)
 
-    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
+    def sizeHint(
+        self,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> QSize:
         data = index.internalPointer()
-        wgt = SynonymsGroupWidget(data.on[CustomDataRole.Name], data.on[CustomDataRole.Description])
+        wgt = SynonymsGroupWidget(
+            data.on[CustomDataRole.Name],
+            data.on[CustomDataRole.Description],
+        )
         wgt.adjustSize()
         return wgt.size()
 
+
 class SynonymsGroupsView(QListView):
-    ''' Реализация части MVC фреймворка Qt для групп синонимов '''
+    """Реализация части MVC фреймворка Qt для групп синонимов"""
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
@@ -167,59 +180,106 @@ class SynonymsGroupsView(QListView):
         for index in self.selectedIndexes():
             self.__remove_row(index)
 
-    def __rename_row(self, index:QModelIndex):
-        new_name, ok = QInputDialog.getText(self, "Переименовать вектор", "Новое имя вектора:")
-        if not ok: return
-        
+    def __rename_row(self, index: QModelIndex):
+        new_name, ok = QInputDialog.getText(
+            self,
+            "Переименовать вектор",
+            "Новое имя вектора:",
+        )
+        if not ok:
+            return
+
         self.model().setData(index, new_name, CustomDataRole.Name)
 
-    def __remove_row(self, index:QModelIndex):
+    def __remove_row(self, index: QModelIndex):
         if not self.model().removeRow(index.row()):
-            QMessageBox.warning(self, 'Невозможно выполнить', 'Невозможно удалить выбранный вектор. Он используется в существующих переходах!')
+            QMessageBox.warning(
+                self,
+                "Невозможно выполнить",
+                "Невозможно удалить выбранный вектор. Он используется в существующих переходах!",
+            )
 
-    def selectionChanged(self, selected: QItemSelection, deselected: QItemSelection) -> None:
+    def selectionChanged(
+        self,
+        selected: QItemSelection,
+        deselected: QItemSelection,
+    ) -> None:
         self.on_selectionChanged.emit(selected, deselected)
         return super().selectionChanged(selected, deselected)
-    
+
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_F2:
             indexes = self.selectedIndexes()
             if len(indexes) > 0:
                 self.__rename_row(indexes[0])
-            
+
         return super().keyPressEvent(event)
-    
+
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         index = self.indexAt(event.pos())
         if not index.isValid():
             return
 
         menu = QMenu(self)
-        menu.addAction('Удалить', lambda: self.__remove_row(index), QKeySequence(QKeySequence.StandardKey.Delete))
-        menu.addAction('Переименовать', lambda: self.__rename_row(index), QKeySequence(Qt.Key.Key_F2))
+        menu.addAction(
+            "Удалить",
+            lambda: self.__remove_row(index),
+            QKeySequence(QKeySequence.StandardKey.Delete),
+        )
+        menu.addAction(
+            "Переименовать",
+            lambda: self.__rename_row(index),
+            QKeySequence(Qt.Key.Key_F2),
+        )
         menu.move(event.globalPos())
         menu.show()
 
+
 class SynonymsSetDelegate(QStyledItemDelegate):
-    ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
+    """Реализация части MVC фреймворка Qt для набора синонимов в группе"""
+
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
+    def createEditor(
+        self,
+        parent: QWidget,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> QWidget:
         return super().createEditor(parent, option, index)
-    
-    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+
+    def updateEditorGeometry(
+        self,
+        editor: QWidget,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
         super().updateEditorGeometry(editor, option, index)
-    
-    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+
+    def setEditorData(
+        self,
+        editor: QWidget,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
         super().setEditorData(editor, index)
         editor.setText(index.data())
-    
-    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
-        #super().setModelData(editor, model, index)
+
+    def setModelData(
+        self,
+        editor: QWidget,
+        model: QAbstractItemModel,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
+        # super().setModelData(editor, model, index)
         model.setData(index, editor.text())
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+    def paint(
+        self,
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
         data = index.data(CustomDataRole.Text)
         wgt = SynonymEditorWidget(data)
         wgt.resize(option.rect.size())
@@ -232,14 +292,20 @@ class SynonymsSetDelegate(QStyledItemDelegate):
 
         super().paint(painter, option, index)
 
-    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
+    def sizeHint(
+        self,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> QSize:
         data = index.data(CustomDataRole.Text)
         wgt = SynonymEditorWidget(data)
         wgt.adjustSize()
         return wgt.size()
 
+
 class SynonymsSetView(QListView):
-    ''' Реализация части MVC фреймворка Qt для набора синонимов в группе '''
+    """Реализация части MVC фреймворка Qt для набора синонимов в группе"""
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setSelectionBehavior(QListView.SelectionBehavior.SelectItems)
@@ -250,18 +316,20 @@ class SynonymsSetView(QListView):
 
     def sizeHint(self) -> QSize:
         size = super().sizeHint()
-        temp_w = SynonymEditorWidget('some text')
+        temp_w = SynonymEditorWidget("some text")
         temp_w.adjustSize()
         item_height = temp_w.height()
         size.setHeight(self.model().rowCount() * item_height)
         return size
 
+
 class GroupsList(QStackedWidget):
-    ''' Обёртка для набора синонимов в группе'''
+    """Обёртка для набора синонимов в группе"""
+
     # TODO: изменить наследование на ассоциацию?
-    
+
     __indexed: dict[int, SynonymsGroupsView]
-    __empty_index:int
+    __empty_index: int
     create_value = Signal(SynonymsGroupsModel)
 
     def addWidget(self, w: SynonymsGroupsView) -> int:
@@ -281,33 +349,37 @@ class GroupsList(QStackedWidget):
         area.setWidget(wrapper)
 
         return super().addWidget(area)
-    
-    def __init__(self, parent: QWidget = None):
+
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
         self.__indexed = {}
         self.__empty_index = super().addWidget(QWidget(self))
         self.resize(200, self.height())
 
     def set_empty(self):
-        ''' Показать заглушку '''
+        """Показать заглушку"""
         self.setCurrentIndex(self.__empty_index)
-    
+
     def setList(self, view: SynonymsGroupsView, set_current: bool = False):
         # для нового списка создаём отдельный виджет и сохраняем его индекс
-        if not view in self.__indexed.values():
+        if view not in self.__indexed.values():
             self.__indexed[self.addWidget(view)] = view
 
         # получаем индекс виджета с полученным списком синонимов
-        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(view)]
+        idx: int = list(self.__indexed.keys())[
+            list(self.__indexed.values()).index(view)
+        ]
 
         # если указано - устанавливаем текущим виджетом
         if set_current:
             self.setCurrentIndex(idx)
 
+
 class SynonymsList(QStackedWidget):
-    ''' Обёртка для списка групп синонимов '''
+    """Обёртка для списка групп синонимов"""
+
     __indexed: dict[int, SynonymsSetModel]
-    __empty_index:int
+    __empty_index: int
     create_value = Signal(SynonymsSetModel)
 
     def addWidget(self, w: SynonymsSetView) -> int:
@@ -326,46 +398,51 @@ class SynonymsList(QStackedWidget):
         area.setWidgetResizable(True)
         area.setWidget(wrapper)
         return super().addWidget(area)
-    
-    def __init__(self, parent: QWidget = None):
+
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
         self.__indexed = {}
         self.__empty_index = super().addWidget(QWidget(self))
 
     def set_empty(self):
-        ''' Показать заглушку '''
+        """Показать заглушку"""
         self.setCurrentIndex(self.__empty_index)
-    
+
     def set_current(self, model: SynonymsSetModel):
         # для нового списка создаём отдельный виджет и сохраняем его индекс
-        if not model in self.__indexed.values():
+        if model not in self.__indexed.values():
             view = SynonymsSetView(self)
             view.setModel(model)
             self.__indexed[self.addWidget(view)] = model
 
         # получаем индекс виджета с полученным списком синонимов
-        idx:int = list(self.__indexed.keys())[list(self.__indexed.values()).index(model)]
+        idx: int = list(self.__indexed.keys())[
+            list(self.__indexed.values()).index(model)
+        ]
         self.setCurrentIndex(idx)
 
+
 class SynonymsEditor(QDialog):
-    ''' Редактор синонимов. Содержит список групп синонимов (слева) и набор синонимов в выбранной группе (справа) '''
+    """Редактор синонимов. Содержит список групп синонимов (слева) и набор синонимов в выбранной группе (справа)"""
+
     __oldPos: QPoint | None
-    __tool_bar: QWidget # полоска с кнопкой "закрыть"
+    __tool_bar: QWidget  # полоска с кнопкой "закрыть"
     __close_btn: CloseButton
 
     __synonyms_list: SynonymsList
     __group_list: GroupsList
 
-    __g_model:SynonymsGroupsModel
-    __create_group_handler:Callable
-    __create_value_handler:Callable
+    __g_model: SynonymsGroupsModel
+    __create_group_handler: Callable
+    __create_value_handler: Callable
 
     def __init__(
-            self, g_model:SynonymsGroupsModel,
-            create_group_handler:Callable[[SynonymsGroupsModel], None],
-            create_value_handler:Callable[[SynonymsSetModel], None],
-            parent: QWidget | None = None
-        ) -> None:
+        self,
+        g_model: SynonymsGroupsModel,
+        create_group_handler: Callable[[SynonymsGroupsModel], None],
+        create_value_handler: Callable[[SynonymsSetModel], None],
+        parent: QWidget | None = None,
+    ) -> None:
         self.__g_model = g_model
         self.__create_group_handler = create_group_handler
         self.__create_value_handler = create_value_handler
@@ -373,11 +450,11 @@ class SynonymsEditor(QDialog):
         super().__init__(parent, Qt.WindowType.FramelessWindowHint)
         self.setWindowFlag(Qt.WindowType.Window, True)
 
-        self.setWindowTitle('Редактор синонимов')
+        self.setWindowTitle("Редактор синонимов")
         self.resize(600, 500)
-        
+
         main_lay = QVBoxLayout(self)
-        main_lay.setContentsMargins(0,0,0,0)
+        main_lay.setContentsMargins(0, 0, 0, 0)
         main_lay.setSpacing(0)
 
         # полоска с кнопкой закрыть
@@ -392,10 +469,11 @@ class SynonymsEditor(QDialog):
         tool_bar_layout.setContentsMargins(2, 2, 2, 2)
         tool_bar_layout.addSpacerItem(
             QSpacerItem(
-                0,0,
+                0,
+                0,
                 QSizePolicy.Policy.Expanding,
-                QSizePolicy.Policy.Minimum
-            )
+                QSizePolicy.Policy.Minimum,
+            ),
         )
 
         self.__close_btn = CloseButton(self)
@@ -403,27 +481,31 @@ class SynonymsEditor(QDialog):
         tool_bar_layout.addWidget(self.__close_btn)
 
         self.__group_list = GroupsList(self)
-        self.__group_list.create_value.connect(lambda model: self.__create_group_handler(model))
-        
+        self.__group_list.create_value.connect(
+            lambda model: self.__create_group_handler(model),
+        )
+
         g_view = SynonymsGroupsView(self)
         g_view.setModel(g_model)
         self.__group_list.setList(g_view, True)
 
         self.__synonyms_list = SynonymsList(self)
-        self.__synonyms_list.create_value.connect(lambda model: self.__create_value_handler(model))
+        self.__synonyms_list.create_value.connect(
+            lambda model: self.__create_value_handler(model),
+        )
         self.__synonyms_list.set_empty()
 
         g_view.selectionModel().selectionChanged.connect(
-            lambda now, prev: self.__on_syn_group_changed(now.indexes())
+            lambda now, prev: self.__on_syn_group_changed(now.indexes()),
         )
 
         # рабочая область
-        splitter = QSplitter( self, Qt.Orientation.Horizontal )
+        splitter = QSplitter(self, Qt.Orientation.Horizontal)
         splitter.addWidget(self.__group_list)
-        splitter.setStretchFactor(0,0)
+        splitter.setStretchFactor(0, 0)
         splitter.addWidget(self.__synonyms_list)
-        splitter.setStretchFactor(1,1)
-        
+        splitter.setStretchFactor(1, 1)
+
         main_lay.addWidget(splitter, 1)
 
     def mousePressEvent(self, event):
@@ -445,64 +527,99 @@ class SynonymsEditor(QDialog):
             self.resize(event.size())
 
         return super().resizeEvent(event)
-    
+
     @Slot(list)
     def __on_syn_group_changed(self, selected_index_list):
         if len(selected_index_list):
             synonyms = self.__g_model.data(
                 selected_index_list[0],
-                CustomDataRole.SynonymsSet
+                CustomDataRole.SynonymsSet,
             )
             self.__synonyms_list.set_current(synonyms)
 
+
 class SynonymsGroupWidgetToSelect(QWidget):
-    ''' Внутренний виджет для отображения элемента модели в окне выбора существующего набора синонимов '''
-    def __init__(self, name: str, synonyms_set_model:SynonymsSetModel, parent: QWidget = None):
+    """Внутренний виджет для отображения элемента модели в окне выбора существующего набора синонимов"""
+
+    def __init__(
+        self,
+        name: str,
+        synonyms_set_model: SynonymsSetModel,
+        parent: QWidget = None,
+    ) -> None:
         super().__init__(parent)
         main_lay: QVBoxLayout = QVBoxLayout(self)
 
-        title:QLabel = QLabel(name, self)
+        title: QLabel = QLabel(name, self)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setAutoFillBackground(True)
-        title_font:QFont = title.font()
+        title_font: QFont = title.font()
         title_font.setBold(True)
         title.setFont(title_font)
         main_lay.addWidget(title)
 
         synonyms_list = QListView(self)
-        synonyms_list.setVerticalScrollMode(QListView.ScrollMode.ScrollPerPixel)
+        synonyms_list.setVerticalScrollMode(
+            QListView.ScrollMode.ScrollPerPixel,
+        )
         model = ProxyModelReadOnly(self)
         model.setSourceModel(synonyms_set_model)
         synonyms_list.setModel(model)
         synonyms_list.setMaximumHeight(50)
         main_lay.addWidget(synonyms_list)
 
+
 class SynonymsSelectorDelegate(QStyledItemDelegate):
-    ''' Реализация части MVC фреймворка Qt для окна выбора существующего набора синонимов '''
+    """Реализация части MVC фреймворка Qt для окна выбора существующего набора синонимов"""
+
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
+    def createEditor(
+        self,
+        parent: QWidget,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> QWidget:
         return SynonymsGroupWidgetToSelect(
             index.data(CustomDataRole.Name),
             index.data(CustomDataRole.SynonymsSet),
-            parent
+            parent,
         )
-    
-    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
-        super().updateEditorGeometry(editor, option, index)
-    
-    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
-        super().setEditorData(editor, index)
-    
-    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
-        '''ReadOnly'''
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> None:
+    def updateEditorGeometry(
+        self,
+        editor: QWidget,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
+        super().updateEditorGeometry(editor, option, index)
+
+    def setEditorData(
+        self,
+        editor: QWidget,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
+        super().setEditorData(editor, index)
+
+    def setModelData(
+        self,
+        editor: QWidget,
+        model: QAbstractItemModel,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
+        """ReadOnly"""
+
+    def paint(
+        self,
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
         data = index.internalPointer()
         wgt = SynonymsGroupWidgetToSelect(
             data.on[CustomDataRole.Name],
-            data.on[CustomDataRole.SynonymsSet]
+            data.on[CustomDataRole.SynonymsSet],
         )
         wgt.resize(option.rect.size())
 
@@ -514,18 +631,24 @@ class SynonymsSelectorDelegate(QStyledItemDelegate):
 
         super().paint(painter, option, index)
 
-    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QSize:
+    def sizeHint(
+        self,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> QSize:
         data = index.internalPointer()
         wgt = SynonymsGroupWidgetToSelect(
             data.on[CustomDataRole.Name],
-            data.on[CustomDataRole.SynonymsSet]
+            data.on[CustomDataRole.SynonymsSet],
         )
         wgt.setProperty("isWindowTitle", True)
         wgt.adjustSize()
         return wgt.size()
-    
+
+
 class SynonymsSelectorView(QListView):
-    ''' Реализация части MVC фреймворка Qt для окна выбора существующего набора синонимов '''
+    """Реализация части MVC фреймворка Qt для окна выбора существующего набора синонимов"""
+
     item_selected = Signal(str)
     __selected: bool
 
@@ -538,7 +661,7 @@ class SynonymsSelectorView(QListView):
         self.setItemDelegate(SynonymsSelectorDelegate(self))
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
-        #self.resize(600, 400)
+        # self.resize(600, 400)
         self.setMouseTracking(True)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
@@ -560,7 +683,7 @@ class SynonymsSelectorView(QListView):
             self.__selected = True
 
         return super().mouseDoubleClickEvent(event)
-    
+
     def accept(self):
         self.close()
 
@@ -570,17 +693,22 @@ class SynonymsSelectorView(QListView):
 
 
 class SynonymsSelector(QDialog):
-    __g_model:SynonymsGroupsModel
-    __create_group_handler:Callable[[SynonymsGroupsModel], None]
+    __g_model: SynonymsGroupsModel
+    __create_group_handler: Callable[[SynonymsGroupsModel], None]
 
     __selected_name: str
 
     create_value = Signal(SynonymsGroupsModel)
 
-    def __init__(self, g_model:SynonymsGroupsModel, create_group_handler:Callable[[SynonymsGroupsModel], None], parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        g_model: SynonymsGroupsModel,
+        create_group_handler: Callable[[SynonymsGroupsModel], None],
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Выбор синонима")
-        
+
         self.__selected_name = None
         self.__g_model = g_model
         self.__create_group_handler = create_group_handler
@@ -591,7 +719,9 @@ class SynonymsSelector(QDialog):
         main_lay.addWidget(view, 1)
 
         create_btn = QPushButton("Новое значение", self)
-        create_btn.clicked.connect(lambda: self.__create_group_handler(view.model()))
+        create_btn.clicked.connect(
+            lambda: self.__create_group_handler(view.model()),
+        )
         main_lay.addWidget(create_btn, 1)
 
         view.item_selected.connect(self.__selected)
@@ -599,15 +729,16 @@ class SynonymsSelector(QDialog):
         self.resize(600, 400)
 
     @Slot(str)
-    def __selected(self, name:str):
+    def __selected(self, name: str):
         self.__selected_name = name
         self.accept()
 
-    def selected_item(self) -> Optional[SynonymsSetModel]:
-        g_item = self.__g_model.get_item_by(CustomDataRole.Name, self.__selected_name)
+    def selected_item(self) -> SynonymsSetModel | None:
+        g_item = self.__g_model.get_item_by(
+            CustomDataRole.Name,
+            self.__selected_name,
+        )
 
         if g_item is None:
             return None
-        else:
-            return g_item.on[CustomDataRole.SynonymsSet]
-        
+        return g_item.on[CustomDataRole.SynonymsSet]

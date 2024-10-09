@@ -1,0 +1,6 @@
+-e ./ii_constructor/packages/core
+-e ./ii_constructor/packages/levenshtain
+-e ./ii_constructor/packages/mariarepo
+-e ./ii_constructor/packages/mysqlrepo
+-e ./ii_constructor/packages/inmemoryrepo
+-e ./ii_constructor/packages/gui

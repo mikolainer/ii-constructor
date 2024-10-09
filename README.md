@@ -126,3 +126,21 @@
 Работа с БД:
 - чтобы создать БД (в СУБД mariadb или mysql), используйте `ii_constructor\db\ii_constructor.sql`
 - чтобы сформировать движок, запустите скрипт `make_db_engine.bat`. После этого упакуйте в zip архив содержимое папки `engine`.
+
+### Разработка конструктора
+- Установите зависимости для разработки из `requirements-dev.txt`:
+  ```
+  pip install -r requirements-dev.txt
+  ```
+- После изменения кода посмотрите предложения линтеров:
+  ```
+  black --diff .
+  isort --dif .
+  ruff check .
+  ```
+- Исправтье код автоматически и самостоятельно:
+  ```
+  black .
+  isort .
+  ruff check --fix .
+  ```
