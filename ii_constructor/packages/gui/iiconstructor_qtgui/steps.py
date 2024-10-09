@@ -152,7 +152,7 @@ class StepInputSetView(QTableView):
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
 
         self.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
+            QHeaderView.ResizeMode.Stretch,
         )
         self.horizontalHeader().hide()
 
@@ -173,7 +173,9 @@ class StepEditor(QDialog):
     __model: StepModel
 
     def __init__(
-        self, model: StepModel, parent: QWidget | None = None
+        self,
+        model: StepModel,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Просмотр связи")

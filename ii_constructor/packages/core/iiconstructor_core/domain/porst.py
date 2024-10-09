@@ -29,7 +29,9 @@ class ScenarioInterface:
         """сохраняет положение состояни"""
 
     def create_enter_state(
-        self, input: InputDescription, required: bool = False
+        self,
+        input: InputDescription,
+        required: bool = False,
     ):
         """добавляет вектор и новое состояние-вход с таким-же именем"""
 

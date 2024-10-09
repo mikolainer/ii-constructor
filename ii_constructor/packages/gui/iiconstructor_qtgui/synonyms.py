@@ -97,7 +97,10 @@ class SynonymsGroupWidget(QWidget):
         return self.__description.text()
 
     def __init__(
-        self, name: str, description: str, parent: QWidget = None
+        self,
+        name: str,
+        description: str,
+        parent: QWidget = None,
     ) -> None:
         super().__init__(parent)
         main_lay = QVBoxLayout(self)
@@ -466,7 +469,10 @@ class SynonymsEditor(QDialog):
         tool_bar_layout.setContentsMargins(2, 2, 2, 2)
         tool_bar_layout.addSpacerItem(
             QSpacerItem(
-                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+                0,
+                0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
             ),
         )
 
@@ -554,7 +560,7 @@ class SynonymsGroupWidgetToSelect(QWidget):
 
         synonyms_list = QListView(self)
         synonyms_list.setVerticalScrollMode(
-            QListView.ScrollMode.ScrollPerPixel
+            QListView.ScrollMode.ScrollPerPixel,
         )
         model = ProxyModelReadOnly(self)
         model.setSourceModel(synonyms_set_model)
@@ -714,7 +720,7 @@ class SynonymsSelector(QDialog):
 
         create_btn = QPushButton("Новое значение", self)
         create_btn.clicked.connect(
-            lambda: self.__create_group_handler(view.model())
+            lambda: self.__create_group_handler(view.model()),
         )
         main_lay.addWidget(create_btn, 1)
 
@@ -729,7 +735,8 @@ class SynonymsSelector(QDialog):
 
     def selected_item(self) -> SynonymsSetModel | None:
         g_item = self.__g_model.get_item_by(
-            CustomDataRole.Name, self.__selected_name
+            CustomDataRole.Name,
+            self.__selected_name,
         )
 
         if g_item is None:

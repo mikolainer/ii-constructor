@@ -107,7 +107,8 @@ class PossibleInputs:
         return self.__inputs[name]
 
     def select(
-        self, names: list[Name] | None = None
+        self,
+        names: list[Name] | None = None,
     ) -> list["InputDescription"]:
         """
         Возвращает список векторов управляющих воздействий по указанным именам
@@ -207,7 +208,8 @@ class StepVectorBaseClassificator:
         raise NotImplementedError
 
     def __prepare_to_step_detect(
-        self, cur_state_id: StateID
+        self,
+        cur_state_id: StateID,
     ) -> dict[str, State]:
         inputs = dict[str, State]()
         for step in self.__project.steps(cur_state_id):
@@ -361,7 +363,10 @@ class Source:
         # TODO: оптимизировать API. (фактически в память выгружается вся база)
 
     def set_synonym_value(
-        self, input_name: str, old_synonym: str, new_synonym: str
+        self,
+        input_name: str,
+        old_synonym: str,
+        new_synonym: str,
     ):
         """изменяет значение синонима"""
 
@@ -405,7 +410,9 @@ class Scenario(ScenarioInterface):
 
     # создание сущностей
     def create_enter_state(
-        self, input: InputDescription, required: bool = False
+        self,
+        input: InputDescription,
+        required: bool = False,
     ):
         """добавляет вектор и новое состояние-вход с таким-же именем"""
 
@@ -431,7 +438,7 @@ class Scenario(ScenarioInterface):
                 and _state.id() != state_to.id()
             ):
                 raise CoreException(
-                    "Состояние-вход должно иметь уникальное имя!"
+                    "Состояние-вход должно иметь уникальное имя!",
                 )
 
         # проверяем существование вектора c именем состояния входа
@@ -449,7 +456,8 @@ class Scenario(ScenarioInterface):
         # проверяем является ли входом
         if self.is_enter(state_to):
             raise Exists(
-                state_to, f'Точка входа в состояние "{state_to.id().value}"'
+                state_to,
+                f'Точка входа в состояние "{state_to.id().value}"',
             )
 
         input_name = state_to.attributes.name
@@ -476,7 +484,7 @@ class Scenario(ScenarioInterface):
             _states = self.states()
             for _state in _states.values():
                 if _state.attributes.name == to_state.name and self.is_enter(
-                    _state
+                    _state,
                 ):
                     raise CoreException(
                         f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.',
@@ -586,7 +594,10 @@ class Scenario(ScenarioInterface):
         return self.__src.check_vector_exists(name)
 
     def set_synonym_value(
-        self, input_name: str, old_synonym: str, new_synonym: str
+        self,
+        input_name: str,
+        old_synonym: str,
+        new_synonym: str,
     ):
         """изменяет значение синонима"""
         self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
@@ -634,7 +645,7 @@ class Scenario(ScenarioInterface):
         try:
             self.get_vector(new_name)
             raise CoreException(
-                f'Вектор с именем "{new_name.value}" уже существует!'
+                f'Вектор с именем "{new_name.value}" уже существует!',
             )
 
         except NotExists:

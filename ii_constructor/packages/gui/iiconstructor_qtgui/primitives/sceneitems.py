@@ -142,7 +142,9 @@ class Arrow(QGraphicsItem):
         return super().mouseDoubleClickEvent(event)
 
     def itemChange(
-        self, change: QGraphicsItem.GraphicsItemChange, value: Any
+        self,
+        change: QGraphicsItem.GraphicsItemChange,
+        value: Any,
     ) -> Any:
         if change == QGraphicsItem.GraphicsItemChange.ItemSelectedChange:
             if value:
@@ -672,7 +674,8 @@ class SceneNode(QGraphicsProxyWidget):
 
         self.setParentItem(self.__controll)
         self.setFlag(
-            QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True
+            QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent,
+            True,
         )
         self.installSceneEventFilter(self.__controll)
 
@@ -738,7 +741,7 @@ class SceneNode(QGraphicsProxyWidget):
         add_btn.setParentItem(self)
         add_btn.setPos(pos)
         add_btn.connection_added.connect(
-            lambda: self.__add_connection_request(add_btn)
+            lambda: self.__add_connection_request(add_btn),
         )
         self.__add_btns.append(add_btn)
 
@@ -888,13 +891,13 @@ class NodeWidget(QWidget):
             pixmap = QPixmap(":icons/delete_btn.svg").scaled(QSize(20, 20))
 
         self.__close_btn.setIcon(
-            pixmap.scaled(self.BUTTON_SIZE, self.BUTTON_SIZE)
+            pixmap.scaled(self.BUTTON_SIZE, self.BUTTON_SIZE),
         )
 
     def set_title(self, text: str):
         """Устанавливает заголовок. Прямое использование не ожидается (обрабатывается в SceneNode)"""
         if self.__change_title_handler is None or self.__change_title_handler(
-            text
+            text,
         ):
             self.__title.setText(text)
             self.__title.setToolTip(text)

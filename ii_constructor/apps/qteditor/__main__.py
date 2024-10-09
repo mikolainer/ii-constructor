@@ -22,7 +22,7 @@ from presentation import ProjectManager
 from PySide6.QtCore import QFile, QIODevice, QTextStream
 from PySide6.QtWidgets import QApplication
 
-import resources.styles_rc  # noqa: F401 Для вызова функции инициализации стилей
+import resources.styles_rc
 import resources.icons_rc  # noqa: F401 Для вызова функции инициализации иконок
 
 if __name__ == "__main__":

@@ -308,7 +308,10 @@ class SourceInMemory(Source):
         return self.__connections
 
     def set_synonym_value(
-        self, input_name: str, old_synonym: str, new_synonym: str
+        self,
+        input_name: str,
+        old_synonym: str,
+        new_synonym: str,
     ):
         vector: LevenshtainVector = self.get_vector(Name(input_name))
         synonym = Synonym(new_synonym)

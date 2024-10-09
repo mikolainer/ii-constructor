@@ -166,7 +166,8 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         self.__remove_callback = callback
 
     def set_edit_callback(
-        self, callback: Callable[[QModelIndex, int, Any, Any], bool]
+        self,
+        callback: Callable[[QModelIndex, int, Any, Any], bool],
     ):
         """callback обработки изменений из пользовательского интерфейса"""
         self.__edit_callback = callback
@@ -184,7 +185,8 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         self.__prepared_item = item
 
     def parent(
-        self, child: QModelIndex | QPersistentModelIndex
+        self,
+        child: QModelIndex | QPersistentModelIndex,
     ) -> QModelIndex:
         """Модель плоская. Возвращается QModelIndex()"""
         return QModelIndex()
@@ -199,13 +201,15 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         return self.createIndex(row, column, self.get_item(row))
 
     def rowCount(
-        self, parent: QModelIndex | QPersistentModelIndex = None
+        self,
+        parent: QModelIndex | QPersistentModelIndex = None,
     ) -> int:
         """Возвращает количество элементов в модели"""
         return len(self)
 
     def columnCount(
-        self, parent: QModelIndex | QPersistentModelIndex = None
+        self,
+        parent: QModelIndex | QPersistentModelIndex = None,
     ) -> int:
         """Всегда возвращает 1 (список представляется таблицей с единствоенный мтолбцом)"""
         return 1

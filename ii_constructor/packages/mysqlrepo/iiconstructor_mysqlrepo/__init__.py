@@ -49,14 +49,16 @@ class SourceMySQL(Source):
     def __init__(self, conn: pymysql.Connection, id: ScenarioID) -> None:
         if not conn.open:
             raise CoreException(
-                "подключение не открыто", "Не удалось открыть "
+                "подключение не открыто",
+                "Не удалось открыть ",
             )
 
         self.__db_connection = conn
 
         cur = conn.cursor()
         cur.execute(
-            "SELECT name, description FROM projects WHERE id=%s", (id.value,)
+            "SELECT name, description FROM projects WHERE id=%s",
+            (id.value,),
         )
         conn.commit()
         name, descr = cur.fetchone()
@@ -66,7 +68,8 @@ class SourceMySQL(Source):
 
     @staticmethod
     def __find_vector(
-        list: list[InputDescription], name: Name
+        list: list[InputDescription],
+        name: Name,
     ) -> InputDescription:
         for vector in list:
             if vector.name() == name:
@@ -245,7 +248,8 @@ class SourceMySQL(Source):
 
             _conn = conns[d_key][__state_id]
             step = Step(
-                self.__find_vector(f_vectors, Name(_vector_name)), _conn
+                self.__find_vector(f_vectors, Name(_vector_name)),
+                _conn,
             )
             _conn.steps.append(step)
             result.append(step)
@@ -400,7 +404,9 @@ class SourceMySQL(Source):
         return State(
             StateID(id),
             StateAttributes(
-                Output(Answer(answer)), Name(name), Description(descr)
+                Output(Answer(answer)),
+                Name(name),
+                Description(descr),
             ),
             required,
         )
@@ -453,7 +459,8 @@ class SourceMySQL(Source):
             if _from_state is not None:
                 _conn = conns[StateID(_from_state)]
                 step = Step(
-                    self.__find_vector(f_vectors, Name(_vector_name)), _conn
+                    self.__find_vector(f_vectors, Name(_vector_name)),
+                    _conn,
                 )
                 _conn.steps.append(step)
 
@@ -517,7 +524,8 @@ class SourceMySQL(Source):
         input: LevenshtainVector = self.get_vector(Name(in_name))
 
         return Step(
-            input, Connection(state_from, state_to, input.synonyms.synonyms)
+            input,
+            Connection(state_from, state_to, input.synonyms.synonyms),
         )
 
     def delete_step(
@@ -593,7 +601,9 @@ class SourceMySQL(Source):
                 continue
 
             result["to"][__to_state_id] = Connection(
-                None, f_states[__to_state_id], []
+                None,
+                f_states[__to_state_id],
+                [],
             )
 
         f_vectors = self.select_vectors()
@@ -610,7 +620,8 @@ class SourceMySQL(Source):
                     break
 
             step = Step(
-                self.__find_vector(f_vectors, Name(_vector_name)), _conn
+                self.__find_vector(f_vectors, Name(_vector_name)),
+                _conn,
             )
             _conn.steps.append(step)  # вроде должны быть уникальными
 
@@ -619,14 +630,18 @@ class SourceMySQL(Source):
             __to_state_id = StateID(_to_state)
             _conn = result["to"][__to_state_id]
             step = Step(
-                self.__find_vector(f_vectors, Name(_vector_name)), _conn
+                self.__find_vector(f_vectors, Name(_vector_name)),
+                _conn,
             )
             _conn.steps.append(step)  # вроде должны быть уникальными
 
         return result
 
     def set_synonym_value(
-        self, input_name: str, old_synonym: str, new_synonym: str
+        self,
+        input_name: str,
+        old_synonym: str,
+        new_synonym: str,
     ):
         self.__do(
             "UPDATE `synonyms` SET `value`= %s WHERE `project_id`= %s AND `group_name`= %s AND `value` = %s",

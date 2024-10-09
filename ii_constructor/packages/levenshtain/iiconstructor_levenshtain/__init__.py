@@ -44,7 +44,7 @@ class SynonymsGroup:
 
     def __init__(
         self,
-        other: Optional[Union["SynonymsGroup", list[Synonym]]] = None,
+        other: Union["SynonymsGroup", list[Synonym]] | None = None,
     ) -> None:
         if isinstance(other, SynonymsGroup):
             self.synonyms = other.synonyms
@@ -79,7 +79,7 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
 
         for key, val in possible_inputs.items():
             vector = self._StepVectorBaseClassificator__project.get_vector(
-                Name(key)
+                Name(key),
             )
             if not isinstance(vector, LevenshtainVector):
                 continue
