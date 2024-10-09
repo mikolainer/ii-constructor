@@ -264,11 +264,11 @@ class SourceMySQL(Source):
     ) -> list["InputDescription"]:
         if not names and names is not None:
             return list["InputDescription"]()
-        
+
         conn: pymysql.Connection = self.__db_connection
         cur = conn.cursor()
         result = list[InputDescription]()
-        
+
         if names is not None:
             _names = names
         else:
