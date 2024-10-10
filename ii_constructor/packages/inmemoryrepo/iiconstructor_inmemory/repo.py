@@ -360,6 +360,8 @@ class HostingInmem(Hosting):
 
         for scenario in self.__sources.values():
             src: Source = scenario.source()
-            result.append((src.id.value, src.info.name.value, src.info.description))
+            result.append(
+                (src.id.value, src.info.name.value, src.info.description),
+            )
 
         return result

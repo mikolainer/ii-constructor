@@ -40,9 +40,8 @@ from iiconstructor_core.domain.primitives import (
     StateAttributes,
     StateID,
 )
-from iiconstructor_inmemory.repo import HostingInmem
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
-from iiconstructor_maria.repo import HostingMaria, SourceMariaDB
+from iiconstructor_maria.repo import SourceMariaDB
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 
@@ -142,7 +141,7 @@ class HostingManipulator:
                 id = StateID(int(elem.attrib["Состояние"]))
             else:
                 id = StateID(id_map[int(elem.attrib["Состояние"])])
-            
+
             scenario.make_enter(id)
 
         # добавляем переходы
@@ -151,13 +150,15 @@ class HostingManipulator:
                 state_from_id = StateID(int(elem.attrib["Состояние"]))
             else:
                 state_from_id = StateID(id_map[int(elem.attrib["Состояние"])])
-            
+
             for step in elem.findall("Переход"):
                 if id_map is None:
                     state_to_id = StateID(int(step.attrib["В_состояние"]))
                 else:
-                    state_to_id = StateID(id_map[int(step.attrib["В_состояние"])])
-                
+                    state_to_id = StateID(
+                        id_map[int(step.attrib["В_состояние"])],
+                    )
+
                 for input in step.findall("Управляющее_воздействие"):
                     _vector = scenario.get_vector(
                         Name(input.attrib["Название"]),

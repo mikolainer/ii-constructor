@@ -38,7 +38,7 @@ from iiconstructor_levenshtain import (
     LevenshtainClassificator,
     LevenshtainVector,
 )
-from iiconstructor_maria.repo import HostingMaria, Hosting
+from iiconstructor_maria.repo import Hosting, HostingMaria
 from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from iiconstructor_qtgui.flows import FlowListWidget, FlowsModel, FlowsView
 from iiconstructor_qtgui.main_w import (
