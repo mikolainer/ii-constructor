@@ -49,7 +49,7 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 class HostingManipulator:
     @staticmethod
     def make_scenario(
-        hosting: HostingInmem,
+        hosting: Hosting,
         info: SourceInfo,
     ) -> "ScenarioManipulator":
         """создаёт заготовку сценария для алисы"""
@@ -94,19 +94,15 @@ class HostingManipulator:
             True,
         )
 
-        for state in new_scenario.states().values():
-            state.required = True
-
         return ScenarioManipulator(new_scenario)
 
     @staticmethod
-    def open_scenario(
+    def load_scenario(
         hosting: Hosting,
         data: str,
-        id_map: dict[int, int] = dict[int, int](),  # FIXME: Мутабельный объект
+        id_map: dict[int, int] = None,
     ) -> "ScenarioManipulator":
         """id_map: key - orig, val - new"""
-
         root: Element = fromstring(data)
 
         info = SourceInfo(
@@ -137,17 +133,31 @@ class HostingManipulator:
                     Description(""),
                 ),
             )
-            id_map[int(elem.attrib["Идентификатор"])] = state.id().value
+            if id_map is not None:
+                id_map[int(elem.attrib["Идентификатор"])] = state.id().value
 
         # добавляем входы
         for elem in root.find("Входы").findall("Точка_входа"):
-            scenario.make_enter(StateID(id_map[int(elem.attrib["Состояние"])]))
+            if id_map is None:
+                id = StateID(int(elem.attrib["Состояние"]))
+            else:
+                id = StateID(id_map[int(elem.attrib["Состояние"])])
+            
+            scenario.make_enter(id)
 
         # добавляем переходы
         for elem in root.find("Переходы").findall("Связи"):
-            state_from_id = StateID(id_map[int(elem.attrib["Состояние"])])
+            if id_map is None:
+                state_from_id = StateID(int(elem.attrib["Состояние"]))
+            else:
+                state_from_id = StateID(id_map[int(elem.attrib["Состояние"])])
+            
             for step in elem.findall("Переход"):
-                state_to_id = StateID(id_map[int(step.attrib["В_состояние"])])
+                if id_map is None:
+                    state_to_id = StateID(int(step.attrib["В_состояние"]))
+                else:
+                    state_to_id = StateID(id_map[int(step.attrib["В_состояние"])])
+                
                 for input in step.findall("Управляющее_воздействие"):
                     _vector = scenario.get_vector(
                         Name(input.attrib["Название"]),
@@ -157,61 +167,11 @@ class HostingManipulator:
         return ScenarioManipulator(scenario)
 
     @staticmethod
-    def open_scenario_from_db(
-        hosting: HostingMaria,
+    def open_scenario(
+        hosting: Hosting,
         id: int,
     ) -> "ScenarioManipulator":
         return ScenarioManipulator(hosting.get_scenario(ScenarioID(id)))
-
-    @staticmethod
-    def make_scenario_in_db(
-        hosting: HostingMaria,
-        info: SourceInfo,
-    ) -> "ScenarioManipulator":
-        """создаёт заготовку сценария для алисы в MariaDB"""
-        new_scenario = hosting.get_scenario(hosting.add_source(info))
-
-        new_scenario.create_enter_state(
-            LevenshtainVector(
-                Name("Старт"),
-                SynonymsGroup(
-                    [
-                        Synonym("Алиса, запусти навык ..."),
-                    ],
-                ),
-            ),
-            True,
-        )
-
-        new_scenario.create_enter_state(
-            LevenshtainVector(
-                Name("Информация"),
-                SynonymsGroup(
-                    [
-                        Synonym("Информация"),
-                        Synonym("Справка"),
-                        Synonym("Расскажи о себе"),
-                    ],
-                ),
-            ),
-            True,
-        )
-
-        new_scenario.create_enter_state(
-            LevenshtainVector(
-                Name("Помощь"),
-                SynonymsGroup(
-                    [
-                        Synonym("Помощь"),
-                        Synonym("Помоги"),
-                        Synonym("Как выйти"),
-                    ],
-                ),
-            ),
-            True,
-        )
-
-        return ScenarioManipulator(new_scenario)
 
 
 class ScenarioManipulator:

@@ -393,6 +393,12 @@ class Hosting:
     def get_scenario(self, id: ScenarioID) -> ScenarioInterface:
         """Получить сценарий по id"""
 
+    def sources(self) -> list[tuple[int, str, str]]:
+        """
+        Получить информацию о существующих в хранилище сценариях
+        Возвращает список кортежей (id, name, description)
+        """
+
 
 class Scenario(ScenarioInterface):
     __src: Source

@@ -38,7 +38,7 @@ from iiconstructor_levenshtain import (
     LevenshtainClassificator,
     LevenshtainVector,
 )
-from iiconstructor_maria.repo import HostingMaria
+from iiconstructor_maria.repo import HostingMaria, Hosting
 from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from iiconstructor_qtgui.flows import FlowListWidget, FlowsModel, FlowsView
 from iiconstructor_qtgui.main_w import (
@@ -645,7 +645,7 @@ class ProjectManager:
             data = "".join(file.readlines())
 
         # создание проекта
-        manipulator = HostingManipulator.open_scenario(
+        manipulator = HostingManipulator.load_scenario(
             self.__inmem_hosting,
             data,
         )
@@ -699,7 +699,7 @@ class ProjectManager:
                     Name(dialog.name()),
                     Description(dialog.description()),
                 )
-                manipulator = HostingManipulator.make_scenario_in_db(
+                manipulator = HostingManipulator.make_scenario(
                     self.__maria_hosting,
                     info,
                 )
@@ -720,7 +720,7 @@ class ProjectManager:
                     data = "".join(file.readlines())
 
                 map = dict[int, int]()
-                manipulator = HostingManipulator.open_scenario(
+                manipulator = HostingManipulator.load_scenario(
                     self.__maria_hosting,
                     data,
                     map,
@@ -754,7 +754,7 @@ class ProjectManager:
                         )
                         return
 
-                manipulator = HostingManipulator.open_scenario_from_db(
+                manipulator = HostingManipulator.open_scenario(
                     self.__maria_hosting,
                     selected_id,
                 )
@@ -1279,7 +1279,7 @@ class DBProjLibrary(QDialog):
 
     def __init__(
         self,
-        manipulator: HostingMaria,
+        manipulator: Hosting,
         parent: QWidget | None = None,
         f: Qt.WindowType = Qt.WindowType.Dialog,
     ) -> None:

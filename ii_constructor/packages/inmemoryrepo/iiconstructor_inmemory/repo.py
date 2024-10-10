@@ -354,3 +354,12 @@ class HostingInmem(Hosting):
         self.__next_id = ScenarioID(self.__next_id.value + 1)
         self.__sources[id] = Scenario(SourceInMemory(id, info))
         return id
+
+    def sources(self) -> list[tuple[int, str, str]]:
+        result = list[tuple[int, str, str]]
+
+        for scenario in self.__sources.values():
+            src: Source = scenario.source()
+            result.append((src.id.value, src.info.name.value, src.info.description))
+
+        return result
