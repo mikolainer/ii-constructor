@@ -11,16 +11,10 @@ from iiconstructor_qtgui.primitives.sceneitems import (
 )
 from iiconstructor_qtgui.states import StatesModel
 from iiconstructor_qtgui.steps import StepEditor, StepModel
-from iiconstructor_qtgui.synonyms import (
-    SynonymsGroupsModel
-)
+from iiconstructor_qtgui.synonyms import SynonymsGroupsModel
 from PySide6.QtCore import QModelIndex, QPoint, QPointF
-from PySide6.QtWidgets import (
-    QInputDialog,
-    QMessageBox,
-    QTextEdit,
-    QWidget,
-)
+from PySide6.QtWidgets import QInputDialog, QMessageBox, QTextEdit, QWidget
+
 
 class SceneControll:
     __node_insert_index: int

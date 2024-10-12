@@ -40,7 +40,6 @@ from iiconstructor_levenshtain import (
 )
 from iiconstructor_maria.repo import Hosting, HostingMaria
 from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
-from iiconstructor_qtgui.scene import SceneControll
 from iiconstructor_qtgui.flows import FlowListWidget, FlowsModel, FlowsView
 from iiconstructor_qtgui.main_w import (
     FlowList,
@@ -50,21 +49,19 @@ from iiconstructor_qtgui.main_w import (
     Workspaces,
 )
 from iiconstructor_qtgui.primitives.sceneitems import (
-    Arrow,
     Editor,
     EditorView,
-    NodeWidget,
     SceneNode,
 )
 from iiconstructor_qtgui.primitives.widgets import DBConnectWidget
+from iiconstructor_qtgui.scene import SceneControll
 from iiconstructor_qtgui.states import StatesModel
-from iiconstructor_qtgui.steps import StepEditor, StepModel
 from iiconstructor_qtgui.synonyms import (
     SynonymsEditor,
     SynonymsGroupsModel,
     SynonymsSelector,
 )
-from PySide6.QtCore import QModelIndex, QPoint, QPointF, Qt, Slot
+from PySide6.QtCore import QModelIndex, QPointF, Qt, Slot
 from PySide6.QtGui import QColor, QIcon, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -80,7 +77,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QTableWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
