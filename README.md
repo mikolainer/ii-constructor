@@ -110,7 +110,7 @@
 
 Если вы используете VSCode:
 - настройтке `.vscode\launch.json` так, чтобы запускался файл `ii_constructor/apps/qteditor/__main__.py`;
-- добавьте в `.vscode\settings.json` ключ `"python.analysis.extraPaths"` со списком путей к пакетам в качестве значения
+- добавьте в `.vscode\settings.json` ключ `"python.analysis.extraPaths"` со списком путей к пакетам в качестве значения:
 ```
     [
         "./ii_constructor/packages/levenshtain",
