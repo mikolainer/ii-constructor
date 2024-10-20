@@ -1,0 +1,7 @@
+pymysql 
+Levenshtein 
+-e ./packages/core 
+-e ./packages/engine 
+-e ./packages/server 
+-e ./packages/mysqlrepo 
+-e ./packages/levenshtain 

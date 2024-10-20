@@ -1,4 +1,6 @@
 -e ./ii_constructor/packages/core
+-e ./ii_constructor/packages/server
+-e ./ii_constructor/packages/engine
 -e ./ii_constructor/packages/levenshtain
 -e ./ii_constructor/packages/mariarepo
 -e ./ii_constructor/packages/mysqlrepo

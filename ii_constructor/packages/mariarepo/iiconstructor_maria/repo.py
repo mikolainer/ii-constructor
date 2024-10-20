@@ -24,10 +24,7 @@ from collections.abc import Sequence
 import mariadb
 from iiconstructor_core.domain import (
     Connection,
-    Hosting,
     InputDescription,
-    Scenario,
-    ScenarioInterface,
     Source,
     State,
     Step,
@@ -44,6 +41,9 @@ from iiconstructor_core.domain.primitives import (
     StateID,
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
+from iiconstructor_server_side.ports import Hosting, ScenarioInterface
+
+from iiconstructor_server_side import Scenario
 
 
 class SourceMariaDB(Source):

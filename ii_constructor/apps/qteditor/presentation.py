@@ -25,7 +25,7 @@ from typing import Any
 
 from application import HostingManipulator, ScenarioManipulator
 from data import LevenshtainVectorSerializer
-from iiconstructor_core.domain import Engine, State
+from iiconstructor_core.domain import State
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.primitives import (
     Description,
@@ -33,6 +33,7 @@ from iiconstructor_core.domain.primitives import (
     Request,
     SourceInfo,
 )
+from iiconstructor_engine import Engine
 from iiconstructor_inmemory.repo import HostingInmem
 from iiconstructor_levenshtain import (
     LevenshtainClassificator,
@@ -90,7 +91,7 @@ class Project:
     __flows_wgt: FlowListWidget
     __save_callback: Callable
     __wgt: "TestDialog"
-    manipulator: ScenarioManipulator
+    __manipulator: ScenarioManipulator
 
     vectors_model: SynonymsGroupsModel
 
@@ -105,9 +106,8 @@ class Project:
         content: FlowListWidget,
         save_callback: Callable,
     ) -> None:
-        self.manipulator = manipulator
+        self.__manipulator = manipulator
         self.vectors_model = SynonymsGroupsModel()
-        # self.vectors_model.set_edit_callback(lambda i, r, o, n: True)
         self.vectors_model.set_edit_callback(
             lambda i, r, o, n: vector_rename_callback(i, r, o, n),
         )
@@ -123,7 +123,7 @@ class Project:
         self.__save_callback = save_callback
 
     def open_test_window(self):
-        self.__wgt = TestDialog(self.manipulator)
+        self.__wgt = TestDialog(self.__manipulator)
         self.__wgt.show()
 
     def editor(self) -> QGraphicsView:
@@ -131,6 +131,9 @@ class Project:
 
     def content(self) -> FlowListWidget:
         return self.__flows_wgt
+
+    def manipulator(self) -> ScenarioManipulator:
+        return self.__manipulator
 
     def edit_inputs(self):
         editor = SynonymsEditor(
@@ -149,6 +152,37 @@ class Project:
         )
         dialog.exec()
         return dialog.selected_item()
+
+    def get_vector_name_by_synonyms_model(
+        self,
+        model: SynonymsSetModel,
+    ) -> str:
+        group_name: str = None
+
+        input_vectors_count = self.vectors_model.rowCount()
+        for vector_model_row in range(input_vectors_count):
+            vector_index = self.vectors_model.index(vector_model_row)
+            if (
+                self.vectors_model.data(
+                    vector_index,
+                    CustomDataRole.SynonymsSet,
+                )
+                is not model
+            ):
+                continue
+
+            group_name = self.vectors_model.data(
+                vector_index,
+                CustomDataRole.Name,
+            )
+            break
+
+        if group_name is None:
+            raise Warning(
+                "по модели набора синонимов группа синонимов не найдена",
+            )
+
+        return group_name
 
     def __ask_new_vector_name(self, model: SynonymsGroupsModel) -> str:
         name: str = ""
@@ -221,7 +255,7 @@ class ProjectManager:
     __main_window: MainWindow
     __workspaces: Workspaces
     __flow_list: FlowList
-    __esc_sqortcut: QShortcut
+    __esc_shortcut: QShortcut
 
     __inmem_hosting: HostingInmem
     __maria_hosting: HostingMaria
@@ -240,14 +274,14 @@ class ProjectManager:
 
         self.__projects = {}
 
-        self.__workspaces.currentChanged.connect(self.on_cur_changed)
+        self.__workspaces.currentChanged.connect(self.__on_cur_changed)
         self.__workspaces.tabCloseRequested.connect(
             lambda index: self.__close_tab(index),
         )
 
-        self.__esc_sqortcut = QShortcut(self.__main_window)
-        self.__esc_sqortcut.setKey(Qt.Key.Key_Escape)
-        self.__esc_sqortcut.activated.connect(
+        self.__esc_shortcut = QShortcut(self.__main_window)
+        self.__esc_shortcut.setKey(Qt.Key.Key_Escape)
+        self.__esc_shortcut.activated.connect(
             lambda: self.__reset_enter_create_mode(),
         )
 
@@ -279,7 +313,9 @@ class ProjectManager:
         btn.status_tip = "Открыть демо-режим"
         btn.whats_this = "Кнопка открытия демонстрационного режима"
         btn.apply_options()
-        btn.clicked.connect(lambda: self.__current().open_test_window())
+        btn.clicked.connect(
+            lambda: self.__current_project().open_test_window(),
+        )
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton(
@@ -290,7 +326,7 @@ class ProjectManager:
         btn.status_tip = "Открыть редактор синонимов"
         btn.whats_this = "Кнопка открытия редактора синонимов"
         btn.apply_options()
-        btn.clicked.connect(lambda: self.__current().edit_inputs())
+        btn.clicked.connect(lambda: self.__current_project().edit_inputs())
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton(
@@ -312,7 +348,7 @@ class ProjectManager:
         btn.status_tip = "Сохранить в файл"
         btn.whats_this = "Кнопка сохранения проекта в файл"
         btn.apply_options()
-        btn.clicked.connect(lambda: self.__current().save_to_file())
+        btn.clicked.connect(lambda: self.__current_project().save_to_file())
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton(
@@ -323,7 +359,7 @@ class ProjectManager:
         btn.status_tip = "Открыть файл проекта"
         btn.whats_this = "Кнопка открытия проекта из файла"
         btn.apply_options()
-        btn.clicked.connect(lambda: self.open_project())
+        btn.clicked.connect(lambda: self.open_file())
         self.__main_window.insert_button(btn)
 
         btn = MainToolButton(
@@ -338,27 +374,27 @@ class ProjectManager:
         self.__main_window.insert_button(btn)
 
     @Slot(int)
-    def on_cur_changed(self, index: int):
+    def __on_cur_changed(self, index: int):
         if index == -1:
             return
 
         proj = self.__projects[self.__workspaces.widget(index)]
         self.__flow_list.setWidget(proj.content(), True)
 
-    def __current(self) -> Project:
+    def __current_project(self) -> Project:
         return self.__projects[self.__workspaces.currentWidget()]
 
-    def __create_enter_handler(
-        self,
-        flows_model: FlowsModel,
-        project: Project,
-    ):
+    def __current_scene(self) -> Editor:
+        current_widget: QGraphicsView = self.__workspaces.currentWidget()
+        return current_widget.scene()
+
+    def __create_enter_handler(self):
         self.__set_enter_create_mode()
 
     def __set_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(True)
 
-        scene = self.__current().scene()
+        scene = self.__current_scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
@@ -370,7 +406,7 @@ class ProjectManager:
     def __reset_enter_create_mode(self):
         self.__main_window.set_only_editor_enabled(False)
 
-        scene = self.__current().scene()
+        scene = self.__current_scene()
         for item in scene.items():
             if not isinstance(item, SceneNode):
                 continue
@@ -536,7 +572,7 @@ class ProjectManager:
         )
 
         content_wgt.create_value.connect(
-            lambda: self.__create_enter_handler(flows_model, proj),
+            lambda: self.__create_enter_handler(),
         )
 
         self.__projects[editor] = (
@@ -628,7 +664,7 @@ class ProjectManager:
         )
         self.__open_project(manipulator)
 
-    def open_project(self) -> Project:
+    def open_file(self) -> Project:
         path, filetype = QFileDialog.getOpenFileName(
             self.__main_window,
             "Создать из файла",
@@ -741,8 +777,8 @@ class ProjectManager:
             else:  # if selected_id >= 0:
                 for proj in self.__projects.values():
                     if (
-                        proj.manipulator.in_db()
-                        and proj.manipulator.id() == selected_id
+                        proj.manipulator().in_db()
+                        and proj.manipulator().id() == selected_id
                     ):
                         QMessageBox.warning(
                             self.__main_window,
@@ -799,11 +835,7 @@ class ProjectManager:
 
         new_state_item = ItemData()
         try:
-            name = self.__get_vector_name_by_synonyms_model(
-                proj,
-                manipulator,
-                s_model,
-            )
+            name = proj.get_vector_name_by_synonyms_model(s_model)
 
             manipulator.check_can_create_enter_state(name)
             new_state_info = manipulator.create_state(name)
@@ -928,11 +960,7 @@ class ProjectManager:
     ) -> bool:
         try:
             from_state_id = from_state_index.data(CustomDataRole.Id)
-            vector_name = self.__get_vector_name_by_synonyms_model(
-                project,
-                manipulator,
-                input,
-            )
+            vector_name = project.get_vector_name_by_synonyms_model(input)
             new_state_info = manipulator.create_step_to_new_state(
                 from_state_id,
                 vector_name,
@@ -966,11 +994,7 @@ class ProjectManager:
     ):
         try:
             from_state_id: int = state_from.data(CustomDataRole.Id)
-            input_name: str = self.__get_vector_name_by_synonyms_model(
-                project,
-                manipulator,
-                input,
-            )
+            input_name: str = project.get_vector_name_by_synonyms_model(input)
             manipulator.remove_step(from_state_id, input_name)
         except Exception:
             return False
@@ -986,11 +1010,7 @@ class ProjectManager:
         input: SynonymsSetModel,
     ) -> bool:
         try:
-            input_name = self.__get_vector_name_by_synonyms_model(
-                project,
-                manipulator,
-                input,
-            )
+            input_name = project.get_vector_name_by_synonyms_model(input)
             manipulator.create_step(
                 from_state_index.data(CustomDataRole.Id),
                 to_state_index.data(CustomDataRole.Id),
@@ -1052,11 +1072,7 @@ class ProjectManager:
     ) -> bool:
         try:
             manipulator.create_synonym(
-                self.__get_vector_name_by_synonyms_model(
-                    proj,
-                    manipulator,
-                    model,
-                ),
+                proj.get_vector_name_by_synonyms_model(model),
                 data.on[CustomDataRole.Text],
             )
 
@@ -1098,7 +1114,6 @@ class ProjectManager:
 
         return True
 
-    # TODO: staticmethod?
     def __connect_synonym_changes_from_gui(
         self,
         proj: Project,
@@ -1134,11 +1149,7 @@ class ProjectManager:
         new_value: Any,
     ) -> bool:
         try:
-            group_name = self.__get_vector_name_by_synonyms_model(
-                proj,
-                manipulator,
-                index.model(),
-            )
+            group_name = proj.get_vector_name_by_synonyms_model(index.model())
             manipulator.set_synonym_value(group_name, old_value, new_value)
         except Exception:
             return False
@@ -1152,50 +1163,13 @@ class ProjectManager:
         index: QModelIndex,
     ) -> bool:
         try:
-            group_name = self.__get_vector_name_by_synonyms_model(
-                proj,
-                manipulator,
-                index.model(),
-            )
+            group_name = proj.get_vector_name_by_synonyms_model(index.model())
             synonym_value = index.data(CustomDataRole.Text)
             manipulator.remove_synonym(group_name, synonym_value)
         except Exception:
             return False
 
         return True
-
-    def __get_vector_name_by_synonyms_model(
-        self,
-        proj: Project,
-        manipulator: ScenarioManipulator,
-        model: SynonymsSetModel,
-    ) -> str:
-        group_name: str = None
-
-        input_vectors_count = proj.vectors_model.rowCount()
-        for vector_model_row in range(input_vectors_count):
-            vector_index = proj.vectors_model.index(vector_model_row)
-            if (
-                proj.vectors_model.data(
-                    vector_index,
-                    CustomDataRole.SynonymsSet,
-                )
-                is not model
-            ):
-                continue
-
-            group_name = proj.vectors_model.data(
-                vector_index,
-                CustomDataRole.Name,
-            )
-            break
-
-        if group_name is None:
-            raise Warning(
-                "по модели набора синонимов группа синонимов не найдена",
-            )
-
-        return group_name
 
 
 class TestDialog(QWidget):
@@ -1214,6 +1188,7 @@ class TestDialog(QWidget):
             title += f" [id={manipulator.id()}]"
         self.setWindowTitle(title)
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
 
         start_state: State = manipulator.interface().get_states_by_name(
             Name("Старт"),
