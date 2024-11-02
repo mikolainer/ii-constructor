@@ -1,26 +1,7 @@
-# Copyright 2024 Николай Иванцов (tg/vk/wa: <@mikolainer> | <mikolainer@mail.ru>)
-# Copyright 2024 Kirill Lesovoy
-# 
-# Этот файл — часть "Конструктора интерактивных инструкций".
-# 
-# Конструктор интерактивных инструкций — свободная программа:
-# вы можете перераспространять ее и/или изменять ее на условиях
-# Стандартной общественной лицензии GNU в том виде,
-# в каком она была опубликована Фондом свободного программного обеспечения;
-# либо версии 3 лицензии, либо (по вашему выбору) любой более поздней версии.
-# Конструктор интерактивных инструкций распространяется в надежде,
-# что она будет полезной, но БЕЗО ВСЯКИХ ГАРАНТИЙ;
-# даже без неявной гарантии ТОВАРНОГО ВИДА
-# или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ.
-# Подробнее см. в Стандартной общественной лицензии GNU.
-# 
-# Вы должны были получить копию Стандартной общественной лицензии GNU
-# вместе с этой программой. Если это не так,
-# см. <https://www.gnu.org/licenses/>.
-
-
-
-
+# Resource object code (Python 3)
+# Created by: object code
+# Created by: The Resource Compiler for Qt version 6.7.3
+# WARNING! All changes made in this file will be lost!
 
 from PySide6 import QtCore
 
@@ -2221,23 +2202,10 @@ qt_resource_struct = b"\
 \x00\x00\x01\x8ff\xb8\xefl\
 "
 
-
 def qInitResources():
-    QtCore.qRegisterResourceData(
-        0x03,
-        qt_resource_struct,
-        qt_resource_name,
-        qt_resource_data,
-    )
-
+    QtCore.qRegisterResourceData(0x03, qt_resource_struct, qt_resource_name, qt_resource_data)
 
 def qCleanupResources():
-    QtCore.qUnregisterResourceData(
-        0x03,
-        qt_resource_struct,
-        qt_resource_name,
-        qt_resource_data,
-    )
+    QtCore.qUnregisterResourceData(0x03, qt_resource_struct, qt_resource_name, qt_resource_data)
 
-
-qInitResources()   # FIXME: Убрать вызов в __main__.py
+qInitResources()
