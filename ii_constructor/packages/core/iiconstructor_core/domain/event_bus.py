@@ -5,16 +5,16 @@ class Event:
 
 class EventHandler:
     """ Абстрактный обработчик события """
-    @staticmethod
-    def handle(ev: Event):
+    def handle(self, ev: Event):
         """ Обрабатывает конкретное событие в `Subscriber` """
+        raise NotImplementedError("Использование абстрактного класса")
+    
+    @staticmethod
+    def event_type() -> type:
         raise NotImplementedError("Использование абстрактного класса")
 
 class Subscriber:
-    """ Интерфейс получателя событий """
-    def __init__(self):
-        pass
-
+    """ Абстрактный нтерфейс получателя событий """
     def triggered(self, ev: Event):
         """ Раздаёт событие обработчикам `EventHandler` """
         raise NotImplementedError("Использование абстрактного класса")
