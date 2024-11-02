@@ -38,12 +38,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .data import BaseModel, CustomDataRole, SynonymsSetModel
+from .data import Old_BaseModel, CustomDataRole, Old_SynonymsSetModel
 from .primitives.sceneitems import Arrow, SceneNode
 from .synonyms import SynonymsSetView
 
 
-class StepModel(BaseModel):
+class Old_StepModel(Old_BaseModel):
     __arrow: Arrow
     __node_from: SceneNode
     __node_to: SceneNode
@@ -84,7 +84,7 @@ class StepInputWidget(QWidget):
 
     def __init__(
         self,
-        synonyms_set_model: SynonymsSetModel,
+        synonyms_set_model: Old_SynonymsSetModel,
         parent: QWidget = None,
     ) -> None:
         super().__init__(parent)
@@ -173,11 +173,11 @@ class StepInputSetView(QTableView):
 
 
 class StepEditor(QDialog):
-    __model: StepModel
+    __model: Old_StepModel
 
     def __init__(
         self,
-        model: StepModel,
+        model: Old_StepModel,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)

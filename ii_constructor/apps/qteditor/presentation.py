@@ -40,8 +40,8 @@ from iiconstructor_levenshtain import (
     LevenshtainVector,
 )
 from iiconstructor_maria.repo import Hosting, HostingMaria
-from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
-from iiconstructor_qtgui.flows import FlowListWidget, FlowsModel, FlowsView
+from iiconstructor_qtgui.data import CustomDataRole, ItemData, Old_SynonymsSetModel
+from iiconstructor_qtgui.flows import FlowListWidget, Old_FlowsModel, FlowsView
 from iiconstructor_qtgui.main_w import (
     FlowList,
     MainToolButton,
@@ -55,11 +55,11 @@ from iiconstructor_qtgui.primitives.sceneitems import (
     SceneNode,
 )
 from iiconstructor_qtgui.primitives.widgets import DBConnectWidget
-from iiconstructor_qtgui.scene import SceneControll
-from iiconstructor_qtgui.states import StatesModel
+from iiconstructor_qtgui.scene import Old_SceneControll
+from iiconstructor_qtgui.states import Old_StatesModel
 from iiconstructor_qtgui.synonyms import (
     SynonymsEditor,
-    SynonymsGroupsModel,
+    Old_SynonymsGroupsModel,
     SynonymsSelector,
 )
 from PySide6.QtCore import QModelIndex, QPointF, Qt, Slot
@@ -83,7 +83,7 @@ from PySide6.QtWidgets import (
 )
 
 
-class Project:
+class Old_Project:
     __synonym_create_callback: Callable
     __synonyms_group_create_callback: Callable
     __connect_synonym_changes_callback: Callable
@@ -93,7 +93,7 @@ class Project:
     __wgt: "TestDialog"
     __manipulator: ScenarioManipulator
 
-    vectors_model: SynonymsGroupsModel
+    vectors_model: Old_SynonymsGroupsModel
 
     def __init__(
         self,
@@ -107,7 +107,7 @@ class Project:
         save_callback: Callable,
     ) -> None:
         self.__manipulator = manipulator
-        self.vectors_model = SynonymsGroupsModel()
+        self.vectors_model = Old_SynonymsGroupsModel()
         self.vectors_model.set_edit_callback(
             lambda i, r, o, n: vector_rename_callback(i, r, o, n),
         )
@@ -144,7 +144,7 @@ class Project:
         )
         editor.show()
 
-    def choose_input(self) -> SynonymsSetModel | None:
+    def choose_input(self) -> Old_SynonymsSetModel | None:
         dialog = SynonymsSelector(
             self.vectors_model,
             self.__create_synonyms_group,
@@ -155,7 +155,7 @@ class Project:
 
     def get_vector_name_by_synonyms_model(
         self,
-        model: SynonymsSetModel,
+        model: Old_SynonymsSetModel,
     ) -> str:
         group_name: str = None
 
@@ -184,7 +184,7 @@ class Project:
 
         return group_name
 
-    def __ask_new_vector_name(self, model: SynonymsGroupsModel) -> str:
+    def __ask_new_vector_name(self, model: Old_SynonymsGroupsModel) -> str:
         name: str = ""
         prev_name = ""
 
@@ -209,7 +209,7 @@ class Project:
 
         return name
 
-    def __create_synonyms_group(self, model: SynonymsGroupsModel):
+    def __create_synonyms_group(self, model: Old_SynonymsGroupsModel):
         name: str
 
         try:
@@ -221,7 +221,7 @@ class Project:
 
         item = ItemData()
         item.on[CustomDataRole.Name] = name
-        item.on[CustomDataRole.SynonymsSet] = SynonymsSetModel()
+        item.on[CustomDataRole.SynonymsSet] = Old_SynonymsSetModel()
         item.on[CustomDataRole.Description] = ""
 
         model.prepare_item(item)
@@ -231,7 +231,7 @@ class Project:
             item.on[CustomDataRole.SynonymsSet],
         )
 
-    def __create_synonym(self, model: SynonymsSetModel):
+    def __create_synonym(self, model: Old_SynonymsSetModel):
         default_value = "значение"
 
         item = ItemData()
@@ -248,9 +248,9 @@ class Project:
         self.__save_callback()
 
 
-class ProjectManager:
+class Old_ProjectManager:
     # открытые проекты
-    __projects: dict[QGraphicsView, Project]
+    __projects: dict[QGraphicsView, Old_Project]
 
     __main_window: MainWindow
     __workspaces: Workspaces
@@ -381,7 +381,7 @@ class ProjectManager:
         proj = self.__projects[self.__workspaces.widget(index)]
         self.__flow_list.setWidget(proj.content(), True)
 
-    def __current_project(self) -> Project:
+    def __current_project(self) -> Old_Project:
         return self.__projects[self.__workspaces.currentWidget()]
 
     def __current_scene(self) -> Editor:
@@ -418,7 +418,7 @@ class ProjectManager:
     def __save_scenario_handler(
         self,
         manipulator: ScenarioManipulator,
-        scene_ctrl: "SceneControll",
+        scene_ctrl: "Old_SceneControll",
     ):
         path, filetype = QFileDialog.getSaveFileName(
             self.__main_window,
@@ -444,7 +444,7 @@ class ProjectManager:
             )
             return
 
-        project: Project = self.__projects[self.__workspaces.widget(index)]
+        project: Old_Project = self.__projects[self.__workspaces.widget(index)]
         self.__workspaces.removeTab(index)
         self.__flow_list.removeWidget(project.content())
         self.__projects.pop(project.editor())
@@ -454,9 +454,9 @@ class ProjectManager:
     def __open_project(
         self,
         manipulator: ScenarioManipulator,
-    ) -> "SceneControll":
+    ) -> "Old_SceneControll":
         content_view = FlowsView(self.__flow_list)
-        flows_model = FlowsModel(self.__main_window)
+        flows_model = Old_FlowsModel(self.__main_window)
         flows_model.set_edit_callback(lambda i, r, o, n: True)
         content_view.setModel(flows_model)
         content_wgt = FlowListWidget(content_view)
@@ -466,7 +466,7 @@ class ProjectManager:
         editor = EditorView(proj_scene, self.__workspaces)
 
         # создание обработчика изменений на сцене
-        states_model = StatesModel(self.__main_window)
+        states_model = Old_StatesModel(self.__main_window)
         states_model.set_edit_callback(
             lambda i, r, o, n: self.__on_state_changed_from_gui(
                 manipulator,
@@ -480,7 +480,7 @@ class ProjectManager:
             lambda index: self.__on_state_removed_from_gui(manipulator, index),
         )
 
-        scene_controll = SceneControll(
+        scene_controll = Old_SceneControll(
             lambda id: manipulator.steps_from(id),
             # select_input_callback: Callable[[],Optional[SynonymsSetModel]]
             lambda: proj.choose_input(),
@@ -538,7 +538,7 @@ class ProjectManager:
         )
 
         # создание объекта взаимодействий с проектом
-        proj = Project(
+        proj = Old_Project(
             manipulator,
             lambda model, data: self.__on_synonym_created_from_gui(
                 proj,
@@ -592,7 +592,7 @@ class ProjectManager:
                 proj.vectors_model.prepare_item(vector_item)
                 proj.vectors_model.insertRow()
 
-                synonyms_model: SynonymsSetModel = vector_item.on[
+                synonyms_model: Old_SynonymsSetModel = vector_item.on[
                     CustomDataRole.SynonymsSet
                 ]
                 self.__connect_synonym_changes_from_gui(
@@ -647,7 +647,7 @@ class ProjectManager:
 
         return scene_controll
 
-    def create_project(self) -> Project:
+    def create_project(self) -> Old_Project:
         dialog = NewProjectDialog(self.__main_window)
         if dialog.exec() == QDialog.DialogCode.Rejected:
             return
@@ -664,7 +664,7 @@ class ProjectManager:
         )
         self.__open_project(manipulator)
 
-    def open_file(self) -> Project:
+    def open_file(self) -> Old_Project:
         path, filetype = QFileDialog.getOpenFileName(
             self.__main_window,
             "Создать из файла",
@@ -821,8 +821,8 @@ class ProjectManager:
     def __add_enter_to_new_state(
         self,
         scene: Editor,
-        scene_ctrl: "SceneControll",
-        proj: Project,
+        scene_ctrl: "Old_SceneControll",
+        proj: Old_Project,
         manipulator: ScenarioManipulator,
         pos: QPointF,
     ):
@@ -892,9 +892,9 @@ class ProjectManager:
     def __on_enter_created_from_gui(
         self,
         manipulator: ScenarioManipulator,
-        project: Project,
+        project: Old_Project,
         to_state_index: QModelIndex,
-    ) -> tuple[bool, SynonymsSetModel | None]:
+    ) -> tuple[bool, Old_SynonymsSetModel | None]:
         vector_name: str
 
         try:
@@ -921,7 +921,7 @@ class ProjectManager:
         if isinstance(g_item, ItemData):
             return True, g_item.on[CustomDataRole.SynonymsSet]
 
-        s_model = SynonymsSetModel()
+        s_model = Old_SynonymsSetModel()
         item = ItemData()
         item.on[CustomDataRole.Name] = vector_name
         item.on[CustomDataRole.SynonymsSet] = s_model
@@ -935,7 +935,7 @@ class ProjectManager:
     def __save_lay(
         self,
         manipulator: ScenarioManipulator,
-        ctrl: "SceneControll",
+        ctrl: "Old_SceneControll",
         node: SceneNode,
         pos: QPointF,
     ):
@@ -953,10 +953,10 @@ class ProjectManager:
     def __on_step_created_from_gui(
         self,
         manipulator: ScenarioManipulator,
-        project: Project,
+        project: Old_Project,
         from_state_index: QModelIndex,
         to_state_item: ItemData,
-        input: SynonymsSetModel,
+        input: Old_SynonymsSetModel,
     ) -> bool:
         try:
             from_state_id = from_state_index.data(CustomDataRole.Id)
@@ -987,10 +987,10 @@ class ProjectManager:
     def __on_step_removed_from_gui(
         self,
         manipulator: ScenarioManipulator,
-        project: Project,
+        project: Old_Project,
         state_from: QModelIndex,
         state_to: QModelIndex,
-        input: SynonymsSetModel,
+        input: Old_SynonymsSetModel,
     ):
         try:
             from_state_id: int = state_from.data(CustomDataRole.Id)
@@ -1004,10 +1004,10 @@ class ProjectManager:
     def __on_step_to_created_from_gui(
         self,
         manipulator: ScenarioManipulator,
-        project: Project,
+        project: Old_Project,
         from_state_index: QModelIndex,
         to_state_index: QModelIndex,
-        input: SynonymsSetModel,
+        input: Old_SynonymsSetModel,
     ) -> bool:
         try:
             input_name = project.get_vector_name_by_synonyms_model(input)
@@ -1065,9 +1065,9 @@ class ProjectManager:
     # TODO: staticmethod?
     def __on_synonym_created_from_gui(
         self,
-        proj: Project,
+        proj: Old_Project,
         manipulator: ScenarioManipulator,
-        model: SynonymsSetModel,
+        model: Old_SynonymsSetModel,
         data: ItemData,
     ) -> bool:
         try:
@@ -1091,7 +1091,7 @@ class ProjectManager:
 
     def __rename_vector_handler(
         self,
-        proj: Project,
+        proj: Old_Project,
         manipulator: ScenarioManipulator,
         index: QModelIndex,
         row: int,
@@ -1116,9 +1116,9 @@ class ProjectManager:
 
     def __connect_synonym_changes_from_gui(
         self,
-        proj: Project,
+        proj: Old_Project,
         manipulator: ScenarioManipulator,
-        model: SynonymsSetModel,
+        model: Old_SynonymsSetModel,
     ):
         model.set_edit_callback(
             lambda index, role, old_val, new_val: self.__synonym_changed_from_gui_handler(
@@ -1141,7 +1141,7 @@ class ProjectManager:
 
     def __synonym_changed_from_gui_handler(
         self,
-        proj: Project,
+        proj: Old_Project,
         manipulator: ScenarioManipulator,
         index: QModelIndex,
         role: int,
@@ -1158,7 +1158,7 @@ class ProjectManager:
 
     def __synonym_deleted_from_gui_handler(
         self,
-        proj: Project,
+        proj: Old_Project,
         manipulator: ScenarioManipulator,
         index: QModelIndex,
     ) -> bool:

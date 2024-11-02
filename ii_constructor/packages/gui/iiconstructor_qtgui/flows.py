@@ -45,11 +45,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .data import BaseModel, CustomDataRole, SynonymsSetModel
+from .data import Old_BaseModel, CustomDataRole, Old_SynonymsSetModel
 from .primitives.widgets import SynonymEditorWidget
 
 
-class FlowsModel(BaseModel):
+class Old_FlowsModel(Old_BaseModel):
     """Модель содержания проекта. Реализация части MVC фреймворка Qt для содержания проекта"""
 
     def __init__(self, parent: QObject | None = None) -> None:
@@ -89,7 +89,7 @@ class FlowWidget(QWidget):
         self,
         name: str,
         description: str,
-        synonyms: SynonymsSetModel,
+        synonyms: Old_SynonymsSetModel,
         start_state,  # :QGraphicsProxyWidget,
         parent=None,
     ) -> None:

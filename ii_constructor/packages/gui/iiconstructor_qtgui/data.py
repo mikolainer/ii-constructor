@@ -140,7 +140,7 @@ class PresentationModelMixinBase:
         return len(self.__data)
 
 
-class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
+class Old_BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     """Базовая надстройка над базовой моделью Qt для работы с ItemData в виде списка"""
 
     __prepared_item: ItemData | None
@@ -313,7 +313,7 @@ class ProxyModelReadOnly(QIdentityProxyModel):
 
 
 # COMMON
-class SynonymsSetModel(BaseModel):
+class Old_SynonymsSetModel(Old_BaseModel):
     """Модель набора синонимов"""
 
     def __init__(self, parent: QObject | None = None) -> None:

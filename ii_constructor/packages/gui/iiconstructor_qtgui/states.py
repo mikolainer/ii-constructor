@@ -21,10 +21,10 @@
 
 from PySide6.QtCore import QModelIndex, QObject, QPersistentModelIndex, Qt
 
-from .data import BaseModel, CustomDataRole
+from .data import Old_BaseModel, CustomDataRole
 
 
-class StatesModel(BaseModel):
+class Old_StatesModel(Old_BaseModel):
     """Модель состояний. Для обработки сценой (Editor)"""
 
     def __init__(self, parent: QObject | None = None) -> None:
