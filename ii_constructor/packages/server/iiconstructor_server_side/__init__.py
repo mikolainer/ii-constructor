@@ -37,8 +37,8 @@ from iiconstructor_core.domain.primitives import (
     StateAttributes,
     StateID,
 )
-from iiconstructor_server_side.ports import ScenarioInterface
 
+from iiconstructor_server_side.ports import ScenarioInterface
 
 class Scenario(ScenarioInterface):
     __src: Source

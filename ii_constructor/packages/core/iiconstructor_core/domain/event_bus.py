@@ -30,7 +30,14 @@ class EventBus:
     def notify(self, ev: Event):
         raise NotImplementedError("Использование абстрактного класса")
 
-class InmemoryEventBus(EventBus):
+class Singleton(type):
+    __instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls.__instances:
+            cls.__instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls.__instances[cls]
+
+class InmemoryEventBus(EventBus, metaclass=Singleton):
     __subscribers: list[Subscriber]
 
     def __init__(self):
