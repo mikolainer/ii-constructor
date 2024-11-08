@@ -29,6 +29,7 @@ from iiconstructor_core.domain import (
     State,
     Step,
 )
+from iiconstructor_core.domain.event_bus import EventBus
 from iiconstructor_core.domain.exceptions import CoreException, NotExists
 from iiconstructor_core.domain.primitives import (
     Answer,
@@ -703,11 +704,11 @@ class HostingMySQL(Hosting):
                 self.__connection = None
                 raise
 
-    def get_scenario(self, id: ScenarioID) -> ScenarioInterface:
+    def get_scenario(self, id: ScenarioID, event_bus: EventBus | None = None) -> ScenarioInterface:
         if not self.connected():
             raise CoreException("БД не подключена")
 
-        return Scenario(SourceMySQL(self.__connection, id))
+        return Scenario(SourceMySQL(self.__connection, id), event_bus)
 
     def add_source(self, info: SourceInfo) -> ScenarioID:
         if not self.connected():

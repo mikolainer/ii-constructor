@@ -27,6 +27,7 @@ from iiconstructor_core.domain import (
     State,
     Step,
 )
+from iiconstructor_core.domain.event_bus import EventBus
 from iiconstructor_core.domain.exceptions import Exists, NotExists
 from iiconstructor_core.domain.primitives import (
     Name,
@@ -340,19 +341,27 @@ class SourceInMemory(Source):
 
 class HostingInmem(Hosting):
     __sources: dict[ScenarioID, ScenarioInterface]
+    __sources_info: dict[ScenarioID, SourceInfo]
     __next_id: ScenarioID
 
     def __init__(self) -> None:
         self.__sources = {}
+        self.__sources_info = {}
         self.__next_id = ScenarioID(0)
 
-    def get_scenario(self, id: ScenarioID) -> ScenarioInterface:
+    def get_scenario(self, id: ScenarioID, event_bus: EventBus | None = None) -> ScenarioInterface:
+        if self.__sources[id] is None:
+            self.__sources[id] = Scenario(
+                SourceInMemory(id, self.__sources_info.pop(id)), event_bus
+            )
+        
         return self.__sources[id]
 
     def add_source(self, info: SourceInfo) -> ScenarioID:
         id = self.__next_id
         self.__next_id = ScenarioID(self.__next_id.value + 1)
-        self.__sources[id] = Scenario(SourceInMemory(id, info))
+        self.__sources[id] = None
+        self.__sources_info[id] = info
         return id
 
     def sources(self) -> list[tuple[int, str, str]]:

@@ -33,32 +33,9 @@ from iiconstructor_core.domain.primitives import (
     StateAttributes,
     StateID,
 )
-from iiconstructor_core.domain.event_bus import (
-    InmemoryEventBus,
-    Publisher
-)
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from iiconstructor_maria.repo import SourceMariaDB
 from iiconstructor_server_side.ports import Hosting, ScenarioInterface
-from iiconstructor_server_side.events import(
-    SaveLayEvent,
-    CreateStateEvent,
-    RemoveSynonymEvent,
-    RemoveVectorEvent,
-    RemoveEnterEvent,
-    RemoveStepEvent,
-    RemoveStateEvent,
-    CreateSynonymEvent,
-    AddVectorEvent,
-    MakeEnterEvent,
-    CreateStepEvent,
-    CreateStepToNewStateEvent,
-    UpdateAnswerEvent,
-    RenameStateEvent,
-    RenameVectorEvent,
-    UpdateSynonymEvent,
-    CreateEnterStateEvent,
-)
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 
@@ -194,12 +171,9 @@ class HostingManipulator:
 
 class ScenarioManipulator:
     __scenario: ScenarioInterface
-    __event_publisher: Publisher
 
     def __init__(self, scenario: ScenarioInterface) -> None:
         self.__scenario = scenario
-        self.__event_publisher = Publisher()
-        self.__event_publisher.connect(InmemoryEventBus())
 
     def id(self) -> int:
         return self.__scenario.source().id.value
@@ -222,25 +196,6 @@ class ScenarioManipulator:
 
     def save_lay(self, id: int, x: float, y: float):
         self.__scenario.save_lay(StateID(id), x, y)
-        self.__event_publisher.send(SaveLayEvent(id, x, y))
-
-    def create_state(self, name: str) -> dict:
-        state: State = self.__scenario.source().create_state(
-            StateAttributes(None, Name(name), None),
-        )
-
-        self.__event_publisher.send(
-            CreateStateEvent(
-                state.id().value,
-                state.attributes.name.value,
-                state.attributes.output.value.text
-            )
-        )
-        return {
-            "id": state.id().value,
-            "name": state.attributes.name.value,
-            "text": state.attributes.output.value.text,
-        }
 
     def remove_synonym(self, input_name: str, synonym: str):
         """удаляет синоним"""
@@ -253,28 +208,23 @@ class ScenarioManipulator:
         index = vector.synonyms.synonyms.index(Synonym(synonym))
 
         self.__scenario.remove_synonym(input_name, synonym)
-        self.__event_publisher.send(RemoveSynonymEvent(input_name, synonym))
 
     def remove_vector(self, input_name: str):
         """удаляет вектор"""
         self.__scenario.remove_vector(Name(input_name))
-        self.__event_publisher.send(RemoveVectorEvent(input_name))
 
     def remove_enter(self, state_id: int):
         """удаляет точку входа (переход)"""
         self.__scenario.remove_enter(StateID(state_id))
-        self.__event_publisher.send(RemoveEnterEvent(state_id))
 
     def remove_step(self, from_state_id: int, input_name: str):
         """удаляет переход"""
         vector: InputDescription = self.__scenario.get_vector(Name(input_name))
         self.__scenario.remove_step(StateID(from_state_id), vector)
-        self.__event_publisher.send(RemoveStepEvent(from_state_id, input_name))
 
     def remove_state(self, state_id: int):
         """удаляет состояние"""
         self.__scenario.remove_state(StateID(state_id))
-        self.__event_publisher.send(RemoveStateEvent(state_id))
 
     def create_synonym(self, input_name: str, new_synonym: str):
         """создаёт синоним"""
@@ -293,12 +243,10 @@ class ScenarioManipulator:
             )
 
         self.__scenario.create_synonym(input_name, new_synonym)
-        self.__event_publisher.send(CreateSynonymEvent(input_name, new_synonym))
 
     def add_vector(self, input_name: str):
         """создаёт вектор"""
         self.__scenario.add_vector(LevenshtainVector(Name(input_name)))
-        self.__event_publisher.send(AddVectorEvent(input_name))
 
     def make_enter(
         self,
@@ -338,7 +286,6 @@ class ScenarioManipulator:
 
         self.__scenario.make_enter(state_id_d)
 
-        self.__event_publisher.send(MakeEnterEvent(state_id, vector_name))
         return vector_name.value
 
     def create_step(
@@ -354,7 +301,6 @@ class ScenarioManipulator:
             StateID(to_state_id),
             vector,
         )
-        self.__event_publisher.send(CreateStepEvent(from_state_id, to_state_id, input_name))
 
     def create_step_to_new_state(
         self,
@@ -377,15 +323,6 @@ class ScenarioManipulator:
         )
         to_state: State = step.connection.to_state
 
-        self.__event_publisher.send(
-            CreateStepToNewStateEvent(
-                from_state_id,
-                to_state.id().value,
-                to_state.attributes.name.value,
-                to_state.attributes.output.value.text,
-                input_name
-            )
-        )
         return {
             "id": to_state.id().value,
             "name": to_state.attributes.name.value,
@@ -398,17 +335,14 @@ class ScenarioManipulator:
             StateID(state_id),
             Output(Answer(new_value)),
         )
-        self.__event_publisher.send(UpdateAnswerEvent(state_id, new_value))
 
     def rename_state(self, state_id: int, new_name: str):
         """изменяет имя состояния"""
         self.__scenario.rename_state(StateID(state_id), Name(new_name))
-        self.__event_publisher.send(RenameStateEvent(state_id, new_name))
 
     def rename_vector(self, old_name: str, new_name: str):
         """переименовывает группу синонимов"""
         self.__scenario.rename_vector(Name(old_name), Name(new_name))
-        self.__event_publisher.send(RenameVectorEvent(old_name, new_name))
 
     def set_synonym_value(self, input_name, old_synonym, new_synonym):
         """изменяет значение синонима"""
@@ -422,7 +356,6 @@ class ScenarioManipulator:
             Synonym(old_synonym),
         )  # raises ValueError if `old_synonym` not found
         self.__scenario.set_synonym_value(input_name, old_synonym, new_synonym)
-        self.__event_publisher.send(UpdateSynonymEvent(input_name, old_synonym, new_synonym))
 
     def steps_from(self, from_state: int) -> dict[int, list[str]]:
         """возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов"""
@@ -555,35 +488,15 @@ class ScenarioManipulator:
         indent(root)
         return tostring(root, "unicode")
 
-    def check_can_create_enter_state(self, name: str):
-        """проверяет условия для создания точки входа в новое состояние"""
-        _name = Name(name)
-
-        # должно подняться исключение если не существует
-        self.__scenario.get_vector(_name)
-
-        if len(self.__scenario.get_states_by_name(_name)) > 0:
-            raise CoreException(f'Состояние с именем "{name}" уже существует!')
-
     def create_enter_state(self, name: str) -> dict:
         """создаёт состояние-вход и вектор
         возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         """
-        vector = self.__scenario.get_vector(Name(name))
-        new_enter_state_id: StateID = self.__scenario.create_enter_state(
-            vector,
-        )
+        new_enter_state_id: StateID = self.__scenario.create_enter_state(Name(name))
         new_enter_state = self.__scenario.states([new_enter_state_id])[
             new_enter_state_id
         ]
 
-        self.__event_publisher.send(
-            CreateEnterStateEvent(
-                new_enter_state.id().value,
-                new_enter_state.attributes.name.value,
-                new_enter_state.attributes.output.value.text
-            )
-        )
         return {
             "id": new_enter_state.id().value,
             "name": new_enter_state.attributes.name.value,

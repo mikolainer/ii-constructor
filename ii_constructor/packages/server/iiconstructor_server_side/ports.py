@@ -20,6 +20,7 @@
 
 
 from iiconstructor_core.domain import InputDescription, State, Step
+from iiconstructor_core.domain.event_bus import EventBus
 from iiconstructor_core.domain.primitives import (
     Name,
     Output,
@@ -39,9 +40,9 @@ class ScenarioInterface:
 
     def create_enter_state(
         self,
-        input: InputDescription,
+        input: InputDescription | Name,
         required: bool = False,
-    ):
+    ) -> StateID:
         """добавляет вектор и новое состояние-вход с таким-же именем"""
 
     def create_enter_vector(self, input: InputDescription, state_id: StateID):
@@ -144,7 +145,7 @@ class Hosting:
     def add_source(self, info: SourceInfo) -> ScenarioID:
         """Создать пустой проект"""
 
-    def get_scenario(self, id: ScenarioID) -> ScenarioInterface:
+    def get_scenario(self, id: ScenarioID, event_bus: EventBus | None = None) -> ScenarioInterface:
         """Получить сценарий по id"""
 
     def sources(self) -> list[tuple[int, str, str]]:

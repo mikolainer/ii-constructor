@@ -836,14 +836,7 @@ class Old_ProjectManager:
         new_state_item = ItemData()
         try:
             name = proj.get_vector_name_by_synonyms_model(s_model)
-
-            manipulator.check_can_create_enter_state(name)
-            new_state_info = manipulator.create_state(name)
-            manipulator.make_enter(
-                self.__main_window,
-                new_state_info["id"],
-                False,
-            )
+            new_state_info = manipulator.create_enter_state(name)
 
             new_state_item.on[CustomDataRole.Id] = new_state_info["id"]
             new_state_item.on[CustomDataRole.Name] = new_state_info["name"]

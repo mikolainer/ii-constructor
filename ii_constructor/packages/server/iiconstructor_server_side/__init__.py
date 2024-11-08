@@ -37,16 +37,44 @@ from iiconstructor_core.domain.primitives import (
     StateAttributes,
     StateID,
 )
+from iiconstructor_core.domain.event_bus import (
+    EventBus,
+    Publisher
+)
+from iiconstructor_server_side.events import(
+    SaveLayEvent,
+    RemoveSynonymEvent,
+    RemoveVectorEvent,
+    RemoveEnterEvent,
+    RemoveStepEvent,
+    RemoveStateEvent,
+    CreateSynonymEvent,
+    AddVectorEvent,
+    MakeEnterEvent,
+    CreateStepEvent,
+    CreateStepToNewStateEvent,
+    UpdateAnswerEvent,
+    RenameStateEvent,
+    RenameVectorEvent,
+    UpdateSynonymEvent,
+    CreateEnterStateEvent,
+)
 
 from iiconstructor_server_side.ports import ScenarioInterface
 
 class Scenario(ScenarioInterface):
     __src: Source
+    __event_publisher: Publisher | None
 
     # Scenario public
 
-    def __init__(self, src: Source) -> None:
+    def __init__(self, src: Source, bus: EventBus | None = None) -> None:
         self.__src = src
+
+        self.__event_publisher = None
+        if issubclass(type(bus), EventBus):
+            self.__event_publisher = Publisher()
+            self.__event_publisher.connect(bus)
 
     def source(self) -> Source:
         return self.__src
@@ -56,26 +84,47 @@ class Scenario(ScenarioInterface):
 
     def save_lay(self, id: StateID, x: float, y: float):
         self.__src.save_lay(id, x, y)
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(SaveLayEvent(id.value, x, y))
 
     # создание сущностей
     def create_enter_state(
         self,
-        input: InputDescription,
+        input: InputDescription | Name,
         required: bool = False,
-    ):
+    ) -> StateID:
         """добавляет вектор и новое состояние-вход с таким-же именем"""
+        vector: InputDescription
 
         # создаём вектор
-        self.add_vector(input)
+        if issubclass(type(input), InputDescription):
+            self.add_vector(input)
+            vector = input
+
+        else: #if isinstance(input, Name):
+            vector = self.get_vector(input) # плюнет исключение если не существует
+            if len(self.get_states_by_name(input)) > 0:
+                raise CoreException(f'Состояние с именем "{input.value}" уже существует!')
 
         # создаём состояние
         state_to = self.__src.create_state(
-            StateAttributes(None, input.name(), None),
+            StateAttributes(None, vector.name(), None),
             required,
         )
 
         # делаем состояние точкой входа
         self.make_enter(state_to.id())
+
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(
+                CreateEnterStateEvent(
+                    state_to.id().value,
+                    state_to.attributes.name.value,
+                    state_to.attributes.output.value.text
+                )
+            )
+
+        return state_to.id()
 
     def create_enter_vector(self, input: InputDescription, state_id: StateID):
         """Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем"""
@@ -100,7 +149,7 @@ class Scenario(ScenarioInterface):
     def make_enter(self, state_id: StateID):
         """привязывает к состоянию существующий вектор с соответствующим именем как команду входа"""
         # получаем состояние
-        state_to = self.states([state_id])[state_id]
+        state_to: State = self.states([state_id])[state_id]
 
         # проверяем является ли входом
         if self.is_enter(state_to):
@@ -109,8 +158,11 @@ class Scenario(ScenarioInterface):
                 f'Точка входа в состояние "{state_to.id().value}"',
             )
 
-        input_name = state_to.attributes.name
+        input_name: Name = state_to.attributes.name
         self.__src.new_step(None, state_to.id(), input_name)
+
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(MakeEnterEvent(state_id.value, input_name.value))
 
     def create_step(
         self,
@@ -141,7 +193,26 @@ class Scenario(ScenarioInterface):
 
             state_to = self.__src.create_state(to_state)
 
-        return self.__src.new_step(from_state_id, state_to.id(), input.name())
+        new_step = self.__src.new_step(from_state_id, state_to.id(), input.name())
+        
+        if self.__event_publisher is not None:
+            if isinstance(to_state, StateID):
+                self.__event_publisher.send(
+                    CreateStepEvent(from_state_id.value, state_to.id().value, input.name().value)
+                )
+
+            elif isinstance(to_state, StateAttributes):
+                self.__event_publisher.send(
+                    CreateStepToNewStateEvent(
+                        from_state_id.value,
+                        state_to.id().value,
+                        state_to.attributes.name.value,
+                        state_to.attributes.output.value.text,
+                        input.name().value
+                    )
+                )
+
+        return new_step
 
     # удаление сущностей
 
@@ -158,6 +229,9 @@ class Scenario(ScenarioInterface):
 
         self.__src.delete_state(state_id)
 
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(RemoveStateEvent(state_id.value))
+
     def remove_enter(self, state_id: StateID):
         """удаляет связь с командой входа в состояние"""
         enter_state = self.states([state_id])[state_id]
@@ -167,6 +241,9 @@ class Scenario(ScenarioInterface):
 
         self.__src.delete_step(None, state_id)
 
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(RemoveEnterEvent(state_id.value))
+
     def remove_step(self, from_state_id: StateID, input: InputDescription):
         """
         удаляет связь между состояниями
@@ -174,6 +251,9 @@ class Scenario(ScenarioInterface):
         @input: управляющее воздействие
         """
         self.__src.delete_step(from_state_id, None, input.name())
+
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(RemoveStepEvent(from_state_id.value, input.name().value))
 
     # геттеры
 
@@ -198,6 +278,9 @@ class Scenario(ScenarioInterface):
     def set_answer(self, state_id: StateID, data: Output):
         """Изменить ответ состояния"""
         self.__src.set_answer(state_id, data)
+
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(UpdateAnswerEvent(state_id.value, data.value.text))
 
     # векторы
 
@@ -226,6 +309,9 @@ class Scenario(ScenarioInterface):
         if self.check_vector_exists(input.name()):
             raise _Exists(self.get_vector(input.name()))
 
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(AddVectorEvent(input.name().value))
+
         return self.__src.add_vector(input)
 
     def remove_vector(self, name: Name):
@@ -234,6 +320,9 @@ class Scenario(ScenarioInterface):
         @name - имя вектора для удаления (идентификатор)
         """
         self.__src.remove_vector(name)
+
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(RemoveVectorEvent(name.value))
 
     def check_vector_exists(self, name: Name) -> bool:
         """
@@ -250,14 +339,23 @@ class Scenario(ScenarioInterface):
     ):
         """изменяет значение синонима"""
         self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
+        
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(UpdateSynonymEvent(input_name, old_synonym, new_synonym))
 
     def create_synonym(self, input_name: str, new_synonym: str):
         """создаёт синоним"""
         self.__src.create_synonym(input_name, new_synonym)
 
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(CreateSynonymEvent(input_name, new_synonym))
+
     def remove_synonym(self, input_name: str, synonym: str):
         """удаляет синоним"""
         self.__src.remove_synonym(input_name, synonym)
+
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(RemoveSynonymEvent(input_name, synonym))
 
     def rename_state(self, state: StateID, name: Name):
         """Переименовывает состояние"""
@@ -283,6 +381,9 @@ class Scenario(ScenarioInterface):
 
         self.__src.rename_state(state, name)
 
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(RenameStateEvent(state.value, name.value))
+
     def rename_vector(self, old_name: Name, new_name: Name):
         """переименовывает группу синонимов"""
         for state in self.get_states_by_name(old_name):
@@ -302,3 +403,6 @@ class Scenario(ScenarioInterface):
 
         except Exception:
             raise
+
+        if self.__event_publisher is not None:
+            self.__event_publisher.send(RenameVectorEvent(old_name.value, new_name.value))
