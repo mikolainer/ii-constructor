@@ -43,7 +43,7 @@ from iiconstructor_core.domain.primitives import (
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from iiconstructor_server_side.ports import Hosting, ScenarioInterface
 
-from iiconstructor_server_side import Scenario
+from iiconstructor_server_side import Master
 
 
 class SourceMySQL(Source):
@@ -707,7 +707,7 @@ class HostingMySQL(Hosting):
         if not self.connected():
             raise CoreException("БД не подключена")
 
-        return Scenario(SourceMySQL(self.__connection, id))
+        return Master(SourceMySQL(self.__connection, id))
 
     def add_source(self, info: SourceInfo) -> ScenarioID:
         if not self.connected():

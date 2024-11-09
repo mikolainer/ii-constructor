@@ -40,7 +40,7 @@ from iiconstructor_core.domain.primitives import (
 from iiconstructor_levenshtain import LevenshtainVector, Synonym
 from iiconstructor_server_side.ports import Hosting, ScenarioInterface
 
-from iiconstructor_server_side import Scenario
+from iiconstructor_server_side import Master
 
 
 class SourceInMemory(Source):
@@ -351,7 +351,7 @@ class HostingInmem(Hosting):
 
     def get_scenario(self, id: ScenarioID, event_bus: EventBus | None = None) -> ScenarioInterface:
         if self.__sources[id] is None:
-            self.__sources[id] = Scenario(
+            self.__sources[id] = Master(
                 SourceInMemory(id, self.__sources_info.pop(id)), event_bus
             )
         

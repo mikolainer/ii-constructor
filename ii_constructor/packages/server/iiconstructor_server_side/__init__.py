@@ -62,7 +62,7 @@ from iiconstructor_server_side.events import(
 
 from iiconstructor_server_side.ports import ScenarioInterface
 
-class Scenario(ScenarioInterface):
+class Master(ScenarioInterface):
     __src: Source
     __event_publisher: Publisher | None
 
@@ -127,7 +127,7 @@ class Scenario(ScenarioInterface):
         return state_to.id()
 
     def create_enter_vector(self, input: InputDescription, state_id: StateID):
-        """Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем"""
+        """Создаёт вектор с соответствующим состоянию именем"""
         _states = self.states()
         state_to = _states[state_id]
         for _state in _states.values():
