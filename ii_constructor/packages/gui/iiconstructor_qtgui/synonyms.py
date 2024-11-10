@@ -64,6 +64,7 @@ from PySide6.QtWidgets import (
 )
 
 from .data import (
+    BaseModel,
     Old_BaseModel,
     CustomDataRole,
     ProxyModelReadOnly,
@@ -72,7 +73,19 @@ from .data import (
 from .primitives.buttons import CloseButton
 from .primitives.widgets import SynonymEditorWidget
 
+class SynonymsGroupsModel(BaseModel):
+    """Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов"""
 
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init(
+            index_roles=[CustomDataRole.Name],
+            required_roles=[CustomDataRole.Name, CustomDataRole.SynonymsSet],
+        )
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+    
 class Old_SynonymsGroupsModel(Old_BaseModel):
     """Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов"""
 

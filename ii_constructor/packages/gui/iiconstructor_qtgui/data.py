@@ -140,6 +140,169 @@ class PresentationModelMixinBase:
         return len(self.__data)
 
 
+class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
+    """Базовая надстройка над базовой моделью Qt для работы с ItemData в виде списка"""
+
+    __prepared_item: ItemData | None
+    __map_custom_as_qt_role: dict[Qt.ItemDataRole, CustomDataRole]
+
+    __remove_callback: Callable[[QModelIndex], bool]
+    """ (index) -> ok """
+
+    __edit_callback: Callable[[QModelIndex, int, Any, Any], bool]
+    """ (index, role, old_value, new_value) -> ok """
+
+    def __init__(
+        self,
+        parent: QObject | None = None,
+        prepared_item: ItemData | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.__remove_callback = lambda index: False
+        self.__edit_callback = lambda index, role, old_value, new_value: False
+
+        self.__map_custom_as_qt_role = {}
+        self.__prepared_item = prepared_item
+
+    def set_remove_callback(self, callback: Callable[[QModelIndex], bool]):
+        """callback обработки изменений из пользовательского интерфейса"""
+        self.__remove_callback = callback
+
+    def set_edit_callback(
+        self,
+        callback: Callable[[QModelIndex, int, Any, Any], bool],
+    ):
+        """callback обработки изменений из пользовательского интерфейса"""
+        self.__edit_callback = callback
+
+    def map_role_as(self, role: CustomDataRole, as_role: Qt.ItemDataRole):
+        """устанавливает соответствие ролей для получения данных через `data()`"""
+        self.__map_custom_as_qt_role[as_role] = role
+
+    def unmap_role(self, role: Qt.ItemDataRole):
+        """удаляет соответствие роли для получения данных через `data()`"""
+        del self.__map_custom_as_qt_role[role]
+
+    def prepare_item(self, item: ItemData):
+        """Подготовить элемент для вставки в модель"""
+        self.__prepared_item = item
+
+    def parent(
+        self,
+        child: QModelIndex | QPersistentModelIndex,
+    ) -> QModelIndex:
+        """Модель плоская. Возвращается QModelIndex()"""
+        return QModelIndex()
+
+    def index(
+        self,
+        row: int,
+        column: int = 0,
+        parent: QModelIndex | QPersistentModelIndex = None,
+    ) -> QModelIndex:
+        """возвращает индекс по строке (аргумент `column` игнорируется, всегда 0)"""
+        return self.createIndex(row, column, self.get_item(row))
+
+    def rowCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = None,
+    ) -> int:
+        """Возвращает количество элементов в модели"""
+        return len(self)
+
+    def columnCount(
+        self,
+        parent: QModelIndex | QPersistentModelIndex = None,
+    ) -> int:
+        """Всегда возвращает 1 (список представляется таблицей с единствоенный мтолбцом)"""
+        return 1
+
+    def setData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        value: Any,
+        role: int = Qt.ItemDataRole.EditRole,
+    ) -> bool:
+        """Устанавливает значение для роли элемента, с индексом `index.row()`"""
+        if not self.__edit_callback(index, role, index.data(role), value):
+            return False
+#
+#        if (
+#            role == Qt.ItemDataRole.EditRole
+#            and Qt.ItemDataRole.DisplayRole
+#            in self.__map_custom_as_qt_role.keys()
+#        ):
+#            self.get_item(index.row()).on[
+#                self.__map_custom_as_qt_role[Qt.ItemDataRole.DisplayRole]
+#            ] = value
+#            self.dataChanged.emit(index, index, [role])
+#            return True
+#
+#        self.get_item(index.row()).on[role] = value
+#        self.dataChanged.emit(index, index, [role])
+#        return True
+
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
+        """Возвращает значение роли у элемента, с индексом `index.row()`"""
+        if role < Qt.ItemDataRole.UserRole:
+            if role in self.__map_custom_as_qt_role.keys():
+                return self.get_item(index.row()).on[
+                    self.__map_custom_as_qt_role[role]
+                ]
+            return None
+        return self.get_item(index.row()).on[role]
+
+    def insertRow(
+        self,
+        row: int = None,
+        parent: QModelIndex | QPersistentModelIndex = None,
+    ) -> bool:
+        """Добавляет 1 подготовленный элемент в конец. Все аргументы игнорируются."""
+        return super().insertRow(self.rowCount(), QModelIndex())
+
+    def insertRows(
+        self,
+        row: int,
+        count: int = None,
+        parent: QModelIndex | QPersistentModelIndex = None,
+    ) -> bool:
+        """Добавляет 1 подготовленный элемент в конец. Все аргументы игнорируются."""
+        new_row: int = self.rowCount()
+        self.beginInsertRows(QModelIndex(), new_row, new_row)
+        self.add_item(self.__prepared_item)
+        self.endInsertRows()
+        self.__prepared_item = None
+        return True
+
+    def removeRow(
+        self,
+        row: int,
+        parent: QModelIndex | QPersistentModelIndex = None,
+    ) -> bool:
+        """Удаляет 1 элемент с индексом `row`. Аргумент `parent` игнорируeтся."""
+        return super().removeRow(row, QModelIndex())
+
+    def removeRows(
+        self,
+        row: int,
+        count: int = None,
+        parent: QModelIndex | QPersistentModelIndex = None,
+    ) -> bool:
+        """Удаляет 1 элемент с индексом `row`. Аргументы `count` и `parent` игнорируются."""
+        self.__remove_callback(self.index(row))
+        return False
+#        if not self.__remove_callback(self.index(row)):
+#            return False
+#
+#        self.beginRemoveRows(QModelIndex(), row, row)
+#        self.cut_item(self.get_item(row))
+#        self.endRemoveRows()
+#        return True
+
 class Old_BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     """Базовая надстройка над базовой моделью Qt для работы с ItemData в виде списка"""
 

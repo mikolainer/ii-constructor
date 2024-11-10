@@ -42,7 +42,40 @@ from .data import Old_BaseModel, CustomDataRole, Old_SynonymsSetModel
 from .primitives.sceneitems import Arrow, SceneNode
 from .synonyms import SynonymsSetView
 
+class StepModel(Old_BaseModel):
+    __arrow: Arrow
+    __node_from: SceneNode
+    __node_to: SceneNode
 
+    """ Модель стрелочки на сцене """
+
+    def __init__(
+        self,
+        arrow,
+        from_node,
+        to_node,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+
+        self.__arrow = arrow
+        self.__node_from = from_node
+        self.__node_to = to_node
+
+        self._data_init(index_roles=[CustomDataRole.SynonymsSet])
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+
+    def arrow(self) -> Arrow:
+        return self.__arrow
+
+    def node_from(self) -> SceneNode:
+        return self.__node_from
+
+    def node_to(self) -> SceneNode:
+        return self.__node_to
+    
 class Old_StepModel(Old_BaseModel):
     __arrow: Arrow
     __node_from: SceneNode
