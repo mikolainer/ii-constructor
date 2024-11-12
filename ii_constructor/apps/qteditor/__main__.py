@@ -21,15 +21,17 @@
 
 import sys
 
+import resources.icons_rc  # noqa: F401 Для вызова функции инициализации иконок
+import resources.styles_rc
 from presentation import ProjectManager
 from PySide6.QtCore import QFile, QIODevice, QTextStream
 from PySide6.QtWidgets import QApplication
 
-import resources.styles_rc
-import resources.icons_rc  # noqa: F401 Для вызова функции инициализации иконок
-
 if __name__ == "__main__":
-    sys.argv += ["-platform", "windows:darkmode=0"]
+    if sys.platform == "windows":
+        sys.argv += ["-platform", "windows:darkmode=0"]
+    elif sys.platform == "darwin":
+        sys.argv += ["-platform", "cocoa:darkmode=0"]
 
     app = QApplication(sys.argv)
     app.setOrganizationName("ii_constructor")
