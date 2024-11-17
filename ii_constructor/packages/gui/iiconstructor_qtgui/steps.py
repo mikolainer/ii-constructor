@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .data import BaseModel, Old_BaseModel, CustomDataRole, Old_SynonymsSetModel
+from .data import BaseModel, CustomDataRole, SynonymsSetModel
 from .primitives.sceneitems import Arrow, SceneNode
 from .synonyms import SynonymsSetView
 
@@ -75,41 +75,6 @@ class StepModel(BaseModel):
 
     def node_to(self) -> SceneNode:
         return self.__node_to
-    
-class Old_StepModel(Old_BaseModel):
-    __arrow: Arrow
-    __node_from: SceneNode
-    __node_to: SceneNode
-
-    """ Модель стрелочки на сцене """
-
-    def __init__(
-        self,
-        arrow,
-        from_node,
-        to_node,
-        parent: QObject | None = None,
-    ) -> None:
-        super().__init__(parent)
-
-        self.__arrow = arrow
-        self.__node_from = from_node
-        self.__node_to = to_node
-
-        self._data_init(index_roles=[CustomDataRole.SynonymsSet])
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-
-    def arrow(self) -> Arrow:
-        return self.__arrow
-
-    def node_from(self) -> SceneNode:
-        return self.__node_from
-
-    def node_to(self) -> SceneNode:
-        return self.__node_to
-
 
 class StepInputWidget(QWidget):
     __synonyms_set: SynonymsSetView
@@ -117,7 +82,7 @@ class StepInputWidget(QWidget):
 
     def __init__(
         self,
-        synonyms_set_model: Old_SynonymsSetModel,
+        synonyms_set_model: SynonymsSetModel,
         parent: QWidget = None,
     ) -> None:
         super().__init__(parent)
@@ -206,11 +171,11 @@ class StepInputSetView(QTableView):
 
 
 class StepEditor(QDialog):
-    __model: Old_StepModel
+    __model: StepModel
 
     def __init__(
         self,
-        model: Old_StepModel,
+        model: StepModel,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)

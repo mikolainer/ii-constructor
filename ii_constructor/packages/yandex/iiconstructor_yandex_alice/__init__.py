@@ -41,7 +41,7 @@ from iiconstructor_core.domain.event_bus import (
     EventBus,
     Publisher
 )
-from iiconstructor_server_side.events import(
+from iiconstructor_yandex_alice.events import(
     SaveLayEvent,
     RemoveSynonymEvent,
     RemoveVectorEvent,
@@ -60,8 +60,8 @@ from iiconstructor_server_side.events import(
     CreateEnterStateEvent,
 )
 
-from iiconstructor_server_side.ports import ScenarioInterface
-from iiconstructor_server_side.client import ScenarioEventListener
+from iiconstructor_yandex_alice.ports import ScenarioInterface
+from iiconstructor_yandex_alice.client import ScenarioEventListener
 
 class Master(ScenarioInterface):
     __event_publisher: Publisher | None

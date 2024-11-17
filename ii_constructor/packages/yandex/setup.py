@@ -25,16 +25,16 @@ if __name__ == "__main__":
     with open("README.md") as f:
         readme = f.read()
 
-    # with open('requirements.txt') as f:
+    # with open("requirements.txt") as f:
     #    requirements = f.read().splitlines()
 
     setup(
-        name="iiconstructor_core",
+        name="iiconstructor_yandex_alice",
         version="0.0",
         description='Parts of project "interactive instructons constructor"',
         long_description=readme,
         author="Nikolay Ivantsov",
         author_email="mikolainer@mail.ru",
-        packages=["iiconstructor_core"],
+        packages=["iiconstructor_yandex_alice"],
         # install_requires=requirements,
     )

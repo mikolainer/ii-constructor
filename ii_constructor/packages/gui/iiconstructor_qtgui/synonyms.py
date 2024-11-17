@@ -65,10 +65,9 @@ from PySide6.QtWidgets import (
 
 from .data import (
     BaseModel,
-    Old_BaseModel,
     CustomDataRole,
     ProxyModelReadOnly,
-    Old_SynonymsSetModel,
+    SynonymsSetModel,
 )
 from .primitives.buttons import CloseButton
 from .primitives.widgets import SynonymEditorWidget
@@ -85,20 +84,6 @@ class SynonymsGroupsModel(BaseModel):
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-    
-class Old_SynonymsGroupsModel(Old_BaseModel):
-    """Модель групп синонимов. Реализация части MVC фреймворка Qt для набора синонимов в редакторе синонимов"""
-
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self._data_init(
-            index_roles=[CustomDataRole.Name],
-            required_roles=[CustomDataRole.Name, CustomDataRole.SynonymsSet],
-        )
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-
 
 class SynonymsGroupWidget(QWidget):
     """Единица списка групп синонимов. Отображение элемента модели групп синонимов"""
@@ -346,7 +331,7 @@ class GroupsList(QStackedWidget):
 
     __indexed: dict[int, SynonymsGroupsView]
     __empty_index: int
-    create_value = Signal(Old_SynonymsGroupsModel)
+    create_value = Signal(SynonymsGroupsModel)
 
     def addWidget(self, w: SynonymsGroupsView) -> int:
         if not isinstance(w, SynonymsGroupsView):
@@ -394,9 +379,9 @@ class GroupsList(QStackedWidget):
 class SynonymsList(QStackedWidget):
     """Обёртка для списка групп синонимов"""
 
-    __indexed: dict[int, Old_SynonymsSetModel]
+    __indexed: dict[int, SynonymsSetModel]
     __empty_index: int
-    create_value = Signal(Old_SynonymsSetModel)
+    create_value = Signal(SynonymsSetModel)
 
     def addWidget(self, w: SynonymsSetView) -> int:
         if not isinstance(w, SynonymsSetView):
@@ -424,7 +409,7 @@ class SynonymsList(QStackedWidget):
         """Показать заглушку"""
         self.setCurrentIndex(self.__empty_index)
 
-    def set_current(self, model: Old_SynonymsSetModel):
+    def set_current(self, model: SynonymsSetModel):
         # для нового списка создаём отдельный виджет и сохраняем его индекс
         if model not in self.__indexed.values():
             view = SynonymsSetView(self)
@@ -448,15 +433,15 @@ class SynonymsEditor(QDialog):
     __synonyms_list: SynonymsList
     __group_list: GroupsList
 
-    __g_model: Old_SynonymsGroupsModel
+    __g_model: SynonymsGroupsModel
     __create_group_handler: Callable
     __create_value_handler: Callable
 
     def __init__(
         self,
-        g_model: Old_SynonymsGroupsModel,
-        create_group_handler: Callable[[Old_SynonymsGroupsModel], None],
-        create_value_handler: Callable[[Old_SynonymsSetModel], None],
+        g_model: SynonymsGroupsModel,
+        create_group_handler: Callable[[SynonymsGroupsModel], None],
+        create_value_handler: Callable[[SynonymsSetModel], None],
         parent: QWidget | None = None,
     ) -> None:
         self.__g_model = g_model
@@ -560,7 +545,7 @@ class SynonymsGroupWidgetToSelect(QWidget):
     def __init__(
         self,
         name: str,
-        synonyms_set_model: Old_SynonymsSetModel,
+        synonyms_set_model: SynonymsSetModel,
         parent: QWidget = None,
     ) -> None:
         super().__init__(parent)
@@ -709,17 +694,17 @@ class SynonymsSelectorView(QListView):
 
 
 class SynonymsSelector(QDialog):
-    __g_model: Old_SynonymsGroupsModel
-    __create_group_handler: Callable[[Old_SynonymsGroupsModel], None]
+    __g_model: SynonymsGroupsModel
+    __create_group_handler: Callable[[SynonymsGroupsModel], None]
 
     __selected_name: str
 
-    create_value = Signal(Old_SynonymsGroupsModel)
+    create_value = Signal(SynonymsGroupsModel)
 
     def __init__(
         self,
-        g_model: Old_SynonymsGroupsModel,
-        create_group_handler: Callable[[Old_SynonymsGroupsModel], None],
+        g_model: SynonymsGroupsModel,
+        create_group_handler: Callable[[SynonymsGroupsModel], None],
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -749,7 +734,7 @@ class SynonymsSelector(QDialog):
         self.__selected_name = name
         self.accept()
 
-    def selected_item(self) -> Old_SynonymsSetModel | None:
+    def selected_item(self) -> SynonymsSetModel | None:
         g_item = self.__g_model.get_item_by(
             CustomDataRole.Name,
             self.__selected_name,

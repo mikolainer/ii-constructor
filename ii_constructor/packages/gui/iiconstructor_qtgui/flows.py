@@ -45,7 +45,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .data import BaseModel, Old_BaseModel, CustomDataRole, Old_SynonymsSetModel
+from .data import BaseModel, CustomDataRole, SynonymsSetModel
 from .primitives.widgets import SynonymEditorWidget
 
 class FlowsModel(BaseModel):
@@ -57,17 +57,6 @@ class FlowsModel(BaseModel):
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-
-class Old_FlowsModel(Old_BaseModel):
-    """Модель содержания проекта. Реализация части MVC фреймворка Qt для содержания проекта"""
-
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self._data_init()  # TODO
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-
 
 class FlowWidget(QWidget):
     """Единица содержания проекта. Отображение элемента модели содержания"""
@@ -98,7 +87,7 @@ class FlowWidget(QWidget):
         self,
         name: str,
         description: str,
-        synonyms: Old_SynonymsSetModel,
+        synonyms: SynonymsSetModel,
         start_state,  # :QGraphicsProxyWidget,
         parent=None,
     ) -> None:

@@ -21,25 +21,9 @@
 
 from PySide6.QtCore import QModelIndex, QObject, QPersistentModelIndex, Qt
 
-from .data import BaseModel, Old_BaseModel, CustomDataRole
+from .data import BaseModel, CustomDataRole
 
 class StatesModel(BaseModel):
-    """Модель состояний. Для обработки сценой (Editor)"""
-
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-
-        roles: list[CustomDataRole] = [
-            CustomDataRole.Id,
-            CustomDataRole.Name,
-            CustomDataRole.Text,
-        ]
-
-        self._data_init(index_roles=roles)
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-class Old_StatesModel(Old_BaseModel):
     """Модель состояний. Для обработки сценой (Editor)"""
 
     def __init__(self, parent: QObject | None = None) -> None:

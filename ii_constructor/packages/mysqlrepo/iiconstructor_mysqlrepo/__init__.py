@@ -42,9 +42,9 @@ from iiconstructor_core.domain.primitives import (
     StateID,
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
-from iiconstructor_server_side.ports import HostingInterface, ScenarioInterface
+from iiconstructor_yandex_alice.ports import HostingInterface, ScenarioInterface
 
-from iiconstructor_server_side import Master
+from iiconstructor_yandex_alice import Master
 
 
 class SourceMySQL(SourceInterface):

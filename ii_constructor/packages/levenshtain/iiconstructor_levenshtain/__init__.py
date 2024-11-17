@@ -27,7 +27,7 @@ from iiconstructor_core.domain import InputDescription, State
 from iiconstructor_core.domain.exceptions import NotExists
 from iiconstructor_core.domain.primitives import Input, Name
 from iiconstructor_engine import StepVectorBaseClassificator
-from iiconstructor_server_side.ports import ScenarioInterface
+from iiconstructor_yandex_alice.ports import ScenarioInterface
 
 
 @dataclass

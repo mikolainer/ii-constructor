@@ -21,7 +21,7 @@
 
 from iiconstructor_core.infrastructure.data import BaseSerializer, ItemData
 from iiconstructor_levenshtain import LevenshtainVector
-from iiconstructor_qtgui.data import CustomDataRole, Old_SynonymsSetModel, SynonymsSetModel
+from iiconstructor_qtgui.data import CustomDataRole, SynonymsSetModel
 
 
 class LevenshtainVectorSerializer(BaseSerializer):

@@ -17,7 +17,7 @@ from iiconstructor_core.domain.event_bus import(
     EventBus
 )
 
-from iiconstructor_server_side.events import (
+from iiconstructor_yandex_alice.events import (
     Event,
     SaveLayEvent,
     CreateStateEvent,
@@ -37,7 +37,7 @@ from iiconstructor_server_side.events import (
     UpdateSynonymEvent,
     CreateEnterStateEvent,
 )
-from iiconstructor_server_side.ports import ScenarioInterface
+from iiconstructor_yandex_alice.ports import ScenarioInterface
 
 class ScenarioEventHandler(EventHandler):
     __slave: ScenarioInterface

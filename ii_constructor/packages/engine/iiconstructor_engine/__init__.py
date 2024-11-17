@@ -26,7 +26,7 @@ from iiconstructor_core.domain.primitives import (
     Response,
     StateID,
 )
-from iiconstructor_server_side.ports import ScenarioInterface
+from iiconstructor_yandex_alice.ports import ScenarioInterface
 
 class StepVectorBaseClassificator:
     __project: ScenarioInterface

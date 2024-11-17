@@ -1,8 +1,17 @@
+# abstract base
 -e ./ii_constructor/packages/core
--e ./ii_constructor/packages/server
 -e ./ii_constructor/packages/engine
--e ./ii_constructor/packages/levenshtain
+
+# repositories
 -e ./ii_constructor/packages/mariarepo
 -e ./ii_constructor/packages/mysqlrepo
 -e ./ii_constructor/packages/inmemoryrepo
+
+# inputs
+-e ./ii_constructor/packages/levenshtain
+
+# platforms
+-e ./ii_constructor/packages/yandex
+
+# presentation infrastructure
 -e ./ii_constructor/packages/gui

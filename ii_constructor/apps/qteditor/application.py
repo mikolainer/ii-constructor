@@ -35,7 +35,7 @@ from iiconstructor_core.domain.primitives import (
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from iiconstructor_maria.repo import SourceMariaDB
-from iiconstructor_server_side.ports import HostingInterface, ScenarioInterface
+from iiconstructor_yandex_alice.ports import HostingInterface, ScenarioInterface
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 
@@ -259,9 +259,6 @@ class ScenarioAPI:
     def steps_from(self, from_state: int) -> dict[int, list[str]]:
         """возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов"""
 
-    def save_to_file(self):
-        """сохраняет сценарий в файл"""
-
     def serialize(self) -> str:
         """сформировать строку для сохранения в файл"""
 
@@ -470,9 +467,6 @@ class Server(ScenarioAPI):
 
         return result
 
-    def save_to_file(self):
-        """сохраняет сценарий в файл"""
-
     def serialize(self) -> str:
         """сформировать строку для сохранения в файл"""
 
@@ -592,3 +586,95 @@ class Server(ScenarioAPI):
             "name": new_enter_state.attributes.name.value,
             "text": new_enter_state.attributes.output.value.text,
         }
+
+class Client(Server): #(ScenarioAPI)
+    __server: Server
+
+    def __init__(self, slave: ScenarioInterface, server: Server) -> None:
+        super().__init__(slave)
+        self.__server = server
+
+    def in_db(self) -> bool:
+        return self.__server.in_db()
+
+    def save_lay(self, id: int, x: float, y: float):
+        return self.__server.save_lay(id, x, y)
+
+    def remove_synonym(self, input_name: str, synonym: str):
+        """удаляет синоним"""
+        return self.__server.remove_synonym(input_name, synonym)
+
+    def remove_vector(self, input_name: str):
+        """удаляет вектор"""
+        return self.__server.remove_vector(input_name)
+
+    def remove_enter(self, state_id: int):
+        """удаляет точку входа (переход)"""
+        return self.__server.remove_enter(state_id)
+
+    def remove_step(self, from_state_id: int, input_name: str):
+        """удаляет переход"""
+        return self.__server.remove_step(from_state_id, input_name)
+
+    def remove_state(self, state_id: int):
+        """удаляет состояние"""
+        return self.__server.remove_state(state_id)
+
+    def create_synonym(self, input_name: str, new_synonym: str):
+        """создаёт синоним"""
+        return self.__server.create_synonym(input_name, new_synonym)
+
+    def add_vector(self, input_name: str):
+        """создаёт вектор"""
+        return self.__server.add_vector(input_name)
+
+    def make_enter(
+        self,
+        main_window: QWidget,
+        state_id: int,
+        ask: bool = True,
+    ) -> str:
+        """делает состояние точкой входа, возвращает имя вектора"""
+        return self.__server.make_enter(main_window, state_id, ask)
+
+    def create_step(
+        self,
+        from_state_id: int,
+        to_state_id: int,
+        input_name: str,
+    ):
+        """создаёт переход"""
+        return self.__server.create_step(from_state_id, to_state_id, input_name)
+
+    def create_step_to_new_state(
+        self,
+        from_state_id: int,
+        input_name: str,
+        new_state_name: str,
+    ) -> dict:
+        """создаёт состояние с переходом в него
+        возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
+        """
+        return self.__server.create_step_to_new_state(from_state_id, input_name, new_state_name)
+
+    def set_state_answer(self, state_id: int, new_value: str):
+        """изменяет ответ состояния"""
+        return self.__server.set_state_answer(state_id, new_value)
+        
+    def rename_state(self, state_id: int, new_name: str):
+        """изменяет имя состояния"""
+        return self.__server.rename_state(state_id, new_name)
+
+    def rename_vector(self, old_name: str, new_name: str):
+        """переименовывает группу синонимов"""
+        return self.__server.rename_state(old_name, new_name)
+
+    def set_synonym_value(self, input_name, old_synonym, new_synonym):
+        """изменяет значение синонима"""
+        return self.__server.set_synonym_value(input_name, old_synonym, new_synonym)
+
+    def create_enter_state(self, name: str) -> dict:
+        """создаёт состояние-вход и вектор
+        возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
+        """
+        return self.__server.create_enter_state(name)
