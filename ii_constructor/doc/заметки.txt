@@ -1,0 +1,28 @@
+([+] добвил DrawStringEx; [-] оставил как было)
+
+1. нужны отдельные настройки?:	
+-	ImgGridLinesBL::drawStick
+-	ImgGridLinesXY::drawStick
+	
+-	ImgScaleLineCircle::draw
+-	ImgCompass::draw
+-	ImgScaleLine::drawExtended
+-	ImgScaleLine::drawSimple
+
+2. не понял где используется :
++	весь TknMapScale.cpp
++	TknWindNonScale::draw
++	TknFlyLine::PointInfo::draw
++	TknTrace::drawHeadAndtail
++	RuleGroup_stickers::drawSticker
++	RuleGroup_stickers::drawTextInfo
+
+-	DrawableText::draw
+-	TextRenderer::draw
+-	GridBLData::drawGeoRect
+-	GridNomenclatureGKData::drawSheets
+-	GridNomenclatureGKData::drawXYgrid
+
+3. похоже сейчас работает неправильно. вроде понял где должно использоваться, но не смог заставить рисоваться:
++	TknStubDetector::TknStub::draw
++	TextDetector::draw

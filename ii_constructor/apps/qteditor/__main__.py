@@ -21,7 +21,7 @@
 
 import sys
 
-from presentation import Old_ProjectManager
+from presentation import Old_ProjectManager, ProjectManager
 from PySide6.QtCore import QFile, QIODevice, QTextStream
 from PySide6.QtWidgets import QApplication
 
@@ -39,5 +39,5 @@ if __name__ == "__main__":
     stream.open(QIODevice.ReadOnly)
     app.setStyleSheet(QTextStream(stream).readAll())
 
-    projects = Old_ProjectManager()
+    projects = ProjectManager() #Old_ProjectManager()
     app.exec()

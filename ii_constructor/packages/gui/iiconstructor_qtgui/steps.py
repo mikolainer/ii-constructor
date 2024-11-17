@@ -38,11 +38,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .data import Old_BaseModel, CustomDataRole, Old_SynonymsSetModel
+from .data import BaseModel, Old_BaseModel, CustomDataRole, Old_SynonymsSetModel
 from .primitives.sceneitems import Arrow, SceneNode
 from .synonyms import SynonymsSetView
 
-class StepModel(Old_BaseModel):
+class StepModel(BaseModel):
     __arrow: Arrow
     __node_from: SceneNode
     __node_to: SceneNode

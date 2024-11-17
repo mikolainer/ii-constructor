@@ -1,6 +1,6 @@
 from iiconstructor_core.domain import (
     InputDescription,
-    Source,
+    SourceInterface,
     State,
     Step,
 )
@@ -39,14 +39,14 @@ from iiconstructor_server_side.events import (
 )
 from iiconstructor_server_side.ports import ScenarioInterface
 
-class ClientEventHandler(EventHandler):
-    __client: ScenarioInterface
+class ScenarioEventHandler(EventHandler):
+    __slave: ScenarioInterface
 
     def __init__(self, client: ScenarioInterface):
         super().__init__()
-        self.__client = client
+        self.__slave = client
 
-class SaveLayEventHandler(ClientEventHandler):
+class SaveLayEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -54,7 +54,7 @@ class SaveLayEventHandler(ClientEventHandler):
     def event_type() -> type:
         return SaveLayEvent
 
-class CreateStateEventHandler(ClientEventHandler):
+class CreateStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -62,7 +62,7 @@ class CreateStateEventHandler(ClientEventHandler):
     def event_type() -> type:
         return CreateStateEvent
 
-class RemoveSynonymEventHandler(ClientEventHandler):
+class RemoveSynonymEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -70,7 +70,7 @@ class RemoveSynonymEventHandler(ClientEventHandler):
     def event_type() -> type:
         return RemoveSynonymEvent
 
-class RemoveVectorEventHandler(ClientEventHandler):
+class RemoveVectorEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -78,7 +78,7 @@ class RemoveVectorEventHandler(ClientEventHandler):
     def event_type() -> type:
         return RemoveVectorEvent
 
-class RemoveEnterEventHandler(ClientEventHandler):
+class RemoveEnterEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -86,7 +86,7 @@ class RemoveEnterEventHandler(ClientEventHandler):
     def event_type() -> type:
         return RemoveEnterEvent
 
-class RemoveStepEventHandler(ClientEventHandler):
+class RemoveStepEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -94,7 +94,7 @@ class RemoveStepEventHandler(ClientEventHandler):
     def event_type() -> type:
         return RemoveStepEvent
 
-class RemoveStateEventHandler(ClientEventHandler):
+class RemoveStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -102,7 +102,7 @@ class RemoveStateEventHandler(ClientEventHandler):
     def event_type() -> type:
         return RemoveStateEvent
 
-class CreateSynonymEventHandler(ClientEventHandler):
+class CreateSynonymEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -110,7 +110,7 @@ class CreateSynonymEventHandler(ClientEventHandler):
     def event_type() -> type:
         return CreateSynonymEvent
 
-class AddVectorEventHandler(ClientEventHandler):
+class AddVectorEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -118,7 +118,7 @@ class AddVectorEventHandler(ClientEventHandler):
     def event_type() -> type:
         return AddVectorEvent
 
-class MakeEnterEventHandler(ClientEventHandler):
+class MakeEnterEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -126,7 +126,7 @@ class MakeEnterEventHandler(ClientEventHandler):
     def event_type() -> type:
         return MakeEnterEvent
 
-class CreateStepEventHandler(ClientEventHandler):
+class CreateStepEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -134,7 +134,7 @@ class CreateStepEventHandler(ClientEventHandler):
     def event_type() -> type:
         return CreateStepEvent
 
-class CreateStepToNewStateEventHandler(ClientEventHandler):
+class CreateStepToNewStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -142,7 +142,7 @@ class CreateStepToNewStateEventHandler(ClientEventHandler):
     def event_type() -> type:
         return CreateStepToNewStateEvent
 
-class UpdateAnswerEventHandler(ClientEventHandler):
+class UpdateAnswerEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -150,7 +150,7 @@ class UpdateAnswerEventHandler(ClientEventHandler):
     def event_type() -> type:
         return UpdateAnswerEvent
 
-class RenameStateEventHandler(ClientEventHandler):
+class RenameStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -158,7 +158,7 @@ class RenameStateEventHandler(ClientEventHandler):
     def event_type() -> type:
         return RenameStateEvent
 
-class RenameVectorEventHandler(ClientEventHandler):
+class RenameVectorEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -166,7 +166,7 @@ class RenameVectorEventHandler(ClientEventHandler):
     def event_type() -> type:
         return RenameVectorEvent
 
-class UpdateSynonymEventHandler(ClientEventHandler):
+class UpdateSynonymEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -174,7 +174,7 @@ class UpdateSynonymEventHandler(ClientEventHandler):
     def event_type() -> type:
         return UpdateSynonymEvent
 
-class CreateEnterStateEventHandler(ClientEventHandler):
+class CreateEnterStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
         pass
 
@@ -183,10 +183,10 @@ class CreateEnterStateEventHandler(ClientEventHandler):
         return CreateEnterStateEvent
 
 class ScenarioEventListener(Subscriber):
-    __handlers: dict[type, ClientEventHandler]
+    __handlers: dict[type, ScenarioEventHandler]
 
     def __init__(self, client: ScenarioInterface):
-        self.__handlers = dict[type, ClientEventHandler]
+        self.__handlers = dict[type, ScenarioEventHandler]
         self.__handlers[SaveLayEventHandler.event_type()] = SaveLayEventHandler(client)
         self.__handlers[CreateStateEventHandler.event_type()] = CreateStateEventHandler(client)
         self.__handlers[RemoveSynonymEventHandler.event_type()] = RemoveSynonymEventHandler(client)
@@ -211,166 +211,3 @@ class ScenarioEventListener(Subscriber):
         if ev_type in self.__handlers:
             handler = self.__handlers[ev_type]
             handler.handle(ev)
-
-class Slave(ScenarioInterface):
-    __src: Source
-    
-    # Scenario public
-
-    def __init__(self, src: Source, bus: EventBus | None = None) -> None:
-        self.__src = src
-        
-        if issubclass(type(bus), EventBus):
-            bus.subscribe(ScenarioEventListener(self))
-
-    def source(self) -> Source:
-        return self.__src
-
-    def get_layouts(self) -> str:
-        return self.__src.get_layouts()
-    
-    def get_states_by_name(self, name: Name) -> list[State]:
-        """получить все состояния с данным именем"""
-        return self.__src.get_states_by_name(name)
-
-    def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
-        """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
-        return self.__src.states(ids)
-
-    def steps(self, state_id: StateID) -> list[Step]:
-        """получить все переходы, связанные с состоянием по его идентификатору"""
-        return self.__src.steps(state_id)
-
-    def is_enter(self, state: State) -> bool:
-        """Проверить является ли состояние входом"""
-        return self.__src.is_enter(state)
-    
-    def select_vectors(
-        self,
-        names: list[Name] | None = None,
-    ) -> list["InputDescription"]:
-        """
-        Возвращает список векторов управляющих воздействий по указанным именам
-        @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
-        """
-        return self.__src.select_vectors(names)
-
-    def get_vector(self, name: Name) -> InputDescription:
-        """
-        Возвращает вектор управляющих воздействий по имени
-        @names - имя вектора (идентификатор)
-        """
-        return self.__src.get_vector(name)
-    
-    def check_vector_exists(self, name: Name) -> bool:
-        """
-        Проверяет существование вектора
-        @name - имя вектора для проверки (идентификатор)
-        """
-        return self.__src.check_vector_exists(name)
-
-    def save_lay(self, id: StateID, x: float, y: float):
-        self.__src.save_lay(id, x, y)
-
-    # создание сущностей
-    def create_enter_state(
-        self,
-        input: InputDescription,
-        required: bool = False,
-    ) -> StateID:
-        """добавляет вектор и новое состояние-вход с таким-же именем"""
-        # добавление вектора обработается раньше в своём handler'е
-        self.__src.create_state(StateAttributes(None, input.name(), None), required)
-
-    def create_enter_vector(self, input: InputDescription, state_id: StateID):
-        """Создаёт вектор с соответствующим состоянию именем"""
-        # обрабатывается как AddVectorEvent
-
-    def make_enter(self, state_id: StateID):
-        """привязывает к состоянию существующий вектор с соответствующим именем как команду входа"""
-        state_to: State = self.states([state_id])[state_id]
-        self.__src.new_step(None, state_id, state_to.attributes.name)
-
-    def create_step(
-        self,
-        from_state_id: StateID,
-        to_state: StateAttributes | StateID,
-        input: InputDescription,
-    ) -> Step:
-        """
-        Создаёт переход из from_state в to_state по переходу input
-        @from_state_id: id состояния для обработки управляющего воздействия input
-        @to_state: id состояния в которое будет добавлен переход или аттрибуты для создания такого состояния
-        @input: управляющее воздействие
-        """
-        state_to: State
-
-        if isinstance(to_state, StateID):
-            state_to = self.states([to_state])[to_state]
-
-        elif isinstance(to_state, StateAttributes):
-            state_to = self.__src.create_state(to_state)
-
-        new_step = self.__src.new_step(from_state_id, state_to.id(), input.name())
-        # CreateStepEvent | CreateStepToNewStateEvent
-
-    # удаление сущностей
-
-    def remove_state(self, state_id: StateID):
-        """удаляет состояние"""
-        self.__src.delete_state(state_id)
-
-    def remove_enter(self, state_id: StateID):
-        """удаляет связь с командой входа в состояние"""
-        self.__src.delete_step(None, state_id)
-
-    def remove_step(self, from_state_id: StateID, input: InputDescription):
-        """
-        удаляет связь между состояниями
-        @from_state_id: состояние - обработчик управляющих воздействий
-        @input: управляющее воздействие
-        """
-        self.__src.delete_step(from_state_id, None, input.name())
-
-    def set_answer(self, state_id: StateID, data: Output):
-        """Изменить ответ состояния"""
-        self.__src.set_answer(state_id, data)
-
-    def add_vector(self, input: InputDescription):
-        """
-        Сохраняет новый вектор для обработки управляющих воздействий
-        @input_type - новый вектор
-        """
-        self.__src.add_vector(input)
-
-    def remove_vector(self, name: Name):
-        """
-        Удаляет вектор управляющих воздействий
-        @name - имя вектора для удаления (идентификатор)
-        """
-        self.__src.remove_vector(name)
-
-    def set_synonym_value(
-        self,
-        input_name: str,
-        old_synonym: str,
-        new_synonym: str,
-    ):
-        """изменяет значение синонима"""
-        self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
-
-    def create_synonym(self, input_name: str, new_synonym: str):
-        """создаёт синоним"""
-        self.__src.create_synonym(input_name, new_synonym)
-
-    def remove_synonym(self, input_name: str, synonym: str):
-        """удаляет синоним"""
-        self.__src.remove_synonym(input_name, synonym)
-
-    def rename_state(self, state: StateID, name: Name):
-        """Переименовывает состояние"""
-        self.__src.rename_state(state, name)
-
-    def rename_vector(self, old_name: Name, new_name: Name):
-        """переименовывает группу синонимов"""
-        self.__src.rename_vector(old_name, new_name)

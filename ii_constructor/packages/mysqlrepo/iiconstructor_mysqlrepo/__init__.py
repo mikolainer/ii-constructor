@@ -25,7 +25,7 @@ import pymysql
 from iiconstructor_core.domain import (
     Connection,
     InputDescription,
-    Source,
+    SourceInterface,
     State,
     Step,
 )
@@ -42,12 +42,12 @@ from iiconstructor_core.domain.primitives import (
     StateID,
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
-from iiconstructor_server_side.ports import Hosting, ScenarioInterface
+from iiconstructor_server_side.ports import HostingInterface, ScenarioInterface
 
 from iiconstructor_server_side import Master
 
 
-class SourceMySQL(Source):
+class SourceMySQL(SourceInterface):
     __db_connection: pymysql.Connection
 
     def __init__(self, conn: pymysql.Connection, id: ScenarioID) -> None:
@@ -677,7 +677,7 @@ class SourceMySQL(Source):
         )
 
 
-class HostingMySQL(Hosting):
+class HostingMySQL(HostingInterface):
     __connection: pymysql.Connection | None
 
     def __init__(self) -> None:

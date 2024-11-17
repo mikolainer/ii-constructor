@@ -21,7 +21,7 @@
 
 from iiconstructor_core.infrastructure.data import BaseSerializer, ItemData
 from iiconstructor_levenshtain import LevenshtainVector
-from iiconstructor_qtgui.data import CustomDataRole, Old_SynonymsSetModel
+from iiconstructor_qtgui.data import CustomDataRole, Old_SynonymsSetModel, SynonymsSetModel
 
 
 class LevenshtainVectorSerializer(BaseSerializer):
@@ -31,7 +31,7 @@ class LevenshtainVectorSerializer(BaseSerializer):
         item = ItemData()
         item.on[CustomDataRole.Name] = obj.name().value
 
-        synonyms = Old_SynonymsSetModel()
+        synonyms = SynonymsSetModel()
         for value in obj.synonyms.synonyms:
             synonym = ItemData()
             synonym.on[CustomDataRole.Text] = value.value

@@ -21,7 +21,7 @@
 
 from iiconstructor_core.domain import (
     InputDescription,
-    Source,
+    SourceInterface,
     State,
     Step,
     _Exists,
@@ -41,14 +41,14 @@ from iiconstructor_server_side.ports import ScenarioInterface
 
 
 class Scenario(ScenarioInterface):
-    __src: Source
+    __src: SourceInterface
 
     # Scenario public
 
-    def __init__(self, src: Source) -> None:
+    def __init__(self, src: SourceInterface) -> None:
         self.__src = src
 
-    def source(self) -> Source:
+    def source(self) -> SourceInterface:
         return self.__src
 
     def get_layouts(self) -> str:
@@ -81,6 +81,7 @@ class Scenario(ScenarioInterface):
         """Делает состояние точкой входа. Создаёт вектор с соответствующим состоянию именем"""
         _states = self.states()
         state_to = _states[state_id]
+        # TODO: optimize?
         for _state in _states.values():
             if (
                 _state.attributes.name == state_to.attributes.name
@@ -130,6 +131,7 @@ class Scenario(ScenarioInterface):
             state_to = self.states([to_state])[to_state]
 
         elif isinstance(to_state, StateAttributes):
+            # TODO: optimize?
             _states = self.states()
             for _state in _states.values():
                 if _state.attributes.name == to_state.name and self.is_enter(
@@ -274,6 +276,7 @@ class Scenario(ScenarioInterface):
             vector_exsists = False
 
         if vector_exsists:
+            # TODO: optimize?
             for _conn in self.__src.input_usage(vector):
                 if _conn.from_state is None:
                     if self.is_enter(_conn.to_state):
@@ -285,6 +288,7 @@ class Scenario(ScenarioInterface):
 
     def rename_vector(self, old_name: Name, new_name: Name):
         """переименовывает группу синонимов"""
+        # TODO: optimize?
         for state in self.get_states_by_name(old_name):
             if self.is_enter(state):
                 raise CoreException(

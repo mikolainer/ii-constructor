@@ -476,6 +476,32 @@ class ProxyModelReadOnly(QIdentityProxyModel):
 
 
 # COMMON
+class SynonymsSetModel(BaseModel):
+    """Модель набора синонимов"""
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._data_init()  # TODO
+        self.map_role_as(CustomDataRole.Text, Qt.ItemDataRole.DisplayRole)
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
+
+    def setData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        value: Any,
+        role: int = CustomDataRole.Text,
+    ) -> bool:
+        if (
+            role == CustomDataRole.Text
+            and isinstance(value, str)
+            and value == ""
+        ):
+            return self.removeRow(index.row())
+
+        return super().setData(index, value, role)
+    
 class Old_SynonymsSetModel(Old_BaseModel):
     """Модель набора синонимов"""
 

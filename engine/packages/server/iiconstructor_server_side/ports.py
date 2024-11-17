@@ -140,7 +140,7 @@ class ScenarioInterface:
         """переименовывает группу синонимов"""
 
 
-class Hosting:
+class HostingInterface:
     def add_source(self, info: SourceInfo) -> ScenarioID:
         """Создать пустой проект"""
 

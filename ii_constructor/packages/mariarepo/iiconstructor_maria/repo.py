@@ -25,7 +25,7 @@ import mariadb
 from iiconstructor_core.domain import (
     Connection,
     InputDescription,
-    Source,
+    SourceInterface,
     State,
     Step,
 )
@@ -42,12 +42,12 @@ from iiconstructor_core.domain.primitives import (
     StateID,
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
-from iiconstructor_server_side.ports import Hosting, ScenarioInterface
+from iiconstructor_server_side.ports import HostingInterface, ScenarioInterface
 
 from iiconstructor_server_side import Master
 
 
-class SourceMariaDB(Source):
+class SourceMariaDB(SourceInterface):
     __db_connection: mariadb.Connection
 
     def __init__(self, conn: mariadb.Connection, id: ScenarioID) -> None:
@@ -677,7 +677,7 @@ class SourceMariaDB(Source):
         )
 
 
-class HostingMaria(Hosting):
+class HostingMaria(HostingInterface):
     __connection: mariadb.Connection | None
 
     def __init__(self) -> None:

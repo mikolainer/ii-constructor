@@ -23,7 +23,7 @@ from iiconstructor_core.domain import (
     Connection,
     InputDescription,
     PossibleInputs,
-    Source,
+    SourceInterface,
     State,
     Step,
 )
@@ -38,12 +38,12 @@ from iiconstructor_core.domain.primitives import (
     StateID,
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym
-from iiconstructor_server_side.ports import Hosting, ScenarioInterface
+from iiconstructor_server_side.ports import HostingInterface, ScenarioInterface
 
 from iiconstructor_server_side import Master
 
 
-class SourceInMemory(Source):
+class SourceInMemory(SourceInterface):
     __new_state_id: int
     __states: dict[StateID, State]
     __input_vectors: PossibleInputs
@@ -72,6 +72,7 @@ class SourceInMemory(Source):
 
     def get_states_by_name(self, name: Name) -> list[State]:
         """получить все состояния с данным именем"""
+        # TODO: optimize?
         result = list[State]()
         for state in self.__states.values():
             if state.attributes.name == name:
@@ -339,7 +340,7 @@ class SourceInMemory(Source):
         self.get_vector(old_name).set_name(new_name)
 
 
-class HostingInmem(Hosting):
+class HostingInmem(HostingInterface):
     __sources: dict[ScenarioID, ScenarioInterface]
     __sources_info: dict[ScenarioID, SourceInfo]
     __next_id: ScenarioID
@@ -368,7 +369,7 @@ class HostingInmem(Hosting):
         result = list[tuple[int, str, str]]
 
         for scenario in self.__sources.values():
-            src: Source = scenario.source()
+            src: SourceInterface = scenario.source()
             result.append(
                 (src.id.value, src.info.name.value, src.info.description),
             )

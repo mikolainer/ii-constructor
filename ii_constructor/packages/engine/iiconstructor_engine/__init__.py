@@ -28,7 +28,6 @@ from iiconstructor_core.domain.primitives import (
 )
 from iiconstructor_server_side.ports import ScenarioInterface
 
-
 class StepVectorBaseClassificator:
     __project: ScenarioInterface
 

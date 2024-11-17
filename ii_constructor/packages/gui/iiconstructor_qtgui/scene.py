@@ -22,72 +22,72 @@
 from collections.abc import Callable
 from typing import Any
 
-from iiconstructor_qtgui.data import CustomDataRole, ItemData, Old_SynonymsSetModel
-from iiconstructor_qtgui.flows import Old_FlowsModel
+from iiconstructor_qtgui.data import CustomDataRole, ItemData, Old_SynonymsSetModel, SynonymsSetModel
+from iiconstructor_qtgui.flows import Old_FlowsModel, FlowsModel
 from iiconstructor_qtgui.primitives.sceneitems import (
     Arrow,
     Editor,
     NodeWidget,
     SceneNode,
 )
-from iiconstructor_qtgui.states import Old_StatesModel
-from iiconstructor_qtgui.steps import StepEditor, Old_StepModel
-from iiconstructor_qtgui.synonyms import Old_SynonymsGroupsModel
+from iiconstructor_qtgui.states import Old_StatesModel, StatesModel
+from iiconstructor_qtgui.steps import StepEditor, Old_StepModel, StepModel
+from iiconstructor_qtgui.synonyms import Old_SynonymsGroupsModel, SynonymsGroupsModel
 from PySide6.QtCore import QModelIndex, QPoint, QPointF
 from PySide6.QtWidgets import QInputDialog, QMessageBox, QTextEdit, QWidget
 
 class SceneControll:
     __node_insert_index: int
     __new_step_callback: Callable[
-        [QModelIndex, QModelIndex, Old_SynonymsSetModel],
+        [QModelIndex, QModelIndex, SynonymsSetModel],
         bool,
     ]
     __new_state_callback: Callable[
-        [QModelIndex, ItemData, Old_SynonymsSetModel],
+        [QModelIndex, ItemData, SynonymsSetModel],
         bool,
     ]
-    __select_input_callback: Callable[[], Old_SynonymsSetModel | None]
+    __select_input_callback: Callable[[], SynonymsSetModel | None]
     __add_enter_callback: Callable[
         [QModelIndex],
-        tuple[bool, Old_SynonymsSetModel | None],
+        tuple[bool, SynonymsSetModel | None],
     ]
     __step_remove_callback: Callable[
-        [QModelIndex, QModelIndex, Old_SynonymsSetModel],
+        [QModelIndex, QModelIndex, SynonymsSetModel],
         bool,
     ]  # state_from, state_to, input -> ok
     __update_lay_callback: Callable[["SceneNode", QPointF], None]
 
     __get_steps_from_callback: Callable[[int], dict[int, list[str]]]
 
-    __states_model: Old_StatesModel
-    __flows_model: Old_FlowsModel
+    __states_model: StatesModel
+    __flows_model: FlowsModel
 
-    __arrows: dict[Arrow, Old_StepModel]
+    __arrows: dict[Arrow, StepModel]
     __main_window: QWidget
 
     def __init__(
         self,
         get_steps_from_callback: Callable[[int], dict[int, list[str]]],
-        select_input_callback: Callable[[], Old_SynonymsSetModel | None],
+        select_input_callback: Callable[[], SynonymsSetModel | None],
         new_step_callback: Callable[
-            [QModelIndex, QModelIndex, Old_SynonymsSetModel],
+            [QModelIndex, QModelIndex, SynonymsSetModel],
             bool,
         ],
         step_remove_callback: Callable[
-            [QModelIndex, QModelIndex, Old_SynonymsSetModel],
+            [QModelIndex, QModelIndex, SynonymsSetModel],
             bool,
         ],
         new_state_callback: Callable[
-            [QModelIndex, ItemData, Old_SynonymsSetModel],
+            [QModelIndex, ItemData, SynonymsSetModel],
             bool,
         ],
         add_enter_callback: Callable[
             [QModelIndex],
-            tuple[bool, Old_SynonymsSetModel | None],
+            tuple[bool, SynonymsSetModel | None],
         ],
         update_lay_callback: Callable[["SceneNode", QPointF], None],
-        states_model: Old_StatesModel,
-        flows_model: Old_FlowsModel,
+        states_model: StatesModel,
+        flows_model: FlowsModel,
         main_window: QWidget,
     ) -> None:
         self.__node_insert_index = 0
@@ -116,7 +116,7 @@ class SceneControll:
 
         node.wrapper_widget().set_title(text)
 
-    def init_arrows(self, scene: Editor, v_model: Old_SynonymsGroupsModel):
+    def init_arrows(self, scene: Editor, v_model: SynonymsGroupsModel):
         """создать стрелки переходов"""
         for row in range(self.__states_model.rowCount()):
             state_index = self.__states_model.index(row)
@@ -219,7 +219,7 @@ class SceneControll:
     def on_add_step(
         self,
         scene: Editor,
-        input: Old_SynonymsSetModel,
+        input: SynonymsSetModel,
         from_node: SceneNode,
         to_node: SceneNode,
     ):
@@ -231,7 +231,7 @@ class SceneControll:
             scene.addItem(arrow)
             from_node.arrow_connect_as_start(arrow)
             to_node.arrow_connect_as_end(arrow)
-            step_model = Old_StepModel(arrow, from_node, to_node, scene)
+            step_model = StepModel(arrow, from_node, to_node, scene)
             step_model.set_edit_callback(lambda i, r, o, n: True)
             self.__arrows[arrow] = step_model
 
@@ -286,7 +286,7 @@ class SceneControll:
 
     def on_remove_step(self, step_index: QModelIndex):
         """удаляет связь между объектами сцены и вектором перехода"""
-        model: Old_StepModel = step_index.model()
+        model: StepModel = step_index.model()
         step_index.data(CustomDataRole.SynonymsSet)
         self.find_in_model(model.node_from())
         if not self.__step_remove_callback(
@@ -380,6 +380,7 @@ class SceneControll:
         to_node: SceneNode,
     ) -> Arrow | None:
         """ищет связь между элементами сцены"""
+        # TODO: optimize?
         for step_model in self.__arrows.values():
             if (
                 step_model.node_from() == from_node
@@ -390,6 +391,7 @@ class SceneControll:
         return None
 
     def find_in_model(self, node: SceneNode) -> QModelIndex:
+        # TODO: optimize?
         for row in range(self.__states_model.rowCount()):
             if (
                 self.__states_model.data(
@@ -480,7 +482,7 @@ class SceneControll:
                 )
                 self.on_add_step(from_node.scene(), input, from_node, to_node)
 
-    def __remove_arrow(self, model: Old_StepModel):
+    def __remove_arrow(self, model: StepModel):
         """удаляет все упоминания стрелки"""
 
         arrow = model.arrow()
@@ -496,7 +498,7 @@ class SceneControll:
         # в индексе
         self.__arrows.pop(arrow)
 
-    def __edit_connection(self, model: Old_StepModel):
+    def __edit_connection(self, model: StepModel):
         dialog = StepEditor(model, self.__main_window)
         dialog.exec()
 
@@ -845,6 +847,7 @@ class Old_SceneControll:
         to_node: SceneNode,
     ) -> Arrow | None:
         """ищет связь между элементами сцены"""
+        # TODO: optimize?
         for step_model in self.__arrows.values():
             if (
                 step_model.node_from() == from_node
@@ -855,6 +858,7 @@ class Old_SceneControll:
         return None
 
     def find_in_model(self, node: SceneNode) -> QModelIndex:
+        # TODO: optimize?
         for row in range(self.__states_model.rowCount()):
             if (
                 self.__states_model.data(

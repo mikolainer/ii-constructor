@@ -19,7 +19,7 @@
 # см. <https://www.gnu.org/licenses/>.
 
 
-from iiconstructor_core.domain import InputDescription, State, Step
+from iiconstructor_core.domain import InputDescription, State, Step, SourceInterface
 from iiconstructor_core.domain.event_bus import EventBus
 from iiconstructor_core.domain.primitives import (
     Name,
@@ -32,6 +32,11 @@ from iiconstructor_core.domain.primitives import (
 
 
 class ScenarioInterface:
+    _src: SourceInterface
+
+    def __init__(self, src: SourceInterface):
+        self._src = src
+
     def get_layouts(self) -> str:
         """получить строку данные отобрадения"""
 
@@ -141,7 +146,7 @@ class ScenarioInterface:
         """переименовывает группу синонимов"""
 
 
-class Hosting:
+class HostingInterface:
     def add_source(self, info: SourceInfo) -> ScenarioID:
         """Создать пустой проект"""
 

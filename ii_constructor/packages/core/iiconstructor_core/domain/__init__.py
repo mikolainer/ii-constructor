@@ -193,7 +193,7 @@ class Connection:
     steps: list[Step]
 
 
-class Source:
+class SourceInterface:
     id: ScenarioID | None
     info: SourceInfo
 
