@@ -95,7 +95,7 @@ class Answer:
 
 
 @dataclass(frozen=True)
-class Output:
+class OutputDescription:
     """Описание ответа - аттрибут состояния"""
 
     value: Answer
@@ -105,7 +105,7 @@ class Output:
 class StateAttributes:
     """Класс, инкапсулирующий аттрибуты состояния"""
 
-    output: Output
+    output: OutputDescription
     name: Name
     description: Description
 

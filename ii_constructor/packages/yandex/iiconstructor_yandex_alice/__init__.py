@@ -33,7 +33,7 @@ from iiconstructor_core.domain.exceptions import (
 )
 from iiconstructor_core.domain.primitives import (
     Name,
-    Output,
+    OutputDescription,
     StateAttributes,
     StateID,
 )
@@ -275,7 +275,7 @@ class Master(ScenarioInterface):
 
     # сеттеры
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
         self._src.set_answer(state_id, data)
 
@@ -527,7 +527,7 @@ class Slave(ScenarioInterface):
         """
         self.__src.delete_step(from_state_id, None, input.name())
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
         self.__src.set_answer(state_id, data)
 

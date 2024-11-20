@@ -23,7 +23,7 @@ from iiconstructor_core.domain import InputDescription, State, Step, SourceInter
 from iiconstructor_core.domain.event_bus import EventBus
 from iiconstructor_core.domain.primitives import (
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -97,7 +97,7 @@ class ScenarioInterface:
 
     # сеттеры
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
 
     def is_enter(self, state: State) -> bool:

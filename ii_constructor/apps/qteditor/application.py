@@ -27,7 +27,7 @@ from iiconstructor_core.domain.primitives import (
     Answer,
     Description,
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -121,7 +121,7 @@ class Hosting:
         for elem in root.find("Состояния").findall("Состояние"):
             state: State = scenario.source().create_state(
                 StateAttributes(
-                    Output(Answer(elem.text)),
+                    OutputDescription(Answer(elem.text)),
                     Name(elem.attrib["Название"]),
                     Description(""),
                 ),
@@ -402,7 +402,7 @@ class Server(ScenarioAPI):
         step: Step = self._scenario.create_step(
             StateID(from_state_id),
             StateAttributes(
-                Output(Answer("текст ответа")),
+                OutputDescription(Answer("текст ответа")),
                 Name(new_state_name),
                 Description(""),
             ),
@@ -420,7 +420,7 @@ class Server(ScenarioAPI):
         """изменяет ответ состояния"""
         self._scenario.set_answer(
             StateID(state_id),
-            Output(Answer(new_value)),
+            OutputDescription(Answer(new_value)),
         )
 
     def rename_state(self, state_id: int, new_name: str):

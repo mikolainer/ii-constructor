@@ -27,7 +27,7 @@ from .primitives import (
     Answer,
     Description,
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -156,7 +156,7 @@ class State:
             attributes.description = Description("")
 
         if attributes.output is None or attributes.output.value.text == "":
-            attributes.output = Output(Answer("текст ответа"))
+            attributes.output = OutputDescription(Answer("текст ответа"))
 
     def id(self) -> StateID:
         return self.__id
@@ -224,7 +224,7 @@ class SourceInterface:
 
     # сеттеры
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
 
     # векторы

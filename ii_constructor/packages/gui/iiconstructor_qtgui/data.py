@@ -146,6 +146,9 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
     __prepared_item: ItemData | None
     __map_custom_as_qt_role: dict[Qt.ItemDataRole, CustomDataRole]
 
+    __add_callback: Callable[[ItemData], bool]
+    """ (item) -> ok """
+
     __remove_callback: Callable[[QModelIndex], bool]
     """ (index) -> ok """
 
@@ -158,14 +161,19 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         prepared_item: ItemData | None = None,
     ) -> None:
         super().__init__(parent)
+        self.__add_callback = lambda item: False
         self.__remove_callback = lambda index: False
         self.__edit_callback = lambda index, role, old_value, new_value: False
 
         self.__map_custom_as_qt_role = {}
         self.__prepared_item = prepared_item
 
+    def set_add_callback(self, callback: Callable[[ItemData], bool]):
+        """callback обработки добавлений из пользовательского интерфейса"""
+        self.__add_callback = callback
+
     def set_remove_callback(self, callback: Callable[[QModelIndex], bool]):
-        """callback обработки изменений из пользовательского интерфейса"""
+        """callback обработки удалений из пользовательского интерфейса"""
         self.__remove_callback = callback
 
     def set_edit_callback(
@@ -271,12 +279,19 @@ class BaseModel(PresentationModelMixinBase, QAbstractItemModel):
         parent: QModelIndex | QPersistentModelIndex = None,
     ) -> bool:
         """Добавляет 1 подготовленный элемент в конец. Все аргументы игнорируются."""
-        new_row: int = self.rowCount()
-        self.beginInsertRows(QModelIndex(), new_row, new_row)
-        self.add_item(self.__prepared_item)
-        self.endInsertRows()
+        #new_row: int = self.rowCount()
+        #self.beginInsertRows(QModelIndex(), new_row, new_row)
+        #self.add_item(self.__prepared_item)
+        #self.endInsertRows()
+        #self.__prepared_item = None
+        #return True
+
+        if self.__prepared_item is None:
+            return False
+        
+        self.__add_callback(self.__prepared_item)
         self.__prepared_item = None
-        return True
+        return False
 
     def removeRow(
         self,

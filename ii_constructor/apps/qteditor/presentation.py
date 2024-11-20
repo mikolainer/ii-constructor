@@ -618,6 +618,10 @@ class ProjectManager:
                     CustomDataRole.Name,
                     step.input.name().value,
                 )
+
+                if vector_data is None:
+                    continue
+
                 s_model = vector_data.on[CustomDataRole.SynonymsSet]
 
                 if step.connection.from_state is None:

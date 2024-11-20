@@ -35,7 +35,7 @@ from iiconstructor_core.domain.primitives import (
     Answer,
     Description,
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -129,7 +129,7 @@ class SourceMariaDB(SourceInterface):
                 State(
                     StateID(_id),
                     StateAttributes(
-                        Output(Answer(_answer)),
+                        OutputDescription(Answer(_answer)),
                         Name(_name),
                         Description(_descr),
                     ),
@@ -165,7 +165,7 @@ class SourceMariaDB(SourceInterface):
             result[s_id] = State(
                 s_id,
                 StateAttributes(
-                    Output(Answer(_answer)),
+                    OutputDescription(Answer(_answer)),
                     Name(_name),
                     Description(_descr),
                 ),
@@ -273,7 +273,7 @@ class SourceMariaDB(SourceInterface):
         (result,) = cur.fetchone()
         return result
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         self.__do(
             "UPDATE `states` SET `answer` = ? WHERE `states`.`project_id` = ? AND `states`.`id` = ?",
             (data.value.text, self.id.value, state_id.value),
@@ -408,7 +408,7 @@ class SourceMariaDB(SourceInterface):
         return State(
             StateID(id),
             StateAttributes(
-                Output(Answer(answer)),
+                OutputDescription(Answer(answer)),
                 Name(name),
                 Description(descr),
             ),

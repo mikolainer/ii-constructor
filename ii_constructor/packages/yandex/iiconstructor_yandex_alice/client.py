@@ -6,7 +6,7 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.primitives import (
     Name,
-    Output,
+    OutputDescription,
     StateAttributes,
     StateID,
 )
