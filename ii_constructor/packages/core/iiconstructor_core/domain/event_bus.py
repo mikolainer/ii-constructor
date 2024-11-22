@@ -45,7 +45,7 @@ class InmemoryEventBus(EventBus, metaclass=Singleton):
         self.__subscribers = list[Subscriber]()
 
     def subscribe(self, sub: Subscriber):
-        if issubclass(sub, Subscriber):
+        if issubclass(type(sub), Subscriber):
             self.__subscribers.append(sub)
 
     def notify(self, ev: Event):

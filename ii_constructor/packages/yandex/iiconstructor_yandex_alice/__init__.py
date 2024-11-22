@@ -112,9 +112,6 @@ class Master(ScenarioInterface):
             required,
         )
 
-        # делаем состояние точкой входа
-        self.make_enter(state_to.id())
-
         if self.__event_publisher is not None:
             self.__event_publisher.send(
                 CreateEnterStateEvent(
@@ -123,6 +120,9 @@ class Master(ScenarioInterface):
                     state_to.attributes.output.value.text
                 )
             )
+
+        # делаем состояние точкой входа
+        self.make_enter(state_to.id())
 
         return state_to.id()
 
@@ -408,8 +408,6 @@ class Master(ScenarioInterface):
             self.__event_publisher.send(RenameVectorEvent(old_name.value, new_name.value))
 
 class Slave(ScenarioInterface):
-    __src: SourceInterface
-    
     # Scenario public
 
     def __init__(self, src: SourceInterface, bus: EventBus | None = None) -> None:
@@ -419,26 +417,26 @@ class Slave(ScenarioInterface):
             bus.subscribe(ScenarioEventListener(self))
 
     def source(self) -> SourceInterface:
-        return self.__src
+        return self._src
 
     def get_layouts(self) -> str:
-        return self.__src.get_layouts()
+        return self._src.get_layouts()
     
     def get_states_by_name(self, name: Name) -> list[State]:
         """получить все состояния с данным именем"""
-        return self.__src.get_states_by_name(name)
+        return self._src.get_states_by_name(name)
 
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
         """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
-        return self.__src.states(ids)
+        return self._src.states(ids)
 
     def steps(self, state_id: StateID) -> list[Step]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
-        return self.__src.steps(state_id)
+        return self._src.steps(state_id)
 
     def is_enter(self, state: State) -> bool:
         """Проверить является ли состояние входом"""
-        return self.__src.is_enter(state)
+        return self._src.is_enter(state)
     
     def select_vectors(
         self,
@@ -448,24 +446,24 @@ class Slave(ScenarioInterface):
         Возвращает список векторов управляющих воздействий по указанным именам
         @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
         """
-        return self.__src.select_vectors(names)
+        return self._src.select_vectors(names)
 
     def get_vector(self, name: Name) -> InputDescription:
         """
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
         """
-        return self.__src.get_vector(name)
+        return self._src.get_vector(name)
     
     def check_vector_exists(self, name: Name) -> bool:
         """
         Проверяет существование вектора
         @name - имя вектора для проверки (идентификатор)
         """
-        return self.__src.check_vector_exists(name)
+        return self._src.check_vector_exists(name)
 
     def save_lay(self, id: StateID, x: float, y: float):
-        self.__src.save_lay(id, x, y)
+        self._src.save_lay(id, x, y)
 
     # создание сущностей
     def create_enter_state(
@@ -475,7 +473,7 @@ class Slave(ScenarioInterface):
     ) -> StateID:
         """добавляет вектор и новое состояние-вход с таким-же именем"""
         # добавление вектора обработается раньше в своём handler'е
-        self.__src.create_state(StateAttributes(None, input.name(), None), required)
+        self._src.create_state(StateAttributes(None, input.name(), None), required)
 
     def create_enter_vector(self, input: InputDescription, state_id: StateID):
         """Создаёт вектор с соответствующим состоянию именем"""
@@ -484,7 +482,7 @@ class Slave(ScenarioInterface):
     def make_enter(self, state_id: StateID):
         """привязывает к состоянию существующий вектор с соответствующим именем как команду входа"""
         state_to: State = self.states([state_id])[state_id]
-        self.__src.new_step(None, state_id, state_to.attributes.name)
+        self._src.new_step(None, state_id, state_to.attributes.name)
 
     def create_step(
         self,
@@ -504,20 +502,20 @@ class Slave(ScenarioInterface):
             state_to = self.states([to_state])[to_state]
 
         elif isinstance(to_state, StateAttributes):
-            state_to = self.__src.create_state(to_state)
+            state_to = self._src.create_state(to_state)
 
-        new_step = self.__src.new_step(from_state_id, state_to.id(), input.name())
+        new_step = self._src.new_step(from_state_id, state_to.id(), input.name())
         # CreateStepEvent | CreateStepToNewStateEvent
 
     # удаление сущностей
 
     def remove_state(self, state_id: StateID):
         """удаляет состояние"""
-        self.__src.delete_state(state_id)
+        self._src.delete_state(state_id)
 
     def remove_enter(self, state_id: StateID):
         """удаляет связь с командой входа в состояние"""
-        self.__src.delete_step(None, state_id)
+        self._src.delete_step(None, state_id)
 
     def remove_step(self, from_state_id: StateID, input: InputDescription):
         """
@@ -525,25 +523,25 @@ class Slave(ScenarioInterface):
         @from_state_id: состояние - обработчик управляющих воздействий
         @input: управляющее воздействие
         """
-        self.__src.delete_step(from_state_id, None, input.name())
+        self._src.delete_step(from_state_id, None, input.name())
 
     def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
-        self.__src.set_answer(state_id, data)
+        self._src.set_answer(state_id, data)
 
     def add_vector(self, input: InputDescription):
         """
         Сохраняет новый вектор для обработки управляющих воздействий
         @input_type - новый вектор
         """
-        self.__src.add_vector(input)
+        self._src.add_vector(input)
 
     def remove_vector(self, name: Name):
         """
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
         """
-        self.__src.remove_vector(name)
+        self._src.remove_vector(name)
 
     def set_synonym_value(
         self,
@@ -552,20 +550,20 @@ class Slave(ScenarioInterface):
         new_synonym: str,
     ):
         """изменяет значение синонима"""
-        self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
+        self._src.set_synonym_value(input_name, old_synonym, new_synonym)
 
     def create_synonym(self, input_name: str, new_synonym: str):
         """создаёт синоним"""
-        self.__src.create_synonym(input_name, new_synonym)
+        self._src.create_synonym(input_name, new_synonym)
 
     def remove_synonym(self, input_name: str, synonym: str):
         """удаляет синоним"""
-        self.__src.remove_synonym(input_name, synonym)
+        self._src.remove_synonym(input_name, synonym)
 
     def rename_state(self, state: StateID, name: Name):
         """Переименовывает состояние"""
-        self.__src.rename_state(state, name)
+        self._src.rename_state(state, name)
 
     def rename_vector(self, old_name: Name, new_name: Name):
         """переименовывает группу синонимов"""
-        self.__src.rename_vector(old_name, new_name)
+        self._src.rename_vector(old_name, new_name)

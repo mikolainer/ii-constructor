@@ -23,7 +23,9 @@ import os.path
 from collections.abc import Callable
 from typing import Any
 
-from application import Hosting, ScenarioAPI
+from iiconstructor_core.domain.event_bus import InmemoryEventBus
+from iiconstructor_yandex_alice import Slave
+from application import Hosting, ScenarioAPI, Server, Client
 from data import LevenshtainVectorSerializer
 from iiconstructor_core.domain import State
 from iiconstructor_core.domain.exceptions import CoreException, Exists
@@ -32,9 +34,10 @@ from iiconstructor_core.domain.primitives import (
     Name,
     Request,
     SourceInfo,
+    ScenarioID,
 )
 from iiconstructor_engine import Engine
-from iiconstructor_inmemory.repo import HostingInmem
+from iiconstructor_inmemory.repo import SourceInMemory, HostingInmem
 from iiconstructor_levenshtain import (
     LevenshtainClassificator,
     LevenshtainVector,
@@ -455,8 +458,19 @@ class ProjectManager:
 
     def __open_project(
         self,
-        manipulator: ScenarioAPI,
+        manipulator: Server,
     ) -> "SceneControll":
+        client = Client(
+            Slave(
+                SourceInMemory(
+                    ScenarioID(manipulator.id()),
+                    SourceInfo(Name(manipulator.name()), Description(manipulator.description()))
+                ),
+                InmemoryEventBus()
+            ),
+            manipulator
+        )
+
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
         flows_model.set_edit_callback(lambda i, r, o, n: True)

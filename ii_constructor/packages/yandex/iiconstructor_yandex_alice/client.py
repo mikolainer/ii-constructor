@@ -6,6 +6,8 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.primitives import (
     Name,
+    Description,
+    Answer,
     OutputDescription,
     StateAttributes,
     StateID,
@@ -38,25 +40,28 @@ from iiconstructor_yandex_alice.events import (
     CreateEnterStateEvent,
 )
 from iiconstructor_yandex_alice.ports import ScenarioInterface
+from iiconstructor_levenshtain import LevenshtainVector
 
 class ScenarioEventHandler(EventHandler):
-    __slave: ScenarioInterface
+    _slave: ScenarioInterface
 
     def __init__(self, client: ScenarioInterface):
         super().__init__()
-        self.__slave = client
+        self._slave = client
 
 class SaveLayEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: SaveLayEvent = ev
+        self._slave.save_lay(StateID(_ev.state_id), _ev.x, _ev.y)
 
     @staticmethod
     def event_type() -> type:
         return SaveLayEvent
 
-class CreateStateEventHandler(ScenarioEventHandler):
+class CreateStateEventHandler(ScenarioEventHandler): # not used?
     def handle(self, ev: Event):
-        pass
+        _ev: CreateStateEvent = ev
+        #self.__slave.create_state()
 
     @staticmethod
     def event_type() -> type:
@@ -64,7 +69,8 @@ class CreateStateEventHandler(ScenarioEventHandler):
 
 class RemoveSynonymEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: RemoveSynonymEvent = ev
+        self._slave.remove_synonym(_ev.input_name, _ev.synonym)
 
     @staticmethod
     def event_type() -> type:
@@ -72,7 +78,8 @@ class RemoveSynonymEventHandler(ScenarioEventHandler):
 
 class RemoveVectorEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: RemoveVectorEvent = ev
+        self._slave.remove_vector(Name(_ev.input_name))
 
     @staticmethod
     def event_type() -> type:
@@ -80,7 +87,8 @@ class RemoveVectorEventHandler(ScenarioEventHandler):
 
 class RemoveEnterEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: RemoveEnterEvent = ev
+        self._slave.remove_enter(StateID(_ev.state_id))
 
     @staticmethod
     def event_type() -> type:
@@ -88,7 +96,11 @@ class RemoveEnterEventHandler(ScenarioEventHandler):
 
 class RemoveStepEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: RemoveStepEvent = ev
+        self._slave.remove_step(
+            StateID(_ev.from_state_id),
+            self._slave.get_vector(Name(_ev.input_name))
+        )
 
     @staticmethod
     def event_type() -> type:
@@ -96,7 +108,8 @@ class RemoveStepEventHandler(ScenarioEventHandler):
 
 class RemoveStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: RemoveStateEvent = ev
+        self._slave.remove_state(StateID(_ev.state_id))
 
     @staticmethod
     def event_type() -> type:
@@ -104,7 +117,8 @@ class RemoveStateEventHandler(ScenarioEventHandler):
 
 class CreateSynonymEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: CreateSynonymEvent = ev
+        self._slave.create_synonym(_ev.input_name, _ev.new_synonym)
 
     @staticmethod
     def event_type() -> type:
@@ -112,7 +126,8 @@ class CreateSynonymEventHandler(ScenarioEventHandler):
 
 class AddVectorEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: AddVectorEvent = ev
+        self._slave.add_vector(LevenshtainVector(Name(_ev.input_name)))
 
     @staticmethod
     def event_type() -> type:
@@ -120,7 +135,8 @@ class AddVectorEventHandler(ScenarioEventHandler):
 
 class MakeEnterEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: MakeEnterEvent = ev
+        self._slave.make_enter(StateID(_ev.state_id))
 
     @staticmethod
     def event_type() -> type:
@@ -128,7 +144,12 @@ class MakeEnterEventHandler(ScenarioEventHandler):
 
 class CreateStepEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: CreateStepEvent = ev
+        self._slave.create_step(
+            StateID(_ev.from_state_id),
+            StateID(_ev.to_state_id),
+            self._slave.get_vector(Name(_ev.input_name))
+        )
 
     @staticmethod
     def event_type() -> type:
@@ -136,7 +157,22 @@ class CreateStepEventHandler(ScenarioEventHandler):
 
 class CreateStepToNewStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: CreateStepToNewStateEvent = ev
+
+        self._slave.source().prepare_new_state_id(_ev.new_state_id)
+        self._slave.source().create_state(
+            StateAttributes(
+                OutputDescription(Answer(_ev.new_state_output)),
+                Name(_ev.new_state_name),
+                Description(""),
+            ),
+        )
+
+        self._slave.create_step(
+            StateID(_ev.from_state_id),
+            StateID(_ev.new_state_id),
+            self._slave.get_vector(Name(_ev.input_name))
+        )
 
     @staticmethod
     def event_type() -> type:
@@ -144,7 +180,8 @@ class CreateStepToNewStateEventHandler(ScenarioEventHandler):
 
 class UpdateAnswerEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: UpdateAnswerEvent = ev
+        self._slave.set_answer(StateID(_ev.state_id), OutputDescription(Answer(_ev.new_output)))
 
     @staticmethod
     def event_type() -> type:
@@ -152,7 +189,8 @@ class UpdateAnswerEventHandler(ScenarioEventHandler):
 
 class RenameStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: RenameStateEvent = ev
+        self._slave.rename_state(StateID(_ev.state_id), Name(_ev.new_name))
 
     @staticmethod
     def event_type() -> type:
@@ -160,7 +198,8 @@ class RenameStateEventHandler(ScenarioEventHandler):
 
 class RenameVectorEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: RenameVectorEvent = ev
+        self._slave.rename_vector(Name(_ev.old_name), Name(_ev.new_name))
 
     @staticmethod
     def event_type() -> type:
@@ -168,7 +207,12 @@ class RenameVectorEventHandler(ScenarioEventHandler):
 
 class UpdateSynonymEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: UpdateSynonymEvent = ev
+        self._slave.set_synonym_value(
+            _ev.input_name,
+            _ev.old_synonym,
+            _ev.new_synonym,
+        )
 
     @staticmethod
     def event_type() -> type:
@@ -176,7 +220,16 @@ class UpdateSynonymEventHandler(ScenarioEventHandler):
 
 class CreateEnterStateEventHandler(ScenarioEventHandler):
     def handle(self, ev: Event):
-        pass
+        _ev: CreateEnterStateEvent = ev
+        self._slave.source().prepare_new_state_id(_ev.new_state_id)
+        self._slave.source().create_state(
+            StateAttributes(
+                OutputDescription(Answer(_ev.new_state_output)),
+                Name(_ev.new_state_name),
+                Description(""),
+            ),
+        )
+        # make enter прилетит отдельно
 
     @staticmethod
     def event_type() -> type:
@@ -186,7 +239,7 @@ class ScenarioEventListener(Subscriber):
     __handlers: dict[type, ScenarioEventHandler]
 
     def __init__(self, client: ScenarioInterface):
-        self.__handlers = dict[type, ScenarioEventHandler]
+        self.__handlers = dict[type, ScenarioEventHandler]()
         self.__handlers[SaveLayEventHandler.event_type()] = SaveLayEventHandler(client)
         self.__handlers[CreateStateEventHandler.event_type()] = CreateStateEventHandler(client)
         self.__handlers[RemoveSynonymEventHandler.event_type()] = RemoveSynonymEventHandler(client)

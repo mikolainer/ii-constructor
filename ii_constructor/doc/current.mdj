@@ -20467,8 +20467,8 @@
 									"visible": false,
 									"fillColor": "#D8FFF8",
 									"font": "Arial;16;0",
-									"left": -128,
-									"top": -136,
+									"left": -64,
+									"top": 32,
 									"width": 10,
 									"height": 10
 								},
@@ -20484,8 +20484,8 @@
 									"visible": false,
 									"fillColor": "#D8FFF8",
 									"font": "Arial;16;0",
-									"left": -128,
-									"top": -136,
+									"left": -64,
+									"top": 32,
 									"width": 10,
 									"height": 10
 								}

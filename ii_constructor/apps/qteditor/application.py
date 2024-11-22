@@ -22,6 +22,7 @@
 from xml.etree.ElementTree import Element, fromstring, indent, tostring
 
 from iiconstructor_core.domain import Connection, InputDescription, State, Step
+from iiconstructor_core.domain.event_bus import InmemoryEventBus
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.primitives import (
     Answer,
@@ -46,7 +47,7 @@ class Hosting:
         info: SourceInfo,
     ) -> "Server":
         """создаёт заготовку сценария для алисы"""
-        new_scenario = hosting.get_scenario(hosting.add_source(info))
+        new_scenario = hosting.get_scenario(hosting.add_source(info), InmemoryEventBus())
 
         new_scenario.create_enter_state(
             LevenshtainVector(
@@ -102,7 +103,7 @@ class Hosting:
             Name(root.attrib["Название"]),
             Description(root.attrib["Краткое_описание"]),
         )
-        scenario = hosting.get_scenario(hosting.add_source(info))
+        scenario = hosting.get_scenario(hosting.add_source(info), InmemoryEventBus())
 
         # добавляем векторы
         for elem in root.find("Управляющие_воздействия").findall("Описание"):
@@ -166,7 +167,7 @@ class Hosting:
         hosting: HostingInterface,
         id: int,
     ) -> "Server":
-        return Server(hosting.get_scenario(ScenarioID(id)))
+        return Server(hosting.get_scenario(ScenarioID(id), InmemoryEventBus()))
 
 
 class ScenarioAPI:

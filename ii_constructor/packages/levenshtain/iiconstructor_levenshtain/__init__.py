@@ -60,7 +60,6 @@ class LevenshtainVector(InputDescription):
         super().__init__(name)
         self.synonyms = SynonymsGroup() if synonyms is None else synonyms
 
-
 class LevenshtainClassificator(StepVectorBaseClassificator):
     def __init__(self, project: ScenarioInterface) -> None:
         super().__init__(project)

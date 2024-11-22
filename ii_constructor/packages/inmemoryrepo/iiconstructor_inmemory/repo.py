@@ -61,6 +61,9 @@ class SourceInMemory(SourceInterface):
         self.__connections = {"from": {}, "to": {}}
         self.__input_vectors = PossibleInputs()
 
+    def prepare_new_state_id(self, new_state_id: int):
+        self.__new_state_id = new_state_id
+
     def get_layouts(self) -> str:
         """-"""
 
