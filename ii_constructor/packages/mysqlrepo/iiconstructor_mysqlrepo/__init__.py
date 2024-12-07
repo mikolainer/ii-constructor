@@ -43,7 +43,7 @@ from iiconstructor_core.domain.primitives import (
     StateAttributes,
     StateID,
 )
-from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
+from iiconstructor_levenshtain import LevenshtainVector, Synonym
 
 
 class SourceMySQL(Source):
@@ -313,9 +313,9 @@ class SourceMySQL(Source):
             )
             conn.commit()
 
-            synonyms_g = SynonymsGroup()
+            synonyms_g = list[Synonym]()
             for (val,) in cur:
-                synonyms_g.synonyms.append(Synonym(val))
+                synonyms_g.append(Synonym(val))
 
             result.append(LevenshtainVector(_name, synonyms_g))
 
@@ -335,9 +335,9 @@ class SourceMySQL(Source):
         )
         conn.commit()
 
-        synonyms_g = SynonymsGroup()
+        synonyms_g = list[Synonym]()
         for (val,) in cur:
-            synonyms_g.synonyms.append(Synonym(val))
+            synonyms_g.append(Synonym(val))
 
         return LevenshtainVector(name, synonyms_g)
 
@@ -528,7 +528,7 @@ class SourceMySQL(Source):
 
         return Step(
             input,
-            Connection(state_from, state_to, input.synonyms.synonyms),
+            Connection(state_from, state_to, None)#, input.synonyms.synonyms), # wtf?
         )
 
     def delete_step(

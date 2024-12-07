@@ -30,42 +30,19 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.exceptions import NotExists
 from iiconstructor_core.domain.porst import ScenarioInterface
-from iiconstructor_core.domain.primitives import Input, Name
+from iiconstructor_core.domain.primitives import Input, StrInput, Name
 
 
-@dataclass
-class Synonym:
-    value: str
+class Synonym(StrInput):
 
-    # FIXME: Декоратор датакласса заменяет этот метод
     def __eq__(self, value: object) -> bool:
-        return value.value == self.value
-
-
-class SynonymsGroup:
-    synonyms: list[Synonym]
-
-    def __init__(
-        self,
-        other: Union["SynonymsGroup", list[Synonym]] | None = None,
-    ) -> None:
-        if isinstance(other, SynonymsGroup):
-            self.synonyms = other.synonyms
-        elif isinstance(other, list):
-            for synonym in other:
-                if not isinstance(synonym, Synonym):
-                    raise TypeError(other)
-            self.synonyms = other
-        else:
-            self.synonyms = []
+        return value.__value == self.__value
 
 
 class LevenshtainVector(InputDescription):
-    synonyms: SynonymsGroup
 
-    def __init__(self, name: Name, synonyms: SynonymsGroup = None) -> None:
-        super().__init__(name)
-        self.synonyms = SynonymsGroup() if synonyms is None else synonyms
+    def __init__(self, name: Name, synonyms: list[Synonym] | Synonym | None = None) -> None:
+        super().__init__(name, synonyms)
 
 
 class LevenshtainClassificator(StepVectorBaseClassificator):
@@ -88,7 +65,8 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
                 continue
 
             best_distance: int
-            for synonym in vector.synonyms.synonyms:
+            for index in range(len(vector)):
+                synonym = vector.value(index)
                 distance = Levenshtein.distance(
                     synonym.value.lower(),
                     cur_input.value().lower(),

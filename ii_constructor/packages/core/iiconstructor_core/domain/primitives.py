@@ -111,9 +111,21 @@ class StrInput(Input):
     
 class InputDescription:
     __name: Name
+    __values: list[Input]
 
-    def __init__(self, name: Name) -> None:
+    # нет сеттеров. только создание целиком.
+    def __init__(self, name: Name, value: list[Input] | Input | None) -> None:
         self.__name = name
+        if isinstance(value, list):
+            if len(value) == 0:
+                self.__values = None
+            else:
+                self.__values = value
+        else:
+            self.__values = [value]
+
+    def value(self, index:int = 0) -> Input:
+        return self.__values[index]
 
     def name(self) -> Name:
         return self.__name
@@ -125,6 +137,9 @@ class InputDescription:
         return (
             isinstance(value, InputDescription) and value.name() == self.__name
         )
+    
+    def __len__(self) -> int:
+        return len(self.__values)
 
 class AnswerValue:
     def as_text(self) -> str:
@@ -153,12 +168,21 @@ class OutputDescription:
     """Описание ответа - аттрибут состояния"""
     __values: list[AnswerValue]
 
-    def __init__(self, answer:AnswerValue | None = None):
-        self.__values = [answer]
+    # нет сеттеров. только создание целиком.
+    def __init__(self, answer: list[AnswerValue] | AnswerValue | None = None):
+        if isinstance(answer, list):
+            if len(answer) == 0:
+                self.__values = None
+            else:
+                self.__values = answer
+        else:
+            self.__values = [answer]
 
     def value(self, index:int = 0) -> AnswerValue:
         return self.__values[index]
 
+    def __len__(self) -> int:
+        return len(self.__values)
 
 @dataclass
 class StateAttributes:

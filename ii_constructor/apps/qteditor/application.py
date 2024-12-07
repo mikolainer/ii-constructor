@@ -40,7 +40,7 @@ from iiconstructor_core.domain.primitives import (
     StateAttributes,
     StateID,
 )
-from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
+from iiconstructor_levenshtain import LevenshtainVector, Synonym
 from iiconstructor_maria.repo import SourceMariaDB
 from PySide6.QtWidgets import QMessageBox, QWidget
 
@@ -56,25 +56,21 @@ class HostingManipulator:
 
         new_scenario.create_enter_state(
             LevenshtainVector(
-                Name("Старт"),
-                SynonymsGroup(
-                    [
-                        Synonym("Алиса, запусти навык ..."),
-                    ],
-                ),
-            ),
+            Name("Старт"),
+                [
+                    Synonym("Алиса, запусти навык ..."),
+                ],
+            )
         )
 
         new_scenario.create_enter_state(
             LevenshtainVector(
                 Name("Информация"),
-                SynonymsGroup(
-                    [
-                        Synonym("Информация"),
-                        Synonym("Справка"),
-                        Synonym("Расскажи о себе"),
-                    ],
-                ),
+                [
+                    Synonym("Информация"),
+                    Synonym("Справка"),
+                    Synonym("Расскажи о себе"),
+                ],
             ),
             True,
         )
@@ -82,13 +78,11 @@ class HostingManipulator:
         new_scenario.create_enter_state(
             LevenshtainVector(
                 Name("Помощь"),
-                SynonymsGroup(
-                    [
-                        Synonym("Помощь"),
-                        Synonym("Помоги"),
-                        Synonym("Как выйти"),
-                    ],
-                ),
+                [
+                    Synonym("Помощь"),
+                    Synonym("Помоги"),
+                    Synonym("Как выйти"),
+                ]
             ),
             True,
         )
@@ -119,7 +113,7 @@ class HostingManipulator:
             scenario.add_vector(
                 LevenshtainVector(
                     Name(elem.attrib["Название"]),
-                    SynonymsGroup(synonyms),
+                    synonyms,
                 ),
             )
 
@@ -214,17 +208,17 @@ class ScenarioManipulator:
             "text": state.attributes.output.value().as_text(),
         }
 
-    def remove_synonym(self, input_name: str, synonym: str):
-        """удаляет синоним"""
-        vector: LevenshtainVector = self.__scenario.get_vector(
-            Name(input_name),
-        )
-        if not isinstance(vector, LevenshtainVector):
-            raise Warning("ошибка получения вектора перехода")
-
-        index = vector.synonyms.synonyms.index(Synonym(synonym))
-
-        self.__scenario.remove_synonym(input_name, synonym)
+#    def remove_synonym(self, input_name: str, synonym: str):
+#        """удаляет синоним"""
+#        vector: LevenshtainVector = self.__scenario.get_vector(
+#            Name(input_name),
+#        )
+#        if not isinstance(vector, LevenshtainVector):
+#            raise Warning("ошибка получения вектора перехода")
+#
+#        index = vector.synonyms.synonyms.index(Synonym(synonym))
+#
+#        self.__scenario.remove_synonym(input_name, synonym)
 
     def remove_vector(self, input_name: str):
         """удаляет вектор"""
@@ -243,23 +237,23 @@ class ScenarioManipulator:
         """удаляет состояние"""
         self.__scenario.remove_state(StateID(state_id))
 
-    def create_synonym(self, input_name: str, new_synonym: str):
-        """создаёт синоним"""
-        vector: LevenshtainVector = self.__scenario.get_vector(
-            Name(input_name),
-        )
-        if not isinstance(vector, LevenshtainVector):
-            raise Warning("ошибка получения вектора перехода")
-
-        synonym = Synonym(new_synonym)
-
-        if synonym in vector.synonyms.synonyms:
-            raise Exists(
-                synonym,
-                f'Синоним "{new_synonym}" группы "{input_name}"',
-            )
-
-        self.__scenario.create_synonym(input_name, new_synonym)
+#    def create_synonym(self, input_name: str, new_synonym: str):
+#        """создаёт синоним"""
+#        vector: LevenshtainVector = self.__scenario.get_vector(
+#            Name(input_name),
+#        )
+#        if not isinstance(vector, LevenshtainVector):
+#            raise Warning("ошибка получения вектора перехода")
+#
+#        synonym = Synonym(new_synonym)
+#
+#        if synonym in vector.synonyms.synonyms:
+#            raise Exists(
+#                synonym,
+#                f'Синоним "{new_synonym}" группы "{input_name}"',
+#            )
+#
+#        self.__scenario.create_synonym(input_name, new_synonym)
 
     def add_vector(self, input_name: str):
         """создаёт вектор"""
@@ -361,18 +355,18 @@ class ScenarioManipulator:
         """переименовывает группу синонимов"""
         self.__scenario.rename_vector(Name(old_name), Name(new_name))
 
-    def set_synonym_value(self, input_name, old_synonym, new_synonym):
-        """изменяет значение синонима"""
-        vector: LevenshtainVector = self.__scenario.get_vector(
-            Name(input_name),
-        )
-        if not isinstance(vector, LevenshtainVector):
-            raise Warning("ошибка получения вектора перехода")
-
-        index = vector.synonyms.synonyms.index(
-            Synonym(old_synonym),
-        )  # raises ValueError if `old_synonym` not found
-        self.__scenario.set_synonym_value(input_name, old_synonym, new_synonym)
+#    def set_synonym_value(self, input_name, old_synonym, new_synonym):
+#        """изменяет значение синонима"""
+#        vector: LevenshtainVector = self.__scenario.get_vector(
+#            Name(input_name),
+#        )
+#        if not isinstance(vector, LevenshtainVector):
+#            raise Warning("ошибка получения вектора перехода")
+#
+#        index = vector.synonyms.synonyms.index(
+#            Synonym(old_synonym),
+#        )  # raises ValueError if `old_synonym` not found
+#        self.__scenario.set_synonym_value(input_name, old_synonym, new_synonym)
 
     def steps_from(self, from_state: int) -> dict[int, list[str]]:
         """возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов"""
@@ -430,9 +424,10 @@ class ScenarioManipulator:
                         "Тип": "Группа синонимов",
                     },
                 )
-                for synonym in vector.synonyms.synonyms:
+                for index in range(len(vector)):
+                    input = vector.value(index)
                     _synonym = Element("Синоним")
-                    _synonym.text = synonym.value
+                    _synonym.text = input.value()
                     _vector.append(_synonym)
                 vectors.append(_vector)
 
@@ -466,9 +461,10 @@ class ScenarioManipulator:
                             "Тип": "Группа синонимов",
                         },
                     )
-                    for synonym in vector.synonyms.synonyms:
+                    for index in range(len(vector)):
+                        input = vector.value(index)
                         _synonym = Element("Синоним")
-                        _synonym.text = synonym.value
+                        _synonym.text = input.value
                         _vector.append(_synonym)
                     _enter.append(_vector)
 
@@ -492,9 +488,10 @@ class ScenarioManipulator:
                                 "Тип": "Группа синонимов",
                             },
                         )
-                        for synonym in vector.synonyms.synonyms:
+                        for index in range(len(vector)):
+                            input = vector.value(index)
                             _synonym = Element("Синоним")
-                            _synonym.text = synonym.value
+                            _synonym.text = input.value()
                             _vector.append(_synonym)
                         _step.append(_vector)
 

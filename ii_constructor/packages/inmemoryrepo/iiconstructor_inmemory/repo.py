@@ -311,25 +311,25 @@ class SourceInMemory(Source):
     def get_all_connections(self) -> dict[str, dict]:
         return self.__connections
 
-    def set_synonym_value(
-        self,
-        input_name: str,
-        old_synonym: str,
-        new_synonym: str,
-    ):
-        vector: LevenshtainVector = self.get_vector(Name(input_name))
-        synonym = Synonym(new_synonym)
-        index = vector.synonyms.synonyms.index(Synonym(old_synonym))
-        vector.synonyms.synonyms[index] = synonym
-
-    def create_synonym(self, input_name: str, new_synonym: str):
-        vector: LevenshtainVector = self.get_vector(Name(input_name))
-        vector.synonyms.synonyms.append(Synonym(new_synonym))
-
-    def remove_synonym(self, input_name: str, synonym: str):
-        vector: LevenshtainVector = self.get_vector(Name(input_name))
-        index = vector.synonyms.synonyms.index(Synonym(synonym))
-        vector.synonyms.synonyms.pop(index)
+#    def set_synonym_value(
+#        self,
+#        input_name: str,
+#        old_synonym: str,
+#        new_synonym: str,
+#    ):
+#        vector: LevenshtainVector = self.get_vector(Name(input_name))
+#        synonym = Synonym(new_synonym)
+#        index = vector.synonyms.synonyms.index(Synonym(old_synonym))
+#        vector.synonyms.synonyms[index] = synonym
+#
+#    def create_synonym(self, input_name: str, new_synonym: str):
+#        vector: LevenshtainVector = self.get_vector(Name(input_name))
+#        vector.synonyms.synonyms.append(Synonym(new_synonym))
+#
+#    def remove_synonym(self, input_name: str, synonym: str):
+#        vector: LevenshtainVector = self.get_vector(Name(input_name))
+#        index = vector.synonyms.synonyms.index(Synonym(synonym))
+#        vector.synonyms.synonyms.pop(index)
 
     def rename_state(self, state: StateID, name: Name):
         self.states([state])[state].attributes.name = name

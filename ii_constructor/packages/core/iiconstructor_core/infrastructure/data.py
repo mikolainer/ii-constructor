@@ -33,8 +33,5 @@ class ItemData:
 
 class BaseSerializer:
     """Базовый абтрактынй класс сериализации"""
-
-    type = Any
-
-    def to_data(self, obj: type) -> ItemData:
+    def to_data(self, obj: object) -> ItemData:
         raise NotImplementedError("Использование абстрактного класса")
