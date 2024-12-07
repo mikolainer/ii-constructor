@@ -24,7 +24,7 @@ from typing import Any
 
 from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from iiconstructor_qtgui.flows import FlowsModel
-from iiconstructor_qtgui.primitives.sceneitems import (
+from qtscenediagramm import (
     Arrow,
     Editor,
     NodeWidget,

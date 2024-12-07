@@ -50,6 +50,9 @@ from PySide6.QtGui import (
     QPolygon,
     QTransform,
     QWheelEvent,
+    QMouseEvent,
+    QEnterEvent,
+    QIcon,
 )
 from PySide6.QtWidgets import (
     QGraphicsItem,
@@ -67,10 +70,37 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
     QWidget,
+    QToolButton,
+    QPushButton,
 )
 
-from .buttons import EnterDetectionButton
+class EnterDetectionButton(QToolButton):
+    """QPushButton c сигналом mouse_enter()"""
 
+    mouse_enter = Signal()
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setMouseTracking(True)
+
+    def enterEvent(self, event: QEnterEvent) -> None:
+        if event.type() == QMouseEvent.Type.Enter:
+            self.mouse_enter.emit()
+        return super().enterEvent(event)
+
+
+class CloseButton(QPushButton):
+    """Стиллизованая кнопка "Закрыть" """
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setToolTip("Закрыть")
+        self.setStatusTip("Закрыть")
+        self.setWhatsThis("Закрыть")
+        self.setIcon(QIcon(QPixmap(":/icons/exit_norm.svg").scaled(12, 12)))
+        size = QSize(20, 20)
+        self.setIconSize(size)
+        self.setFixedSize(size)
 
 class Arrow(QGraphicsItem):
     """Ребро графа на сцене"""

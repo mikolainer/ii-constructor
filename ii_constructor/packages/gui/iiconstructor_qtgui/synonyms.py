@@ -69,7 +69,7 @@ from .data import (
     ProxyModelReadOnly,
     SynonymsSetModel,
 )
-from .primitives.buttons import CloseButton
+from qtscenediagramm import CloseButton
 from .primitives.widgets import SynonymEditorWidget
 
 
