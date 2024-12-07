@@ -33,7 +33,7 @@ from iiconstructor_core.domain import (
 from iiconstructor_core.domain.exceptions import Exists, NotExists
 from iiconstructor_core.domain.primitives import (
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -116,7 +116,7 @@ class SourceInMemory(Source):
 
     # сеттеры
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
         self.__states[state_id].attributes.output = data
 

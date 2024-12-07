@@ -91,7 +91,7 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
             for synonym in vector.synonyms.synonyms:
                 distance = Levenshtein.distance(
                     synonym.value.lower(),
-                    cur_input.value.lower(),
+                    cur_input.value().lower(),
                 )
 
                 if best is None or distance < best_distance:
@@ -99,7 +99,7 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
                     best = val
                     continue
 
-        if best_distance >= len(cur_input.value) / 2:
+        if best_distance >= len(cur_input.value()) / 2:
             raise NotExists(cur_input, "Подходящий вектор")
 
         return best

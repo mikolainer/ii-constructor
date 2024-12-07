@@ -25,17 +25,19 @@ from typing import Any, Optional
 from .exceptions import CoreException, Exists, NotExists
 from .porst import ScenarioInterface
 from .primitives import (
-    Answer,
+    PlainTextAnswer,
     Description,
     Input,
+    StrInput,
     Name,
-    Output,
+    OutputDescription,
     Request,
     Response,
     ScenarioID,
     SourceInfo,
     StateAttributes,
     StateID,
+    InputDescription,
 )
 
 
@@ -158,29 +160,11 @@ class State:
         if attributes.description is None:
             attributes.description = Description("")
 
-        if attributes.output is None or attributes.output.value.text == "":
-            attributes.output = Output(Answer("текст ответа"))
+        if attributes.output is None or attributes.output.value().as_text() == "":
+            attributes.output = OutputDescription(PlainTextAnswer("текст ответа"))
 
     def id(self) -> StateID:
         return self.__id
-
-
-class InputDescription:
-    __name: Name
-
-    def __init__(self, name: Name) -> None:
-        self.__name = name
-
-    def name(self) -> Name:
-        return self.__name
-
-    def set_name(self, new_name: Name) -> None:
-        self.__name = new_name
-
-    def __eq__(self, value: object) -> bool:
-        return (
-            isinstance(value, InputDescription) and value.name() == self.__name
-        )
 
 
 @dataclass
@@ -289,7 +273,7 @@ class Source:
 
     # сеттеры
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
 
     # векторы
@@ -555,7 +539,7 @@ class Scenario(ScenarioInterface):
 
     # сеттеры
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
         self.__src.set_answer(state_id, data)
 
@@ -681,7 +665,7 @@ class Engine:
         prev_state = self.__cur_state.id()
 
         self.__cur_state = self.__classif.get_next_state(
-            Input(req),
+            StrInput(req),
             self.__cur_state.id(),
         )
 
@@ -690,7 +674,7 @@ class Engine:
         if prev_state == self.__cur_state.id():
             result.text = "Запрос не понятен"
         else:
-            result.text = self.__cur_state.attributes.output.value.text
+            result.text = self.__cur_state.attributes.output.value().as_text()
 
         return result
 

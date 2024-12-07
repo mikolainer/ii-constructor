@@ -34,10 +34,10 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.exceptions import CoreException, NotExists
 from iiconstructor_core.domain.primitives import (
-    Answer,
+    PlainTextAnswer,
     Description,
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -128,7 +128,7 @@ class SourceMariaDB(Source):
                 State(
                     StateID(_id),
                     StateAttributes(
-                        Output(Answer(_answer)),
+                        OutputDescription(PlainTextAnswer(_answer)),
                         Name(_name),
                         Description(_descr),
                     ),
@@ -164,7 +164,7 @@ class SourceMariaDB(Source):
             result[s_id] = State(
                 s_id,
                 StateAttributes(
-                    Output(Answer(_answer)),
+                    OutputDescription(PlainTextAnswer(_answer)),
                     Name(_name),
                     Description(_descr),
                 ),
@@ -272,10 +272,10 @@ class SourceMariaDB(Source):
         (result,) = cur.fetchone()
         return result
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         self.__do(
             "UPDATE `states` SET `answer` = ? WHERE `states`.`project_id` = ? AND `states`.`id` = ?",
-            (data.value.text, self.id.value, state_id.value),
+            (data.value().as_text(), self.id.value, state_id.value),
         )
 
     def select_vectors(
@@ -396,9 +396,9 @@ class SourceMariaDB(Source):
         _answ = "DEFAULT"
         if (
             attributes.output is not None
-            and attributes.output.value is not None
+            and attributes.output.value() is not None
         ):
-            _answ = f"'{attributes.output.value.text}'"
+            _answ = f"'{attributes.output.value.value().as_text()}'"
 
         query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (?, {_name}, {_descr}, {_answ}, ?) RETURNING `id`, `answer`, `name`, `descr`, `required`"
         cur.execute(query, (_proj_id, required))
@@ -407,7 +407,7 @@ class SourceMariaDB(Source):
         return State(
             StateID(id),
             StateAttributes(
-                Output(Answer(answer)),
+                OutputDescription(PlainTextAnswer(answer)),
                 Name(name),
                 Description(descr),
             ),

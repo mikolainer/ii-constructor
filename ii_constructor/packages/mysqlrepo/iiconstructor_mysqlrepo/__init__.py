@@ -34,10 +34,10 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.exceptions import CoreException, NotExists
 from iiconstructor_core.domain.primitives import (
-    Answer,
+    PlainTextAnswer,
     Description,
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -128,7 +128,7 @@ class SourceMySQL(Source):
                 State(
                     StateID(_id),
                     StateAttributes(
-                        Output(Answer(_answer)),
+                        OutputDescription(PlainTextAnswer(_answer)),
                         Name(_name),
                         Description(_descr),
                     ),
@@ -164,7 +164,7 @@ class SourceMySQL(Source):
             result[s_id] = State(
                 s_id,
                 StateAttributes(
-                    Output(Answer(_answer)),
+                    OutputDescription(PlainTextAnswer(_answer)),
                     Name(_name),
                     Description(_descr),
                 ),
@@ -272,10 +272,10 @@ class SourceMySQL(Source):
         (result,) = cur.fetchone()
         return result
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         self.__do(
             "UPDATE `states` SET `answer` = %s WHERE `states`.`project_id` = %s AND `states`.`id` = %s",
-            (data.value.text, self.id.value, state_id.value),
+            (data.value().as_text(), self.id.value, state_id.value),
         )
 
     def select_vectors(
@@ -396,9 +396,9 @@ class SourceMySQL(Source):
         _answ = "DEFAULT"
         if (
             attributes.output is not None
-            and attributes.output.value is not None
+            and attributes.output.value() is not None
         ):
-            _answ = f"'{attributes.output.value.text}'"
+            _answ = f"'{attributes.output.value().as_text()}'"
 
         query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (%s, {_name}, {_descr}, {_answ}, %s) RETURNING `id`, `answer`, `name`, `descr`, `required`"
         cur.execute(query, (_proj_id, required))
@@ -407,7 +407,7 @@ class SourceMySQL(Source):
         return State(
             StateID(id),
             StateAttributes(
-                Output(Answer(answer)),
+                OutputDescription(PlainTextAnswer(answer)),
                 Name(name),
                 Description(descr),
             ),

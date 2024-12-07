@@ -31,10 +31,10 @@ from iiconstructor_core.domain import (
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.porst import ScenarioInterface
 from iiconstructor_core.domain.primitives import (
-    Answer,
+    PlainTextAnswer,
     Description,
     Name,
-    Output,
+    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -127,7 +127,7 @@ class HostingManipulator:
         for elem in root.find("Состояния").findall("Состояние"):
             state: State = scenario.source().create_state(
                 StateAttributes(
-                    Output(Answer(elem.text)),
+                    OutputDescription(PlainTextAnswer(elem.text)),
                     Name(elem.attrib["Название"]),
                     Description(""),
                 ),
@@ -211,7 +211,7 @@ class ScenarioManipulator:
         return {
             "id": state.id().value,
             "name": state.attributes.name.value,
-            "text": state.attributes.output.value.text,
+            "text": state.attributes.output.value().as_text(),
         }
 
     def remove_synonym(self, input_name: str, synonym: str):
@@ -332,7 +332,7 @@ class ScenarioManipulator:
         step: Step = self.__scenario.create_step(
             StateID(from_state_id),
             StateAttributes(
-                Output(Answer("текст ответа")),
+                OutputDescription(PlainTextAnswer("текст ответа")),
                 Name(new_state_name),
                 Description(""),
             ),
@@ -343,14 +343,14 @@ class ScenarioManipulator:
         return {
             "id": to_state.id().value,
             "name": to_state.attributes.name.value,
-            "text": to_state.attributes.output.value.text,
+            "text": to_state.attributes.output.value().as_text(),
         }
 
     def set_state_answer(self, state_id: int, new_value: str):
         """изменяет ответ состояния"""
         self.__scenario.set_answer(
             StateID(state_id),
-            Output(Answer(new_value)),
+            OutputDescription(PlainTextAnswer(new_value)),
         )
 
     def rename_state(self, state_id: int, new_name: str):
@@ -445,7 +445,7 @@ class ScenarioManipulator:
                     "Название": state.attributes.name.value,
                 },
             )
-            _state.text = state.attributes.output.value.text
+            _state.text = state.attributes.output.value().as_text()
             states.append(_state)
 
         connections = self.__scenario.source().get_all_connections()
