@@ -48,7 +48,7 @@ from iiconstructor_qtgui.main_w import (
     NewProjectDialog,
     Workspaces,
 )
-from iiconstructor_qtgui.primitives.sceneitems import (
+from qtscenediagramm import (
     Editor,
     EditorView,
     SceneNode,

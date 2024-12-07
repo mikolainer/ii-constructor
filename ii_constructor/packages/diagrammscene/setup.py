@@ -19,35 +19,22 @@
 # см. <https://www.gnu.org/licenses/>.
 
 
-from PySide6.QtCore import QSize, Signal
-from PySide6.QtGui import QEnterEvent, QIcon, QMouseEvent, QPixmap
-from PySide6.QtWidgets import QPushButton, QToolButton, QWidget
+from setuptools import setup
 
+if __name__ == "__main__":
+    with open("README.md") as f:
+        readme = f.read()
 
-class EnterDetectionButton(QToolButton):
-    """QPushButton c сигналом mouse_enter()"""
+    with open("requirements.txt") as f:
+        requirements = f.read().splitlines()
 
-    mouse_enter = Signal()
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setMouseTracking(True)
-
-    def enterEvent(self, event: QEnterEvent) -> None:
-        if event.type() == QMouseEvent.Type.Enter:
-            self.mouse_enter.emit()
-        return super().enterEvent(event)
-
-
-class CloseButton(QPushButton):
-    """Стиллизованая кнопка "Закрыть" """
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setToolTip("Закрыть")
-        self.setStatusTip("Закрыть")
-        self.setWhatsThis("Закрыть")
-        self.setIcon(QIcon(QPixmap(":/icons/exit_norm.svg").scaled(12, 12)))
-        size = QSize(20, 20)
-        self.setIconSize(size)
-        self.setFixedSize(size)
+    setup(
+        name="qtscenediagramm",
+        version="0.0",
+        description='QGraphicsScene for diagramms',
+        long_description=readme,
+        author="Nikolay Ivantsov",
+        author_email="mikolainer@mail.ru",
+        packages=["qtscenediagramm"],
+        install_requires=requirements,
+    )

@@ -38,8 +38,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from qtscenediagramm import Arrow, SceneNode
 from .data import BaseModel, CustomDataRole, SynonymsSetModel
-from .primitives.sceneitems import Arrow, SceneNode
 from .synonyms import SynonymsSetView
 
 
