@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 
-from .primitives import Name, Output, StateAttributes, StateID
+from .primitives import Name, OutputDescription, StateAttributes, StateID
 
 
 class ScenarioInterface:
@@ -85,7 +85,7 @@ class ScenarioInterface:
 
     # сеттеры
 
-    def set_answer(self, state_id: StateID, data: Output):
+    def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
 
     def is_enter(self, state: State) -> bool:

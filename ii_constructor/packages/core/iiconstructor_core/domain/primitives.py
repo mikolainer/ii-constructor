@@ -53,20 +53,6 @@ class Description:
         return self.__MIN_LEN < _len < self.__MAX_LEN
 
 
-@dataclass  # (frozen=True)
-class Input:
-    """Класс "сырого" представления входящего управляющего воздействия"""
-
-    value: str
-
-    __MIN_LEN: int = 1
-    __MAX_LEN: int = 512
-
-    def is_valid(self) -> bool:
-        _len: int = len(self.value)
-        return self.__MIN_LEN < _len < self.__MAX_LEN
-
-
 @dataclass(frozen=True)
 class ScenarioID:
     """Идентификатор сценария"""
@@ -79,36 +65,6 @@ class StateID:
     """Идентификатор состояния"""
 
     value: int
-
-
-@dataclass(frozen=True)
-class Answer:
-    """Базовый класс описания ответа"""
-
-    text: str
-    __MIN_LEN: int = 1
-    __MAX_LEN: int = 1024
-
-    def is_valid(self) -> bool:
-        _len: int = len(self.text)
-        return self.__MIN_LEN < _len < self.__MAX_LEN
-
-
-@dataclass(frozen=True)
-class Output:
-    """Описание ответа - аттрибут состояния"""
-
-    value: Answer
-
-
-@dataclass
-class StateAttributes:
-    """Класс, инкапсулирующий аттрибуты состояния"""
-
-    output: Output
-    name: Name
-    description: Description
-
 
 @dataclass
 class SourceInfo:
@@ -128,3 +84,87 @@ class Response:
     """Базовый класс представления ответа для платформы"""
 
     text: str
+
+class Input:
+    def value(self) -> str:
+        """Получить команду в виде строки"""
+
+class StrInput(Input):
+    """Класс "сырого" представления входящего управляющего воздействия"""
+
+    __value: str
+
+    __MIN_LEN: int = 1
+    __MAX_LEN: int = 512
+
+    def __init__(self, value:str):
+        super().__init__()
+        self.__value = value
+
+    def value(self) -> str:
+        """Получить команду в виде строки"""
+        return self.__value
+
+    def is_valid(self) -> bool:
+        _len: int = len(self.__value)
+        return self.__MIN_LEN < _len < self.__MAX_LEN
+    
+class InputDescription:
+    __name: Name
+
+    def __init__(self, name: Name) -> None:
+        self.__name = name
+
+    def name(self) -> Name:
+        return self.__name
+
+    def set_name(self, new_name: Name) -> None:
+        self.__name = new_name
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            isinstance(value, InputDescription) and value.name() == self.__name
+        )
+
+class AnswerValue:
+    def as_text(self) -> str:
+        """Строковое представление"""
+
+class PlainTextAnswer(AnswerValue):
+    """Базовый класс описания ответа"""
+
+    __text: str
+    __MIN_LEN: int = 1
+    __MAX_LEN: int = 1024
+
+    def __init__(self, text:str):
+        self.__text = text
+
+    def as_text(self) -> str:
+        return self.__text
+
+    def is_valid(self) -> bool:
+        _len: int = len(self.text)
+        return self.__MIN_LEN < _len < self.__MAX_LEN
+
+
+
+class OutputDescription:
+    """Описание ответа - аттрибут состояния"""
+    value: PlainTextAnswer
+    __values: list[AnswerValue]
+
+    def __init__(self, answer:AnswerValue | None = None):
+        self.__values = [answer]
+
+    def value(self, index:int = 0) -> AnswerValue:
+        return self.__values[index]
+
+
+@dataclass
+class StateAttributes:
+    """Класс, инкапсулирующий аттрибуты состояния"""
+
+    output: OutputDescription
+    name: Name
+    description: Description
