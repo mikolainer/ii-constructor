@@ -32,9 +32,10 @@ class LevenshtainVectorSerializer(BaseSerializer):
         item.on[CustomDataRole.Name] = obj.name().value
 
         synonyms = SynonymsSetModel()
-        for value in obj.synonyms.synonyms:
+        for index in range(len(obj)):
+            value = obj.value(index)
             synonym = ItemData()
-            synonym.on[CustomDataRole.Text] = value.value
+            synonym.on[CustomDataRole.Text] = value.value()
             synonyms.prepare_item(synonym)
             synonyms.insertRow()
             # synonyms.add_item(synonym)
