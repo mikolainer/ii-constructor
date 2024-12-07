@@ -151,7 +151,6 @@ class PlainTextAnswer(AnswerValue):
 
 class OutputDescription:
     """Описание ответа - аттрибут состояния"""
-    value: PlainTextAnswer
     __values: list[AnswerValue]
 
     def __init__(self, answer:AnswerValue | None = None):
