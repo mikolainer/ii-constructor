@@ -602,7 +602,7 @@ class ProjectManager:
             item = ItemData()
             item.on[CustomDataRole.Id] = state.id().value
             item.on[CustomDataRole.Name] = state.attributes.name.value
-            item.on[CustomDataRole.Text] = state.attributes.output.value.text
+            item.on[CustomDataRole.Text] = state.attributes.output.value().as_text()
 
             # добавление элемента модели состояний
             scene_controll.on_insert_node(proj.scene(), item, input_items)
