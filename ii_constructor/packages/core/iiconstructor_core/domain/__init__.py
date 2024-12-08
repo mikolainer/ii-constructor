@@ -156,20 +156,25 @@ class State:
         self.__id = id
         self.required = required
         self.attributes = attributes
+        self.__output = output
+
         if attributes.name is None or attributes.name.value == "":
             attributes.name = Name(str(id.value))
 
         if attributes.description is None:
             attributes.description = Description("")
 
-        if attributes.output is None or attributes.output.value().as_text() == "":
-            attributes.output = OutputDescription(PlainTextAnswer("текст ответа"))
-
-        self.__output = output
+        if output is None or output.value().as_text() == "":
+            self.__output = OutputDescription(PlainTextAnswer("текст ответа"))
 
     def id(self) -> StateID:
         return self.__id
 
+    def output(self) -> OutputDescription:
+        return self.__output
+    
+    def set_output(self, output: OutputDescription):
+        self.__output = output
 
 @dataclass
 class Step:
@@ -240,10 +245,10 @@ class StepVectorBaseClassificator:
             inputs = get_inputs()
             try:
                 return self.calc(cmd, inputs)
-            except Exception:
-                result = cur_state
+            except Exception as e:
+                pass
 
-        return result
+        return cur_state
 
 
 class Source:
@@ -419,7 +424,7 @@ class Scenario(ScenarioInterface):
 
         # создаём состояние
         state_to = self.__src.create_state(
-            StateAttributes(None, input.name(), None),
+            StateAttributes(input.name(), Description("")),
             OutputDescription(),
             required,
         )
@@ -486,7 +491,7 @@ class Scenario(ScenarioInterface):
                     f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.',
                 )
 
-        state_to = self.__src.create_state(to_state, to_state.output)
+        state_to = self.__src.create_state(to_state, output)
         return self.__src.new_step(from_state_id, state_to.id(), input.name())
 
     # удаление сущностей
@@ -676,7 +681,7 @@ class Engine:
         if prev_state == self.__cur_state.id():
             result.text = "Запрос не понятен"
         else:
-            result.text = self.__cur_state.attributes.output.value().as_text()
+            result.text = self.__cur_state.output().value().as_text()
 
         return result
 
