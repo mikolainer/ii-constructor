@@ -116,9 +116,11 @@ class InputDescription:
     # нет сеттеров. только создание целиком.
     def __init__(self, name: Name, value: list[Input] | Input | None) -> None:
         self.__name = name
-        if isinstance(value, list):
+        if value is None:
+            self.__values = [StrInput("")]
+        elif isinstance(value, list):
             if len(value) == 0:
-                self.__values = None
+                self.__values = [StrInput("")]
             else:
                 self.__values = value
         else:
@@ -170,9 +172,11 @@ class OutputDescription:
 
     # нет сеттеров. только создание целиком.
     def __init__(self, answer: list[AnswerValue] | AnswerValue | None = None):
-        if isinstance(answer, list):
+        if answer is None:
+            self.__values = [PlainTextAnswer("")]
+        elif isinstance(answer, list):
             if len(answer) == 0:
-                self.__values = None
+                self.__values = [""]
             else:
                 self.__values = answer
         else:
@@ -188,6 +192,5 @@ class OutputDescription:
 class StateAttributes:
     """Класс, инкапсулирующий аттрибуты состояния"""
 
-    output: OutputDescription
     name: Name
     description: Description

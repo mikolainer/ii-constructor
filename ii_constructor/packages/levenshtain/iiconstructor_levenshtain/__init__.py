@@ -54,6 +54,9 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
         cur_input: Input,
         possible_inputs: dict[str, State],
     ) -> State | None:
+        if len(possible_inputs) == 0:
+            raise NotExists(cur_input, "Подходящий вектор")
+
         best_score = 0
         best: State | None = None
 
@@ -68,7 +71,7 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
             for index in range(len(vector)):
                 synonym = vector.value(index)
                 distance = Levenshtein.distance(
-                    synonym.value.lower(),
+                    synonym.value().lower(),
                     cur_input.value().lower(),
                 )
 
