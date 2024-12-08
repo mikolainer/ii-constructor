@@ -640,28 +640,28 @@ class SourceMariaDB(Source):
 
         return result
 
-    def set_synonym_value(
-        self,
-        input_name: str,
-        old_synonym: str,
-        new_synonym: str,
-    ):
-        self.__do(
-            "UPDATE `synonyms` SET `value`= ? WHERE `project_id`= ? AND `group_name`= ? AND `value` = ?",
-            (new_synonym, self.id.value, input_name, old_synonym),
-        )
-
-    def create_synonym(self, input_name: str, new_synonym: str):
-        self.__do(
-            "INSERT INTO `synonyms` (`project_id`, `group_name`, `value`) VALUES (?, ?, ?)",
-            (self.id.value, input_name, new_synonym),
-        )
-
-    def remove_synonym(self, input_name: str, synonym: str):
-        self.__do(
-            "DELETE FROM `synonyms` WHERE `project_id` = ? AND `group_name` = ? AND `value` = ?",
-            (self.id.value, input_name, synonym),
-        )
+#    def set_synonym_value(
+#        self,
+#        input_name: str,
+#        old_synonym: str,
+#        new_synonym: str,
+#    ):
+#        self.__do(
+#            "UPDATE `synonyms` SET `value`= ? WHERE `project_id`= ? AND `group_name`= ? AND `value` = ?",
+#            (new_synonym, self.id.value, input_name, old_synonym),
+#        )
+#
+#    def create_synonym(self, input_name: str, new_synonym: str):
+#        self.__do(
+#            "INSERT INTO `synonyms` (`project_id`, `group_name`, `value`) VALUES (?, ?, ?)",
+#            (self.id.value, input_name, new_synonym),
+#        )
+#
+#    def remove_synonym(self, input_name: str, synonym: str):
+#        self.__do(
+#            "DELETE FROM `synonyms` WHERE `project_id` = ? AND `group_name` = ? AND `value` = ?",
+#            (self.id.value, input_name, synonym),
+#        )
 
     def rename_state(self, state: StateID, name: Name):
         self.__do(
