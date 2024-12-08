@@ -158,7 +158,7 @@ class HostingManipulator:
                     _vector = scenario.get_vector(
                         Name(input.attrib["Название"]),
                     )
-                    scenario.create_step(state_from_id, state_to_id, _vector)
+                    scenario.create_step_between(state_from_id, state_to_id, _vector)
 
         return ScenarioAPI(scenario)
 
@@ -321,7 +321,7 @@ class ScenarioAPI:
     ):
         """создаёт переход"""
         vector = self.__scenario.get_vector(Name(input_name))
-        self.__scenario.create_step(
+        self.__scenario.create_step_between(
             StateID(from_state_id),
             StateID(to_state_id),
             vector,
@@ -337,13 +337,14 @@ class ScenarioAPI:
         возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         """
         vector = self.__scenario.get_vector(Name(input_name))
-        step: Step = self.__scenario.create_step(
+        step: Step = self.__scenario.create_step_to_new(
             StateID(from_state_id),
             StateAttributes(
                 OutputDescription(PlainTextAnswer("текст ответа")),
                 Name(new_state_name),
                 Description(""),
             ),
+            OutputDescription(PlainTextAnswer("текст ответа")),
             vector,
         )
         to_state: State = step.connection.to_state
