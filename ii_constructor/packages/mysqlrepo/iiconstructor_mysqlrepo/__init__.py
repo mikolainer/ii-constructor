@@ -128,7 +128,6 @@ class SourceMySQL(Source):
                 State(
                     StateID(_id),
                     StateAttributes(
-                        OutputDescription(PlainTextAnswer(_answer)),
                         Name(_name),
                         Description(_descr),
                     ),
@@ -165,7 +164,6 @@ class SourceMySQL(Source):
             result[s_id] = State(
                 s_id,
                 StateAttributes(
-                    OutputDescription(PlainTextAnswer(_answer)),
                     Name(_name),
                     Description(_descr),
                 ),
@@ -410,7 +408,6 @@ class SourceMySQL(Source):
         return State(
             StateID(id),
             StateAttributes(
-                OutputDescription(PlainTextAnswer(answer)),
                 Name(name),
                 Description(descr),
             ),

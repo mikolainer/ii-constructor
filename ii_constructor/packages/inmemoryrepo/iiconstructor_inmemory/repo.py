@@ -118,7 +118,7 @@ class SourceInMemory(Source):
 
     def set_answer(self, state_id: StateID, data: OutputDescription):
         """Изменить ответ состояния"""
-        self.__states[state_id].attributes.output = data
+        self.__states[state_id].set_output(data)
 
     # векторы
 

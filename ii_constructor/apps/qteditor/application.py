@@ -121,7 +121,6 @@ class HostingManipulator:
         for elem in root.find("Состояния").findall("Состояние"):
             state: State = scenario.source().create_state(
                 StateAttributes(
-                    OutputDescription(PlainTextAnswer(elem.text)),
                     Name(elem.attrib["Название"]),
                     Description(""),
                 ),
@@ -200,14 +199,14 @@ class ScenarioAPI:
 
     def create_state(self, name: str) -> dict:
         state: State = self.__scenario.source().create_state(
-            StateAttributes(None, Name(name), None),
+            StateAttributes(Name(name), Description("")),
             OutputDescription(),
         )
 
         return {
             "id": state.id().value,
             "name": state.attributes.name.value,
-            "text": state.attributes.output.value().as_text(),
+            "text": state.output().value().as_text(),
         }
 
 #    def remove_synonym(self, input_name: str, synonym: str):
@@ -340,7 +339,6 @@ class ScenarioAPI:
         step: Step = self.__scenario.create_step_to_new(
             StateID(from_state_id),
             StateAttributes(
-                OutputDescription(PlainTextAnswer("текст ответа")),
                 Name(new_state_name),
                 Description(""),
             ),
@@ -352,7 +350,7 @@ class ScenarioAPI:
         return {
             "id": to_state.id().value,
             "name": to_state.attributes.name.value,
-            "text": to_state.attributes.output.value().as_text(),
+            "text": to_state.output().value().as_text(),
         }
 
     def set_state_answer(self, state_id: int, new_value: str):
@@ -442,7 +440,7 @@ class ScenarioAPI:
                     "Название": state.attributes.name.value,
                 },
             )
-            _state.text = state.attributes.output.value().as_text()
+            _state.text = state.output().value().as_text()
             states.append(_state)
 
         connections = self.__scenario.source().get_all_connections()
