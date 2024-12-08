@@ -462,35 +462,31 @@ class Scenario(ScenarioInterface):
         input_name = state_to.attributes.name
         self.__src.new_step(None, state_to.id(), input_name)
 
-    def create_step(
+    def create_step_between(
         self,
         from_state_id: StateID,
-        to_state: StateAttributes | StateID,
+        to_state: StateID,
         input: InputDescription,
     ) -> Step:
-        """
-        Создаёт переход из from_state в to_state по переходу input
-        @from_state_id: id состояния для обработки управляющего воздействия input
-        @to_state: id состояния в которое будет добавлен переход или аттрибуты для создания такого состояния
-        @input: управляющее воздействие
-        """
-        state_to: State
+        return self.__src.new_step(from_state_id, to_state, input.name())
 
-        if isinstance(to_state, StateID):
-            state_to = self.states([to_state])[to_state]
+    def create_step_to_new(
+        self,
+        from_state_id: StateID,
+        to_state: StateAttributes,
+        output: OutputDescription,
+        input: InputDescription,
+    ) -> Step:
+        _states = self.states()
+        for _state in _states.values():
+            if _state.attributes.name == to_state.name and self.is_enter(
+                _state,
+            ):
+                raise CoreException(
+                    f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.',
+                )
 
-        elif isinstance(to_state, StateAttributes):
-            _states = self.states()
-            for _state in _states.values():
-                if _state.attributes.name == to_state.name and self.is_enter(
-                    _state,
-                ):
-                    raise CoreException(
-                        f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.',
-                    )
-
-            state_to = self.__src.create_state(to_state, to_state.output)
-
+        state_to = self.__src.create_state(to_state, to_state.output)
         return self.__src.new_step(from_state_id, state_to.id(), input.name())
 
     # удаление сущностей

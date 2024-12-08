@@ -994,7 +994,7 @@ class ProjectManager:
                 to_state_index.data(CustomDataRole.Id),
                 input_name,
             )
-        except Exception:
+        except Exception as e:
             return False
 
         return True
