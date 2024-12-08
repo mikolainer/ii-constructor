@@ -23,7 +23,7 @@ import os.path
 from collections.abc import Callable
 from typing import Any
 
-from application import HostingManipulator, ScenarioManipulator
+from application import HostingManipulator, ScenarioAPI
 from data import LevenshtainVectorSerializer
 from iiconstructor_core.domain import Engine, State
 from iiconstructor_core.domain.exceptions import CoreException, Exists
@@ -90,13 +90,13 @@ class Project:
     __flows_wgt: FlowListWidget
     __save_callback: Callable
     __wgt: "TestDialog"
-    manipulator: ScenarioManipulator
+    manipulator: ScenarioAPI
 
     vectors_model: SynonymsGroupsModel
 
     def __init__(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         synonym_create_callback: Callable,
         synonyms_group_create_callback: Callable,
         connect_synonym_changes_callback: Callable,
@@ -381,7 +381,7 @@ class ProjectManager:
 
     def __save_scenario_handler(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         scene_ctrl: "SceneControll",
     ):
         path, filetype = QFileDialog.getSaveFileName(
@@ -417,7 +417,7 @@ class ProjectManager:
 
     def __open_project(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
     ) -> "SceneControll":
         content_view = FlowsView(self.__flow_list)
         flows_model = FlowsModel(self.__main_window)
@@ -760,7 +760,7 @@ class ProjectManager:
 
     def __on_vector_remove_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         index: QModelIndex,
     ) -> bool:
         try:
@@ -772,7 +772,7 @@ class ProjectManager:
 
     def __on_flow_remove_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         index: QModelIndex,
     ) -> bool:
         try:
@@ -787,7 +787,7 @@ class ProjectManager:
         scene: Editor,
         scene_ctrl: "SceneControll",
         proj: Project,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         pos: QPointF,
     ):
         if not self.__is_enter_create_mode:
@@ -808,7 +808,6 @@ class ProjectManager:
             manipulator.check_can_create_enter_state(name)
             new_state_info = manipulator.create_state(name)
             manipulator.make_enter(
-                self.__main_window,
                 new_state_info["id"],
                 False,
             )
@@ -847,7 +846,7 @@ class ProjectManager:
 
     def __on_state_removed_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         index: QModelIndex,
     ) -> bool:
         try:
@@ -859,7 +858,7 @@ class ProjectManager:
 
     def __on_enter_created_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         project: Project,
         to_state_index: QModelIndex,
     ) -> tuple[bool, SynonymsSetModel | None]:
@@ -867,7 +866,6 @@ class ProjectManager:
 
         try:
             vector_name = manipulator.make_enter(
-                self.__main_window,
                 to_state_index.data(CustomDataRole.Id),
             )
 
@@ -902,7 +900,7 @@ class ProjectManager:
 
     def __save_lay(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         ctrl: "SceneControll",
         node: SceneNode,
         pos: QPointF,
@@ -920,7 +918,7 @@ class ProjectManager:
 
     def __on_step_created_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         project: Project,
         from_state_index: QModelIndex,
         to_state_item: ItemData,
@@ -958,7 +956,7 @@ class ProjectManager:
 
     def __on_step_removed_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         project: Project,
         state_from: QModelIndex,
         state_to: QModelIndex,
@@ -979,7 +977,7 @@ class ProjectManager:
 
     def __on_step_to_created_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         project: Project,
         from_state_index: QModelIndex,
         to_state_index: QModelIndex,
@@ -1003,7 +1001,7 @@ class ProjectManager:
 
     def __on_vector_created_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         name: str,
     ) -> bool:
         try:
@@ -1015,7 +1013,7 @@ class ProjectManager:
 
     def __on_state_changed_from_gui(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         state_item: QModelIndex,
         role: int,
         old_value: Any,
@@ -1042,41 +1040,10 @@ class ProjectManager:
 
         return True
 
-    # TODO: staticmethod?
-    def __on_synonym_created_from_gui(
-        self,
-        proj: Project,
-        manipulator: ScenarioManipulator,
-        model: SynonymsSetModel,
-        data: ItemData,
-    ) -> bool:
-        try:
-            manipulator.create_synonym(
-                self.__get_vector_name_by_synonyms_model(
-                    proj,
-                    manipulator,
-                    model,
-                ),
-                data.on[CustomDataRole.Text],
-            )
-
-        except Exists as e:
-            QMessageBox.critical(
-                self.__main_window,
-                "Невозможно выполнить",
-                e.ui_text,
-            )
-            return False
-
-        except Exception:
-            return False
-
-        return True
-
     def __rename_vector_handler(
         self,
         proj: Project,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         index: QModelIndex,
         row: int,
         old_name: str,
@@ -1099,10 +1066,81 @@ class ProjectManager:
         return True
 
     # TODO: staticmethod?
+    def __on_synonym_created_from_gui(
+        self,
+        proj: Project,
+        manipulator: ScenarioAPI,
+        model: SynonymsSetModel,
+        data: ItemData,
+    ) -> bool:
+        try:
+            manipulator.create_synonym(
+                self.__get_vector_name_by_synonyms_model(
+                    proj,
+                    manipulator,
+                    model,
+                ),
+                data.on[CustomDataRole.Text],
+            )
+
+        except Exists as e:
+            QMessageBox.critical(
+                self.__main_window,
+                "Невозможно выполнить",
+                e.ui_text,
+            )
+            return False
+
+        except Exception as e:
+            return False
+
+        return True
+    
+    def __synonym_changed_from_gui_handler(
+        self,
+        proj: Project,
+        manipulator: ScenarioAPI,
+        index: QModelIndex,
+        role: int,
+        old_value: Any,
+        new_value: Any,
+    ) -> bool:
+        try:
+            group_name = self.__get_vector_name_by_synonyms_model(
+                proj,
+                manipulator,
+                index.model(),
+            )
+            manipulator.set_synonym_value(group_name, old_value, new_value)
+        except Exception:
+            return False
+
+        return True
+
+    def __synonym_deleted_from_gui_handler(
+        self,
+        proj: Project,
+        manipulator: ScenarioAPI,
+        index: QModelIndex,
+    ) -> bool:
+        try:
+            group_name = self.__get_vector_name_by_synonyms_model(
+                proj,
+                manipulator,
+                index.model(),
+            )
+            synonym_value = index.data(CustomDataRole.Text)
+            manipulator.remove_synonym(group_name, synonym_value)
+        except Exception:
+            return False
+
+        return True
+
+    # TODO: staticmethod?
     def __connect_synonym_changes_from_gui(
         self,
         proj: Project,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         model: SynonymsSetModel,
     ):
         model.set_edit_callback(
@@ -1124,50 +1162,10 @@ class ProjectManager:
             ),
         )
 
-    def __synonym_changed_from_gui_handler(
-        self,
-        proj: Project,
-        manipulator: ScenarioManipulator,
-        index: QModelIndex,
-        role: int,
-        old_value: Any,
-        new_value: Any,
-    ) -> bool:
-        try:
-            group_name = self.__get_vector_name_by_synonyms_model(
-                proj,
-                manipulator,
-                index.model(),
-            )
-            manipulator.set_synonym_value(group_name, old_value, new_value)
-        except Exception:
-            return False
-
-        return True
-
-    def __synonym_deleted_from_gui_handler(
-        self,
-        proj: Project,
-        manipulator: ScenarioManipulator,
-        index: QModelIndex,
-    ) -> bool:
-        try:
-            group_name = self.__get_vector_name_by_synonyms_model(
-                proj,
-                manipulator,
-                index.model(),
-            )
-            synonym_value = index.data(CustomDataRole.Text)
-            manipulator.remove_synonym(group_name, synonym_value)
-        except Exception:
-            return False
-
-        return True
-
     def __get_vector_name_by_synonyms_model(
         self,
         proj: Project,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         model: SynonymsSetModel,
     ) -> str:
         group_name: str = None
@@ -1205,7 +1203,7 @@ class TestDialog(QWidget):
 
     def __init__(
         self,
-        manipulator: ScenarioManipulator,
+        manipulator: ScenarioAPI,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)

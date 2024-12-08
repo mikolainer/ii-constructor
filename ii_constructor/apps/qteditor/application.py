@@ -50,7 +50,7 @@ class HostingManipulator:
     def make_scenario(
         hosting: Hosting,
         info: SourceInfo,
-    ) -> "ScenarioManipulator":
+    ) -> "ScenarioAPI":
         """создаёт заготовку сценария для алисы"""
         new_scenario = hosting.get_scenario(hosting.add_source(info))
 
@@ -87,14 +87,14 @@ class HostingManipulator:
             True,
         )
 
-        return ScenarioManipulator(new_scenario)
+        return ScenarioAPI(new_scenario)
 
     @staticmethod
     def load_scenario(
         hosting: Hosting,
         data: str,
         id_map: dict[int, int] = None,
-    ) -> "ScenarioManipulator":
+    ) -> "ScenarioAPI":
         """id_map: key - orig, val - new"""
         root: Element = fromstring(data)
 
@@ -159,17 +159,17 @@ class HostingManipulator:
                     )
                     scenario.create_step(state_from_id, state_to_id, _vector)
 
-        return ScenarioManipulator(scenario)
+        return ScenarioAPI(scenario)
 
     @staticmethod
     def open_scenario(
         hosting: Hosting,
         id: int,
-    ) -> "ScenarioManipulator":
-        return ScenarioManipulator(hosting.get_scenario(ScenarioID(id)))
+    ) -> "ScenarioAPI":
+        return ScenarioAPI(hosting.get_scenario(ScenarioID(id)))
 
 
-class ScenarioManipulator:
+class ScenarioAPI:
     __scenario: ScenarioInterface
 
     def __init__(self, scenario: ScenarioInterface) -> None:
@@ -220,23 +220,6 @@ class ScenarioManipulator:
 #
 #        self.__scenario.remove_synonym(input_name, synonym)
 
-    def remove_vector(self, input_name: str):
-        """удаляет вектор"""
-        self.__scenario.remove_vector(Name(input_name))
-
-    def remove_enter(self, state_id: int):
-        """удаляет точку входа (переход)"""
-        self.__scenario.remove_enter(StateID(state_id))
-
-    def remove_step(self, from_state_id: int, input_name: str):
-        """удаляет переход"""
-        vector: InputDescription = self.__scenario.get_vector(Name(input_name))
-        self.__scenario.remove_step(StateID(from_state_id), vector)
-
-    def remove_state(self, state_id: int):
-        """удаляет состояние"""
-        self.__scenario.remove_state(StateID(state_id))
-
 #    def create_synonym(self, input_name: str, new_synonym: str):
 #        """создаёт синоним"""
 #        vector: LevenshtainVector = self.__scenario.get_vector(
@@ -255,13 +238,42 @@ class ScenarioManipulator:
 #
 #        self.__scenario.create_synonym(input_name, new_synonym)
 
+#    def set_synonym_value(self, input_name, old_synonym, new_synonym):
+#        """изменяет значение синонима"""
+#        vector: LevenshtainVector = self.__scenario.get_vector(
+#            Name(input_name),
+#        )
+#        if not isinstance(vector, LevenshtainVector):
+#            raise Warning("ошибка получения вектора перехода")
+#
+#        index = vector.synonyms.synonyms.index(
+#            Synonym(old_synonym),
+#        )  # raises ValueError if `old_synonym` not found
+#        self.__scenario.set_synonym_value(input_name, old_synonym, new_synonym)
+
+    def remove_vector(self, input_name: str):
+        """удаляет вектор"""
+        self.__scenario.remove_vector(Name(input_name))
+
+    def remove_enter(self, state_id: int):
+        """удаляет точку входа (переход)"""
+        self.__scenario.remove_enter(StateID(state_id))
+
+    def remove_step(self, from_state_id: int, input_name: str):
+        """удаляет переход"""
+        vector: InputDescription = self.__scenario.get_vector(Name(input_name))
+        self.__scenario.remove_step(StateID(from_state_id), vector)
+
+    def remove_state(self, state_id: int):
+        """удаляет состояние"""
+        self.__scenario.remove_state(StateID(state_id))
+
     def add_vector(self, input_name: str):
         """создаёт вектор"""
         self.__scenario.add_vector(LevenshtainVector(Name(input_name)))
 
     def make_enter(
         self,
-        main_window: QWidget,
         state_id: int,
         ask: bool = True,
     ) -> str:
@@ -354,19 +366,6 @@ class ScenarioManipulator:
     def rename_vector(self, old_name: str, new_name: str):
         """переименовывает группу синонимов"""
         self.__scenario.rename_vector(Name(old_name), Name(new_name))
-
-#    def set_synonym_value(self, input_name, old_synonym, new_synonym):
-#        """изменяет значение синонима"""
-#        vector: LevenshtainVector = self.__scenario.get_vector(
-#            Name(input_name),
-#        )
-#        if not isinstance(vector, LevenshtainVector):
-#            raise Warning("ошибка получения вектора перехода")
-#
-#        index = vector.synonyms.synonyms.index(
-#            Synonym(old_synonym),
-#        )  # raises ValueError if `old_synonym` not found
-#        self.__scenario.set_synonym_value(input_name, old_synonym, new_synonym)
 
     def steps_from(self, from_state: int) -> dict[int, list[str]]:
         """возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов"""

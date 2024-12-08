@@ -640,28 +640,28 @@ class SourceMySQL(Source):
 
         return result
 
-    def set_synonym_value(
-        self,
-        input_name: str,
-        old_synonym: str,
-        new_synonym: str,
-    ):
-        self.__do(
-            "UPDATE `synonyms` SET `value`= %s WHERE `project_id`= %s AND `group_name`= %s AND `value` = %s",
-            (new_synonym, self.id.value, input_name, old_synonym),
-        )
-
-    def create_synonym(self, input_name: str, new_synonym: str):
-        self.__do(
-            "INSERT INTO `synonyms` (`project_id`, `group_name`, `value`) VALUES (%s, %s, %s)",
-            (self.id.value, input_name, new_synonym),
-        )
-
-    def remove_synonym(self, input_name: str, synonym: str):
-        self.__do(
-            "DELETE FROM `synonyms` WHERE `project_id` = %s AND `group_name` = %s AND `value` = %s",
-            (self.id.value, input_name, synonym),
-        )
+#    def set_synonym_value(
+#        self,
+#        input_name: str,
+#        old_synonym: str,
+#        new_synonym: str,
+#    ):
+#        self.__do(
+#            "UPDATE `synonyms` SET `value`= %s WHERE `project_id`= %s AND `group_name`= %s AND `value` = %s",
+#            (new_synonym, self.id.value, input_name, old_synonym),
+#        )
+#
+#    def create_synonym(self, input_name: str, new_synonym: str):
+#        self.__do(
+#            "INSERT INTO `synonyms` (`project_id`, `group_name`, `value`) VALUES (%s, %s, %s)",
+#            (self.id.value, input_name, new_synonym),
+#        )
+#
+#    def remove_synonym(self, input_name: str, synonym: str):
+#        self.__do(
+#            "DELETE FROM `synonyms` WHERE `project_id` = %s AND `group_name` = %s AND `value` = %s",
+#            (self.id.value, input_name, synonym),
+#        )
 
     def rename_state(self, state: StateID, name: Name):
         self.__do(
