@@ -44,16 +44,31 @@ class ScenarioInterface:
     def make_enter(self, state_id: StateID):
         """привязывает к состоянию существующий вектор с соответствующим именем как команду входа"""
 
-    def create_step(
+    def create_step_between(
         self,
         from_state_id: StateID,
-        to_state: StateAttributes | StateID,
+        to_state: StateID,
         input: InputDescription,
     ) -> Step:
         """
         Создаёт переход из from_state в to_state по переходу input
         @from_state_id: id состояния для обработки управляющего воздействия input
-        @to_state: id состояния в которое будет добавлен переход или аттрибуты для создания такого состояния
+        @to_state: id состояния в которое будет добавлен переход
+        @input: управляющее воздействие
+        """
+
+    def create_step_to_new(
+        self,
+        from_state_id: StateID,
+        to_state: StateAttributes,
+        output: OutputDescription,
+        input: InputDescription,
+    ) -> Step:
+        """
+        Создаёт переход из from_state в to_state по переходу input
+        @from_state_id: id состояния для обработки управляющего воздействия input
+        @to_state: аттрибуты для создания нового состояния
+        @output: ответ нового состояния
         @input: управляющее воздействие
         """
 
