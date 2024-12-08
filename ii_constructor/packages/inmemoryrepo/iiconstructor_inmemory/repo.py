@@ -171,9 +171,10 @@ class SourceInMemory(Source):
     def create_state(
         self,
         attributes: StateAttributes,
+        output: OutputDescription,
         required: bool = False,
     ) -> State:
-        new_state = State(StateID(self.__new_state_id), attributes, required)
+        new_state = State(StateID(self.__new_state_id), attributes, output, required)
         self.__new_state_id += 1
         self.__states[new_state.id()] = new_state
         return new_state

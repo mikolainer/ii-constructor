@@ -125,6 +125,7 @@ class HostingManipulator:
                     Name(elem.attrib["Название"]),
                     Description(""),
                 ),
+                OutputDescription(PlainTextAnswer(elem.text)),
             )
             if id_map is not None:
                 id_map[int(elem.attrib["Идентификатор"])] = state.id().value
@@ -200,6 +201,7 @@ class ScenarioAPI:
     def create_state(self, name: str) -> dict:
         state: State = self.__scenario.source().create_state(
             StateAttributes(None, Name(name), None),
+            OutputDescription(),
         )
 
         return {

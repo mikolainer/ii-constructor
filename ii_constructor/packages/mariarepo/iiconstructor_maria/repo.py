@@ -132,6 +132,7 @@ class SourceMariaDB(Source):
                         Name(_name),
                         Description(_descr),
                     ),
+                    OutputDescription(PlainTextAnswer(_answer)),
                     _required,
                 ),
             )
@@ -168,6 +169,7 @@ class SourceMariaDB(Source):
                     Name(_name),
                     Description(_descr),
                 ),
+                OutputDescription(PlainTextAnswer(_answer)),
                 _required,
             )
 
@@ -381,6 +383,7 @@ class SourceMariaDB(Source):
     def create_state(
         self,
         attributes: StateAttributes,
+        output: OutputDescription,
         required: bool = False,
     ) -> State:
         conn: mariadb.Connection = self.__db_connection
@@ -395,10 +398,10 @@ class SourceMariaDB(Source):
             _descr = f"'{attributes.description.value}'"
         _answ = "DEFAULT"
         if (
-            attributes.output is not None
-            and attributes.output.value() is not None
+            output is not None
+            and output.value() is not None
         ):
-            _answ = f"'{attributes.output.value.value().as_text()}'"
+            _answ = f"'{output.value().as_text()}'"
 
         query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (?, {_name}, {_descr}, {_answ}, ?) RETURNING `id`, `answer`, `name`, `descr`, `required`"
         cur.execute(query, (_proj_id, required))
@@ -411,6 +414,7 @@ class SourceMariaDB(Source):
                 Name(name),
                 Description(descr),
             ),
+            OutputDescription(PlainTextAnswer(answer)),
             required,
         )
 

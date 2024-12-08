@@ -144,11 +144,13 @@ class State:
     __id: StateID
     required: bool
     attributes: StateAttributes
+    __output: OutputDescription
 
     def __init__(
         self,
         id: StateID,
         attributes: StateAttributes,
+        output: OutputDescription,
         required: bool = False,
     ) -> None:
         self.__id = id
@@ -162,6 +164,8 @@ class State:
 
         if attributes.output is None or attributes.output.value().as_text() == "":
             attributes.output = OutputDescription(PlainTextAnswer("текст ответа"))
+
+        self.__output = output
 
     def id(self) -> StateID:
         return self.__id
@@ -315,6 +319,7 @@ class Source:
     def create_state(
         self,
         attributes: StateAttributes,
+        output: OutputDescription,
         required: bool = False,
     ) -> State:
         """Создать состояние"""
@@ -415,6 +420,7 @@ class Scenario(ScenarioInterface):
         # создаём состояние
         state_to = self.__src.create_state(
             StateAttributes(None, input.name(), None),
+            OutputDescription(),
             required,
         )
 
@@ -483,7 +489,7 @@ class Scenario(ScenarioInterface):
                         f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.',
                     )
 
-            state_to = self.__src.create_state(to_state)
+            state_to = self.__src.create_state(to_state, to_state.output)
 
         return self.__src.new_step(from_state_id, state_to.id(), input.name())
 
