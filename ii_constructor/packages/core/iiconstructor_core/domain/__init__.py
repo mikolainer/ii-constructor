@@ -349,19 +349,19 @@ class Source:
         """
         # TODO: оптимизировать API. (фактически в память выгружается вся база)
 
-    def set_synonym_value(
-        self,
-        input_name: str,
-        old_synonym: str,
-        new_synonym: str,
-    ):
-        """изменяет значение синонима"""
-
-    def create_synonym(self, input_name: str, new_synonym: str):
-        """создаёт синоним"""
-
-    def remove_synonym(self, input_name: str, synonym: str):
-        """удаляет синоним"""
+#    def set_synonym_value(
+#        self,
+#        input_name: str,
+#        old_synonym: str,
+#        new_synonym: str,
+#    ):
+#        """изменяет значение синонима"""
+#
+#    def create_synonym(self, input_name: str, new_synonym: str):
+#        """создаёт синоним"""
+#
+#    def remove_synonym(self, input_name: str, synonym: str):
+#        """удаляет синоним"""
 
     def rename_state(self, state: StateID, name: Name):
         """Переименовывает состояние"""
@@ -586,22 +586,22 @@ class Scenario(ScenarioInterface):
         """
         return self.__src.check_vector_exists(name)
 
-    def set_synonym_value(
-        self,
-        input_name: str,
-        old_synonym: str,
-        new_synonym: str,
-    ):
-        """изменяет значение синонима"""
-        self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
-
-    def create_synonym(self, input_name: str, new_synonym: str):
-        """создаёт синоним"""
-        self.__src.create_synonym(input_name, new_synonym)
-
-    def remove_synonym(self, input_name: str, synonym: str):
-        """удаляет синоним"""
-        self.__src.remove_synonym(input_name, synonym)
+#    def set_synonym_value(
+#        self,
+#        input_name: str,
+#        old_synonym: str,
+#        new_synonym: str,
+#    ):
+#        """изменяет значение синонима"""
+#        self.__src.set_synonym_value(input_name, old_synonym, new_synonym)
+#
+#    def create_synonym(self, input_name: str, new_synonym: str):
+#        """создаёт синоним"""
+#        self.__src.create_synonym(input_name, new_synonym)
+#
+#    def remove_synonym(self, input_name: str, synonym: str):
+#        """удаляет синоним"""
+#        self.__src.remove_synonym(input_name, synonym)
 
     def rename_state(self, state: StateID, name: Name):
         """Переименовывает состояние"""
