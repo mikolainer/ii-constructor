@@ -142,6 +142,9 @@ class InputDescription:
     
     def __len__(self) -> int:
         return len(self.__values)
+    
+    def _values(self) -> list[Input]:
+        return self.__values.copy()
 
 class AnswerValue:
     def as_text(self) -> str:

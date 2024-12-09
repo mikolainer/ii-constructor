@@ -159,6 +159,10 @@ class SourceInMemory(Source):
             )
 
         return self.__input_vectors.remove(name)
+    
+    def update_vector(self, name: Name, input: InputDescription):
+        self.__input_vectors.remove(name)
+        self.__input_vectors.add(input)
 
     def check_vector_exists(self, name: Name) -> bool:
         """
