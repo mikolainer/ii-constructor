@@ -305,13 +305,20 @@ class Source:
     def add_vector(self, input: InputDescription):
         """
         Сохраняет новый вектор для обработки управляющих воздействий
-        @input_type - новый вектор
+        @input - новый вектор
         """
 
     def remove_vector(self, name: Name):
         """
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
+        """
+
+    def update_vector(self, name: Name, input: InputDescription):
+        """
+        Обновляет вектор управляющих воздействий
+        @name - имя вектора для замены (идентификатор)
+        @input - новый вектор
         """
 
     def check_vector_exists(self, name: Name) -> bool:
@@ -570,21 +577,16 @@ class Scenario(ScenarioInterface):
         return self.__src.get_vector(name)
 
     def add_vector(self, input: InputDescription):
-        """
-        Сохраняет новый вектор для обработки управляющих воздействий
-        @input_type - новый вектор
-        """
         if self.check_vector_exists(input.name()):
             raise _Exists(self.get_vector(input.name()))
 
         return self.__src.add_vector(input)
 
     def remove_vector(self, name: Name):
-        """
-        Удаляет вектор управляющих воздействий
-        @name - имя вектора для удаления (идентификатор)
-        """
         self.__src.remove_vector(name)
+
+    def update_vector(self, name: Name, input: InputDescription):
+        self.__src.update_vector(name, input)
 
     def check_vector_exists(self, name: Name) -> bool:
         """

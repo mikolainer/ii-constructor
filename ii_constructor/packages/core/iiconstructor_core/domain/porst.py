@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 
-from .primitives import Name, OutputDescription, StateAttributes, StateID
+from .primitives import Name, OutputDescription, StateAttributes, StateID, InputDescription
 
 
 class ScenarioInterface:
@@ -134,6 +134,13 @@ class ScenarioInterface:
         """
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
+        """
+
+    def update_vector(self, name: Name, input: InputDescription):
+        """
+        Обновляет вектор управляющих воздействий
+        @name - имя вектора для замены (идентификатор)
+        @input - новый вектор
         """
 
     def check_vector_exists(self, name: Name) -> bool:

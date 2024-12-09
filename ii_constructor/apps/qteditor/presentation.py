@@ -35,6 +35,7 @@ from iiconstructor_core.domain.primitives import (
 )
 from iiconstructor_inmemory.repo import HostingInmem
 from iiconstructor_levenshtain import (
+    Synonym,
     LevenshtainClassificator,
     LevenshtainVector,
 )
@@ -1074,14 +1075,16 @@ class ProjectManager:
         data: ItemData,
     ) -> bool:
         try:
-            manipulator.create_synonym(
-                self.__get_vector_name_by_synonyms_model(
-                    proj,
-                    manipulator,
-                    model,
-                ),
-                data.on[CustomDataRole.Text],
+            group_name = self.__get_vector_name_by_synonyms_model(
+                proj,
+                manipulator,
+                model,
             )
+            synonym_value = data.on[CustomDataRole.Text]
+            old_vector = manipulator.interface().select_vectors([Name(group_name)])[0]
+            if isinstance(old_vector, LevenshtainVector):
+                new_vector = old_vector.add_synonym(Synonym(synonym_value))
+                manipulator.interface().update_vector(old_vector.name(), new_vector)
 
         except Exists as e:
             QMessageBox.critical(
@@ -1111,8 +1114,11 @@ class ProjectManager:
                 manipulator,
                 index.model(),
             )
-            manipulator.set_synonym_value(group_name, old_value, new_value)
-        except Exception:
+            old_vector = manipulator.interface().select_vectors([Name(group_name)])[0]
+            if isinstance(old_vector, LevenshtainVector):
+                new_vector = old_vector.change_synonoym(Synonym(old_value), Synonym(new_value))
+                manipulator.interface().update_vector(old_vector.name(), new_vector)
+        except Exception as e:
             return False
 
         return True
@@ -1130,8 +1136,12 @@ class ProjectManager:
                 index.model(),
             )
             synonym_value = index.data(CustomDataRole.Text)
-            manipulator.remove_synonym(group_name, synonym_value)
-        except Exception:
+            old_vector = manipulator.interface().select_vectors([Name(group_name)])[0]
+            if isinstance(old_vector, LevenshtainVector):
+                new_vector = old_vector.remove_synonym(Synonym(synonym_value))
+                manipulator.interface().update_vector(old_vector.name(), new_vector)
+
+        except Exception as e:
             return False
 
         return True

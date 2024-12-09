@@ -352,10 +352,11 @@ class SourceMariaDB(Source):
         )
 
         # создать синонимы
-        for synonym in input.synonyms.synonyms:
+        _name = input.name().value
+        for index in range(len(input)):
             self.__do(
                 "INSERT INTO `synonyms` (`group_name`, `value`, `project_id`) VALUES (?, ?, ?)",
-                (_name, synonym.value, self.id.value),
+                (_name, input.value(index).value(), self.id.value),
             )
 
     def remove_vector(self, name: Name):
@@ -363,6 +364,22 @@ class SourceMariaDB(Source):
             "DELETE FROM `vectors` WHERE `vectors`.`project_id` = ? AND `vectors`.`name` = ?",
             (self.id.value, name.value),
         )
+
+    def update_vector(self, name: Name, input: InputDescription):
+        if not self.check_vector_exists(name):
+            raise NotExists(name, "Вектор")
+        
+        self.__do(
+            "DELETE FROM `synonyms` WHERE `synonyms`.`project_id` = ? AND `synonyms`.`group_name` = ?",
+            (self.id.value, name.value),
+        )
+
+        _name = input.name().value
+        for index in range(len(input)):
+            self.__do(
+                "INSERT INTO `synonyms` (`group_name`, `value`, `project_id`) VALUES (?, ?, ?)",
+                (_name, input.value(index).value(), self.id.value),
+            )
 
     def check_vector_exists(self, name: Name) -> bool:
         if name is None:

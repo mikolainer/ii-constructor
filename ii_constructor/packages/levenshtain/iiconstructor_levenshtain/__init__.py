@@ -28,15 +28,15 @@ from iiconstructor_core.domain import (
     State,
     StepVectorBaseClassificator,
 )
-from iiconstructor_core.domain.exceptions import NotExists
+from iiconstructor_core.domain.exceptions import NotExists, Exists
 from iiconstructor_core.domain.porst import ScenarioInterface
 from iiconstructor_core.domain.primitives import Input, StrInput, Name
 
 
 class Synonym(StrInput):
 
-    def __eq__(self, value: object) -> bool:
-        return value.__value == self.__value
+    def __eq__(self, value: "Synonym") -> bool:
+        return value.value() == self.value()
 
 
 class LevenshtainVector(InputDescription):
@@ -44,6 +44,36 @@ class LevenshtainVector(InputDescription):
     def __init__(self, name: Name, synonyms: list[Synonym] | Synonym | None = None) -> None:
         super().__init__(name, synonyms)
 
+    def _values(self) -> list[Synonym]:
+        return super()._values()
+
+    def add_synonym(self, new_synonym: Synonym) -> "LevenshtainVector":
+        val_list = self._values()
+
+        if new_synonym in val_list:
+            raise Exists(new_synonym, "Синоним")
+
+        val_list.append(new_synonym)
+        return LevenshtainVector(self.name(), val_list)
+    
+    def remove_synonym(self, synonym_to_delete: Synonym) -> "LevenshtainVector":
+        val_list = self._values()
+
+        if synonym_to_delete not in val_list:
+            raise NotExists(synonym_to_delete)
+        
+        val_list.remove(synonym_to_delete)
+        return LevenshtainVector(self.name(), val_list)
+    
+    def change_synonoym(self, old: Synonym, new_synonym: Synonym) -> "LevenshtainVector":
+        val_list = self._values()
+
+        if old not in val_list:
+            raise NotExists(old)
+        
+        val_list.remove(old)
+        val_list.append(new_synonym)
+        return LevenshtainVector(self.name(), val_list)
 
 class LevenshtainClassificator(StepVectorBaseClassificator):
     def __init__(self, project: ScenarioInterface) -> None:
