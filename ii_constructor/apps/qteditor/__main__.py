@@ -28,7 +28,7 @@ from PySide6.QtCore import QFile, QIODevice, QTextStream
 from PySide6.QtWidgets import QApplication
 
 if __name__ == "__main__":
-    if sys.platform == "windows":
+    if sys.platform in ("windows", "win32", "win64"):
         sys.argv += ["-platform", "windows:darkmode=0"]
     elif sys.platform == "darwin":
         sys.argv += ["-platform", "cocoa:darkmode=0"]
