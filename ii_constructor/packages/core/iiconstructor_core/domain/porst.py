@@ -19,15 +19,9 @@
 # см. <https://www.gnu.org/licenses/>.
 
 
-from iiconstructor_core.domain import InputDescription, State, Step
-from iiconstructor_core.domain.primitives import (
-    Name,
-    Output,
-    ScenarioID,
-    SourceInfo,
-    StateAttributes,
-    StateID,
-)
+from __future__ import annotations
+
+from .primitives import Name, Output, StateAttributes, StateID
 
 
 class ScenarioInterface:
@@ -138,17 +132,3 @@ class ScenarioInterface:
 
     def rename_vector(self, old_name: Name, new_name: Name):
         """переименовывает группу синонимов"""
-
-
-class Hosting:
-    def add_source(self, info: SourceInfo) -> ScenarioID:
-        """Создать пустой проект"""
-
-    def get_scenario(self, id: ScenarioID) -> ScenarioInterface:
-        """Получить сценарий по id"""
-
-    def sources(self) -> list[tuple[int, str, str]]:
-        """
-        Получить информацию о существующих в хранилище сценариях
-        Возвращает список кортежей (id, name, description)
-        """

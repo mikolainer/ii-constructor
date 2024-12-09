@@ -21,8 +21,15 @@
 
 from xml.etree.ElementTree import Element, fromstring, indent, tostring
 
-from iiconstructor_core.domain import Connection, InputDescription, State, Step
+from iiconstructor_core.domain import (
+    Connection,
+    Hosting,
+    InputDescription,
+    State,
+    Step,
+)
 from iiconstructor_core.domain.exceptions import CoreException, Exists
+from iiconstructor_core.domain.porst import ScenarioInterface
 from iiconstructor_core.domain.primitives import (
     Answer,
     Description,
@@ -35,7 +42,6 @@ from iiconstructor_core.domain.primitives import (
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym, SynonymsGroup
 from iiconstructor_maria.repo import SourceMariaDB
-from iiconstructor_server_side.ports import Hosting, ScenarioInterface
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 

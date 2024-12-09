@@ -20,19 +20,26 @@
 
 
 from dataclasses import dataclass
-from typing import Union
+from typing import Optional, Union
 
 import Levenshtein
-from iiconstructor_core.domain import InputDescription, State
+from iiconstructor_core.domain import (
+    InputDescription,
+    State,
+    StepVectorBaseClassificator,
+)
 from iiconstructor_core.domain.exceptions import NotExists
+from iiconstructor_core.domain.porst import ScenarioInterface
 from iiconstructor_core.domain.primitives import Input, Name
-from iiconstructor_engine import StepVectorBaseClassificator
-from iiconstructor_server_side.ports import ScenarioInterface
 
 
 @dataclass
 class Synonym:
     value: str
+
+    # FIXME: Декоратор датакласса заменяет этот метод
+    def __eq__(self, value: object) -> bool:
+        return value.value == self.value
 
 
 class SynonymsGroup:

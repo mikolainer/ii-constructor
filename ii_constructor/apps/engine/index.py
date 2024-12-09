@@ -21,7 +21,7 @@
 
 import os
 
-from iiconstructor_core.domain import State
+from iiconstructor_core.domain import Engine, State
 from iiconstructor_core.domain.primitives import (
     Name,
     Request,
@@ -29,9 +29,8 @@ from iiconstructor_core.domain.primitives import (
     ScenarioID,
     StateID,
 )
-from iiconstructor_engine import Engine
 from iiconstructor_levenshtain import LevenshtainClassificator
-from iiconstructor_mysqlrepo import HostingMySQL
+from mysqlrepo import HostingMySQL
 
 ip = os.environ.get("IP")
 port = int(os.environ.get("PORT"))

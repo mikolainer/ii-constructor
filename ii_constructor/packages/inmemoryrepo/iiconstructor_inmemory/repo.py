@@ -21,8 +21,11 @@
 
 from iiconstructor_core.domain import (
     Connection,
+    Hosting,
     InputDescription,
     PossibleInputs,
+    Scenario,
+    ScenarioInterface,
     Source,
     State,
     Step,
@@ -37,9 +40,6 @@ from iiconstructor_core.domain.primitives import (
     StateID,
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym
-from iiconstructor_server_side.ports import Hosting, ScenarioInterface
-
-from iiconstructor_server_side import Scenario
 
 
 class SourceInMemory(Source):
