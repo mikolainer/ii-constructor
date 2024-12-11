@@ -30,11 +30,13 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.porst import ScenarioInterface
-from iiconstructor_core.domain.primitives import (
+from iiconstructor_answers import (
     PlainTextAnswer,
+    OutputDescription,
+)
+from iiconstructor_core.domain.primitives import (
     Description,
     Name,
-    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,

@@ -21,8 +21,10 @@
 
 from __future__ import annotations
 
-from .primitives import Name, OutputDescription, StateAttributes, StateID, InputDescription
-
+from .primitives import Name, StateAttributes, StateID, InputDescription
+from iiconstructor_answers import (
+    OutputDescription,
+)
 
 class ScenarioInterface:
     def get_layouts(self) -> str:

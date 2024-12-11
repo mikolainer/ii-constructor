@@ -24,13 +24,15 @@ from typing import Any, Optional
 
 from .exceptions import CoreException, Exists, NotExists
 from .porst import ScenarioInterface
-from .primitives import (
+from iiconstructor_answers import (
     PlainTextAnswer,
+    OutputDescription,
+)
+from .primitives import (
     Description,
     Input,
     StrInput,
     Name,
-    OutputDescription,
     Request,
     Response,
     ScenarioID,

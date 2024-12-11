@@ -146,51 +146,6 @@ class InputDescription:
     def _values(self) -> list[Input]:
         return self.__values.copy()
 
-class AnswerValue:
-    def as_text(self) -> str:
-        """Строковое представление"""
-
-class PlainTextAnswer(AnswerValue):
-    """Базовый класс описания ответа"""
-
-    __text: str
-    __MIN_LEN: int = 1
-    __MAX_LEN: int = 1024
-
-    def __init__(self, text:str):
-        self.__text = text
-
-    def as_text(self) -> str:
-        return self.__text
-
-    def is_valid(self) -> bool:
-        _len: int = len(self.text)
-        return self.__MIN_LEN < _len < self.__MAX_LEN
-
-
-
-class OutputDescription:
-    """Описание ответа - аттрибут состояния"""
-    __values: list[AnswerValue]
-
-    # нет сеттеров. только создание целиком.
-    def __init__(self, answer: list[AnswerValue] | AnswerValue | None = None):
-        if answer is None:
-            self.__values = [PlainTextAnswer("")]
-        elif isinstance(answer, list):
-            if len(answer) == 0:
-                self.__values = [""]
-            else:
-                self.__values = answer
-        else:
-            self.__values = [answer]
-
-    def value(self, index:int = 0) -> AnswerValue:
-        return self.__values[index]
-
-    def __len__(self) -> int:
-        return len(self.__values)
-
 @dataclass
 class StateAttributes:
     """Класс, инкапсулирующий аттрибуты состояния"""

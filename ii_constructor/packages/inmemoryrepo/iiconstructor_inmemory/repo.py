@@ -31,9 +31,11 @@ from iiconstructor_core.domain import (
     Step,
 )
 from iiconstructor_core.domain.exceptions import Exists, NotExists
+from iiconstructor_answers import (
+    OutputDescription,
+)
 from iiconstructor_core.domain.primitives import (
     Name,
-    OutputDescription,
     ScenarioID,
     SourceInfo,
     StateAttributes,

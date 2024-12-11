@@ -5,3 +5,4 @@
 -e ./ii_constructor/packages/inmemoryrepo
 -e ./ii_constructor/packages/gui
 -e ./ii_constructor/packages/diagrammscene
+-e ./ii_constructor/packages/answers
