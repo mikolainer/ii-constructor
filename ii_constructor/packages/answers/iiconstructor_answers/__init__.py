@@ -18,6 +18,8 @@
 # вместе с этой программой. Если это не так,
 # см. <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass
+
 class AnswerValue:
     def as_text(self) -> str:
         """Строковое представление"""
@@ -62,3 +64,9 @@ class OutputDescription:
 
     def __len__(self) -> int:
         return len(self.__values)
+    
+@dataclass(frozen=True)
+class State:
+    """Состояние"""
+
+    value: int
