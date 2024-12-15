@@ -423,7 +423,7 @@ class ScenarioAPI:
                     for index in range(len(vector)):
                         input = vector.value(index)
                         _synonym = Element("Синоним")
-                        _synonym.text = input.value
+                        _synonym.text = input.value()
                         _vector.append(_synonym)
                     _enter.append(_vector)
 
