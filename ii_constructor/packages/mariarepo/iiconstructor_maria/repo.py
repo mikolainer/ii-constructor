@@ -33,9 +33,9 @@ from iiconstructor_core.domain import (
     Step,
 )
 from iiconstructor_core.domain.exceptions import CoreException, NotExists
-from iiconstructor_answers import (
+from iiconstructor_answers.plaintext import (
     PlainTextAnswer,
-    OutputDescription,
+    PlainTextDescription,
 )
 from iiconstructor_core.domain.primitives import (
     Description,
@@ -133,7 +133,7 @@ class SourceMariaDB(Source):
                         Name(_name),
                         Description(_descr),
                     ),
-                    OutputDescription(PlainTextAnswer(_answer)),
+                    PlainTextDescription(PlainTextAnswer(_answer)),
                     _required,
                 ),
             )
@@ -169,7 +169,7 @@ class SourceMariaDB(Source):
                     Name(_name),
                     Description(_descr),
                 ),
-                OutputDescription(PlainTextAnswer(_answer)),
+                PlainTextDescription(PlainTextAnswer(_answer)),
                 _required,
             )
 
@@ -274,7 +274,7 @@ class SourceMariaDB(Source):
         (result,) = cur.fetchone()
         return result
 
-    def set_answer(self, state_id: StateID, data: OutputDescription):
+    def set_answer(self, state_id: StateID, data: PlainTextDescription):
         self.__do(
             "UPDATE `states` SET `answer` = ? WHERE `states`.`project_id` = ? AND `states`.`id` = ?",
             (data.value().as_text(), self.id.value, state_id.value),
@@ -400,7 +400,7 @@ class SourceMariaDB(Source):
     def create_state(
         self,
         attributes: StateAttributes,
-        output: OutputDescription,
+        output: PlainTextDescription,
         required: bool = False,
     ) -> State:
         conn: mariadb.Connection = self.__db_connection
@@ -430,7 +430,7 @@ class SourceMariaDB(Source):
                 Name(name),
                 Description(descr),
             ),
-            OutputDescription(PlainTextAnswer(answer)),
+            PlainTextDescription(PlainTextAnswer(answer)),
             required,
         )
 

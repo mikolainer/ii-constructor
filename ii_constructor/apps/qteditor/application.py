@@ -30,9 +30,9 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.porst import ScenarioInterface
-from iiconstructor_answers import (
+from iiconstructor_answers.plaintext import (
     PlainTextAnswer,
-    OutputDescription,
+    PlainTextDescription,
 )
 from iiconstructor_core.domain.primitives import (
     Description,
@@ -126,7 +126,7 @@ class HostingManipulator:
                     Name(elem.attrib["Название"]),
                     Description(""),
                 ),
-                OutputDescription(PlainTextAnswer(elem.text)),
+                PlainTextDescription(PlainTextAnswer(elem.text)),
             )
             if id_map is not None:
                 id_map[int(elem.attrib["Идентификатор"])] = state.id().value
@@ -202,7 +202,7 @@ class ScenarioAPI:
     def create_state(self, name: str) -> dict:
         state: State = self.__scenario.source().create_state(
             StateAttributes(Name(name), Description("")),
-            OutputDescription(),
+            PlainTextDescription(PlainTextAnswer("Текст ответа")),
         )
 
         return {
@@ -210,49 +210,6 @@ class ScenarioAPI:
             "name": state.attributes.name.value,
             "text": state.output().value().as_text(),
         }
-
-#    def remove_synonym(self, input_name: str, synonym: str):
-#        """удаляет синоним"""
-#        vector: LevenshtainVector = self.__scenario.get_vector(
-#            Name(input_name),
-#        )
-#        if not isinstance(vector, LevenshtainVector):
-#            raise Warning("ошибка получения вектора перехода")
-#
-#        index = vector.synonyms.synonyms.index(Synonym(synonym))
-#
-#        self.__scenario.remove_synonym(input_name, synonym)
-
-#    def create_synonym(self, input_name: str, new_synonym: str):
-#        """создаёт синоним"""
-#        vector: LevenshtainVector = self.__scenario.get_vector(
-#            Name(input_name),
-#        )
-#        if not isinstance(vector, LevenshtainVector):
-#            raise Warning("ошибка получения вектора перехода")
-#
-#        synonym = Synonym(new_synonym)
-#
-#        if synonym in vector.synonyms.synonyms:
-#            raise Exists(
-#                synonym,
-#                f'Синоним "{new_synonym}" группы "{input_name}"',
-#            )
-#
-#        self.__scenario.create_synonym(input_name, new_synonym)
-
-#    def set_synonym_value(self, input_name, old_synonym, new_synonym):
-#        """изменяет значение синонима"""
-#        vector: LevenshtainVector = self.__scenario.get_vector(
-#            Name(input_name),
-#        )
-#        if not isinstance(vector, LevenshtainVector):
-#            raise Warning("ошибка получения вектора перехода")
-#
-#        index = vector.synonyms.synonyms.index(
-#            Synonym(old_synonym),
-#        )  # raises ValueError if `old_synonym` not found
-#        self.__scenario.set_synonym_value(input_name, old_synonym, new_synonym)
 
     def remove_vector(self, input_name: str):
         """удаляет вектор"""
@@ -344,7 +301,7 @@ class ScenarioAPI:
                 Name(new_state_name),
                 Description(""),
             ),
-            OutputDescription(PlainTextAnswer("текст ответа")),
+            PlainTextDescription(PlainTextAnswer("Текст ответа")),
             vector,
         )
         to_state: State = step.connection.to_state
@@ -359,7 +316,7 @@ class ScenarioAPI:
         """изменяет ответ состояния"""
         self.__scenario.set_answer(
             StateID(state_id),
-            OutputDescription(PlainTextAnswer(new_value)),
+            PlainTextDescription(PlainTextAnswer(new_value)),
         )
 
     def rename_state(self, state_id: int, new_name: str):

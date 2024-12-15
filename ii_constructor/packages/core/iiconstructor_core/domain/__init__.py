@@ -24,9 +24,12 @@ from typing import Any, Optional
 
 from .exceptions import CoreException, Exists, NotExists
 from .porst import ScenarioInterface
-from iiconstructor_answers import (
-    PlainTextAnswer,
+from iiconstructor_answers.domain import (
     OutputDescription,
+)
+from iiconstructor_answers.plaintext import (
+    PlainTextAnswer,
+    PlainTextDescription,
 )
 from .primitives import (
     Description,
@@ -167,7 +170,7 @@ class State:
             attributes.description = Description("")
 
         if output is None or output.value().as_text() == "":
-            self.__output = OutputDescription(PlainTextAnswer("текст ответа"))
+            self.__output = PlainTextDescription(PlainTextAnswer("текст ответа"))
 
     def id(self) -> StateID:
         return self.__id
@@ -434,7 +437,7 @@ class Scenario(ScenarioInterface):
         # создаём состояние
         state_to = self.__src.create_state(
             StateAttributes(input.name(), Description("")),
-            OutputDescription(),
+            PlainTextDescription(PlainTextAnswer("Текст ответа")),
             required,
         )
 

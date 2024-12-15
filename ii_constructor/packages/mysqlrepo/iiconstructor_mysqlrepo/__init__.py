@@ -33,9 +33,9 @@ from iiconstructor_core.domain import (
     Step,
 )
 from iiconstructor_core.domain.exceptions import CoreException, NotExists
-from iiconstructor_answers import (
+from iiconstructor_answers.plaintext import (
     PlainTextAnswer,
-    OutputDescription,
+    PlainTextDescription,
 )
 from iiconstructor_core.domain.primitives import (
     Description,
@@ -133,7 +133,7 @@ class SourceMySQL(Source):
                         Name(_name),
                         Description(_descr),
                     ),
-                    OutputDescription(PlainTextAnswer(_answer)),
+                    PlainTextDescription(PlainTextAnswer(_answer)),
                     _required,
                 ),
             )
@@ -169,7 +169,7 @@ class SourceMySQL(Source):
                     Name(_name),
                     Description(_descr),
                 ),
-                OutputDescription(PlainTextAnswer(_answer)),
+                PlainTextDescription(PlainTextAnswer(_answer)),
                 _required,
             )
 
@@ -274,7 +274,7 @@ class SourceMySQL(Source):
         (result,) = cur.fetchone()
         return result
 
-    def set_answer(self, state_id: StateID, data: OutputDescription):
+    def set_answer(self, state_id: StateID, data: PlainTextDescription):
         self.__do(
             "UPDATE `states` SET `answer` = %s WHERE `states`.`project_id` = %s AND `states`.`id` = %s",
             (data.value().as_text(), self.id.value, state_id.value),
@@ -399,7 +399,7 @@ class SourceMySQL(Source):
     def create_state(
         self,
         attributes: StateAttributes,
-        output: OutputDescription,
+        output: PlainTextDescription,
         required: bool = False,
     ) -> State:
         conn: pymysql.Connection = self.__db_connection
@@ -429,7 +429,7 @@ class SourceMySQL(Source):
                 Name(name),
                 Description(descr),
             ),
-            OutputDescription(PlainTextAnswer(answer)),
+            PlainTextDescription(PlainTextAnswer(answer)),
             required,
         )
 

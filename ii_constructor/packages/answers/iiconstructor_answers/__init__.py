@@ -18,55 +18,61 @@
 # вместе с этой программой. Если это не так,
 # см. <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
+from .domain import (
+    OutputLib,
+    State,
+    OutputDescription,
+    AnswerValue,
+)
 
-class AnswerValue:
-    def as_text(self) -> str:
-        """Строковое представление"""
+from .plaintext import (
+    PlainTextAnswer,
+    PlainTextDescription,
+)
 
-class PlainTextAnswer(AnswerValue):
-    """Базовый класс описания ответа"""
+class OutputsLibAPI():
+    """Интерфейс к библиотеке ответов для прикладного уровня"""
+    __lib: OutputLib
 
-    __text: str
-    __MIN_LEN: int = 1
-    __MAX_LEN: int = 1024
+    def __init__(self, lib: OutputLib):
+        self.__lib = lib
 
-    def __init__(self, text:str):
-        self.__text = text
+    def type(self) -> str:
+        return self.__lib.attributes().items_type
 
-    def as_text(self) -> str:
-        return self.__text
+    def create_default_for(self, state_id:int):
+        """Создать привязку выходного значения по умолчанию к состоянию"""
+        self.__lib.create(State(state_id), self.__lib.make_default_output())
 
-    def is_valid(self) -> bool:
-        _len: int = len(self.text)
-        return self.__MIN_LEN < _len < self.__MAX_LEN
+    def read(self, state_id:int) -> list[list[str]]:
+        """Получить описание всех выходов состояния"""
+        result = list[list[str]]()
 
+        for output_descr in self.__lib.read(State(state_id)):
+            output_descr: OutputDescription = output_descr
 
+            out_values = list[str]()
+            for index in range(len(output_descr)):
+                val: AnswerValue = output_descr.value(index)
+                out_values.append(val.as_text())
 
-class OutputDescription:
-    """Описание ответа - аттрибут состояния"""
-    __values: list[AnswerValue]
+            result.append(out_values)
 
-    # нет сеттеров. только создание целиком.
-    def __init__(self, answer: list[AnswerValue] | AnswerValue | None = None):
-        if answer is None:
-            self.__values = [PlainTextAnswer("")]
-        elif isinstance(answer, list):
-            if len(answer) == 0:
-                self.__values = [""]
-            else:
-                self.__values = answer
-        else:
-            self.__values = [answer]
+        return result
 
-    def value(self, index:int = 0) -> AnswerValue:
-        return self.__values[index]
+    def update(self, state_id:int, old_data:str, new_data:str):
+        """Заменить одно значение другим"""
+        state = State(state_id)
+        old_value: OutputDescription = self.__lib.parse(old_data)
+        new_value: OutputDescription = self.__lib.parse(new_data)
+        self.__lib.delete(state, old_value)
+        self.__lib.create(state, new_value)
 
-    def __len__(self) -> int:
-        return len(self.__values)
-    
-@dataclass(frozen=True)
-class State:
-    """Состояние"""
+    def delete(self, state_id:int):
+        """Удалить ответы состояния"""
+        state = State(state_id)
 
-    value: int
+        for value in self.__lib.read(state):
+            value: OutputDescription = value
+            self.__lib.delete(state, value)
+
