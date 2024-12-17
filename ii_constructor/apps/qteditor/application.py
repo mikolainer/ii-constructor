@@ -127,7 +127,7 @@ class HostingManipulator:
         for elem in root.find("Состояния").findall("Состояние"):
             state: State = scenario.source().create_state(
                 StateAttributes(
-                    VectorName(elem.attrib["Название"]),
+                    StateName(elem.attrib["Название"]),
                     Description(""),
                 ),
                 PlainTextDescription(PlainTextAnswer(elem.text)),

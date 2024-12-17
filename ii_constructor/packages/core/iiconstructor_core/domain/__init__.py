@@ -439,7 +439,7 @@ class Scenario(ScenarioInterface):
 
         # создаём состояние
         state_to = self.__src.create_state(
-            StateAttributes(input.name(), Description("")),
+            StateAttributes(StateName(input.name().value), Description("")),
             PlainTextDescription(PlainTextAnswer("Текст ответа")),
             required,
         )
