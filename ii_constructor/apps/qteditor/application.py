@@ -36,7 +36,9 @@ from iiconstructor_answers.plaintext import (
 )
 from iiconstructor_core.domain.primitives import (
     Description,
-    Name,
+    StateName,
+    VectorName,
+    ProjectName,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -58,7 +60,7 @@ class HostingManipulator:
 
         new_scenario.create_enter_state(
             LevenshtainVector(
-            Name("Старт"),
+            VectorName("Старт"),
                 [
                     Synonym("Алиса, запусти навык ..."),
                 ],
@@ -67,7 +69,7 @@ class HostingManipulator:
 
         new_scenario.create_enter_state(
             LevenshtainVector(
-                Name("Информация"),
+                VectorName("Информация"),
                 [
                     Synonym("Информация"),
                     Synonym("Справка"),
@@ -79,7 +81,7 @@ class HostingManipulator:
 
         new_scenario.create_enter_state(
             LevenshtainVector(
-                Name("Помощь"),
+                VectorName("Помощь"),
                 [
                     Synonym("Помощь"),
                     Synonym("Помоги"),
@@ -101,7 +103,7 @@ class HostingManipulator:
         root: Element = fromstring(data)
 
         info = SourceInfo(
-            Name(root.attrib["Название"]),
+            ProjectName(root.attrib["Название"]),
             Description(root.attrib["Краткое_описание"]),
         )
         scenario = hosting.get_scenario(hosting.add_source(info))
@@ -114,7 +116,7 @@ class HostingManipulator:
 
             scenario.add_vector(
                 LevenshtainVector(
-                    Name(elem.attrib["Название"]),
+                    VectorName(elem.attrib["Название"]),
                     synonyms,
                 ),
             )
@@ -123,7 +125,7 @@ class HostingManipulator:
         for elem in root.find("Состояния").findall("Состояние"):
             state: State = scenario.source().create_state(
                 StateAttributes(
-                    Name(elem.attrib["Название"]),
+                    VectorName(elem.attrib["Название"]),
                     Description(""),
                 ),
                 PlainTextDescription(PlainTextAnswer(elem.text)),
@@ -157,7 +159,7 @@ class HostingManipulator:
 
                 for input in step.findall("Управляющее_воздействие"):
                     _vector = scenario.get_vector(
-                        Name(input.attrib["Название"]),
+                        VectorName(input.attrib["Название"]),
                     )
                     scenario.create_step_between(state_from_id, state_to_id, _vector)
 
@@ -201,7 +203,7 @@ class ScenarioAPI:
 
     def create_state(self, name: str) -> dict:
         state: State = self.__scenario.source().create_state(
-            StateAttributes(Name(name), Description("")),
+            StateAttributes(StateName(name), Description("")),
             PlainTextDescription(PlainTextAnswer("Текст ответа")),
         )
 
@@ -213,7 +215,7 @@ class ScenarioAPI:
 
     def remove_vector(self, input_name: str):
         """удаляет вектор"""
-        self.__scenario.remove_vector(Name(input_name))
+        self.__scenario.remove_vector(VectorName(input_name))
 
     def remove_enter(self, state_id: int):
         """удаляет точку входа (переход)"""
@@ -221,7 +223,7 @@ class ScenarioAPI:
 
     def remove_step(self, from_state_id: int, input_name: str):
         """удаляет переход"""
-        vector: InputDescription = self.__scenario.get_vector(Name(input_name))
+        vector: InputDescription = self.__scenario.get_vector(VectorName(input_name))
         self.__scenario.remove_step(StateID(from_state_id), vector)
 
     def remove_state(self, state_id: int):
@@ -230,7 +232,7 @@ class ScenarioAPI:
 
     def add_vector(self, input_name: str):
         """создаёт вектор"""
-        self.__scenario.add_vector(LevenshtainVector(Name(input_name)))
+        self.__scenario.add_vector(LevenshtainVector(VectorName(input_name)))
 
     def make_enter(
         self,
@@ -241,7 +243,7 @@ class ScenarioAPI:
         state_id_d = StateID(state_id)
         state: State = self.__scenario.states([state_id_d])[state_id_d]
 
-        vector_name = state.attributes.name
+        vector_name = VectorName(state.attributes.name.value)
 
         try:  # создаём новый вектор
             vector = LevenshtainVector(vector_name)
@@ -278,7 +280,7 @@ class ScenarioAPI:
         input_name: str,
     ):
         """создаёт переход"""
-        vector = self.__scenario.get_vector(Name(input_name))
+        vector = self.__scenario.get_vector(VectorName(input_name))
         self.__scenario.create_step_between(
             StateID(from_state_id),
             StateID(to_state_id),
@@ -294,11 +296,11 @@ class ScenarioAPI:
         """создаёт состояние с переходом в него
         возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         """
-        vector = self.__scenario.get_vector(Name(input_name))
+        vector = self.__scenario.get_vector(VectorName(input_name))
         step: Step = self.__scenario.create_step_to_new(
             StateID(from_state_id),
             StateAttributes(
-                Name(new_state_name),
+                StateName(new_state_name),
                 Description(""),
             ),
             PlainTextDescription(PlainTextAnswer("Текст ответа")),
@@ -321,11 +323,11 @@ class ScenarioAPI:
 
     def rename_state(self, state_id: int, new_name: str):
         """изменяет имя состояния"""
-        self.__scenario.rename_state(StateID(state_id), Name(new_name))
+        self.__scenario.rename_state(StateID(state_id), StateName(new_name))
 
     def rename_vector(self, old_name: str, new_name: str):
         """переименовывает группу синонимов"""
-        self.__scenario.rename_vector(Name(old_name), Name(new_name))
+        self.__scenario.rename_vector(VectorName(old_name), VectorName(new_name))
 
     def steps_from(self, from_state: int) -> dict[int, list[str]]:
         """возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов"""
@@ -463,7 +465,7 @@ class ScenarioAPI:
 
     def check_can_create_enter_state(self, name: str):
         """проверяет условия для создания точки входа в новое состояние"""
-        _name = Name(name)
+        _name = VectorName(name)
 
         # должно подняться исключение если не существует
         self.__scenario.get_vector(_name)
@@ -475,7 +477,7 @@ class ScenarioAPI:
         """создаёт состояние-вход и вектор
         возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         """
-        vector = self.__scenario.get_vector(Name(name))
+        vector = self.__scenario.get_vector(VectorName(name))
         new_enter_state_id: StateID = self.__scenario.create_enter_state(
             vector,
         )

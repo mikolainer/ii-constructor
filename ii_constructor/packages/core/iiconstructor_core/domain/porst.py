@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 
-from .primitives import Name, StateAttributes, StateID, InputDescription
+from .primitives import StateName, StateAttributes, StateID, InputDescription
 from iiconstructor_answers.domain import (
     OutputDescription,
 )
@@ -91,7 +91,7 @@ class ScenarioInterface:
 
     # геттеры
 
-    def get_states_by_name(self, name: Name) -> list[State]:
+    def get_states_by_name(self, name: StateName) -> list[State]:
         """получить все состояния с данным именем"""
 
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
@@ -113,14 +113,14 @@ class ScenarioInterface:
 
     def select_vectors(
         self,
-        names: list[Name] | None = None,
+        names: list[VectorName] | None = None,
     ) -> list[InputDescription]:
         """
         Возвращает список векторов управляющих воздействий по указанным именам
         @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
         """
 
-    def get_vector(self, name: Name) -> InputDescription:
+    def get_vector(self, name: VectorName) -> InputDescription:
         """
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
@@ -132,27 +132,27 @@ class ScenarioInterface:
         @input_type - новый вектор
         """
 
-    def remove_vector(self, name: Name):
+    def remove_vector(self, name: VectorName):
         """
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
         """
 
-    def update_vector(self, name: Name, input: InputDescription):
+    def update_vector(self, name: VectorName, input: InputDescription):
         """
         Обновляет вектор управляющих воздействий
         @name - имя вектора для замены (идентификатор)
         @input - новый вектор
         """
 
-    def check_vector_exists(self, name: Name) -> bool:
+    def check_vector_exists(self, name: VectorName) -> bool:
         """
         Проверяет существование вектора
         @name - имя вектора для проверки (идентификатор)
         """
 
-    def rename_state(self, state: StateID, name: Name):
+    def rename_state(self, state: StateID, name: VectorName):
         """Переименовывает состояние"""
 
-    def rename_vector(self, old_name: Name, new_name: Name):
+    def rename_vector(self, old_name: VectorName, new_name: VectorName):
         """переименовывает группу синонимов"""

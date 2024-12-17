@@ -35,7 +35,8 @@ from .primitives import (
     Description,
     Input,
     StrInput,
-    Name,
+    StateName,
+    VectorName,
     Request,
     Response,
     ScenarioID,
@@ -77,7 +78,7 @@ class _Exists(Exists):
 class PossibleInputs:
     """Классификатор векторов управляющих воздействий"""
 
-    __inputs: dict[Name, "InputDescription"]
+    __inputs: dict[VectorName, "InputDescription"]
     """ Хранилище существующих векторов управляющих воздействий """
 
     def __init__(self) -> None:
@@ -94,7 +95,7 @@ class PossibleInputs:
         name = input_type.name()
         self.__inputs[name] = input_type
 
-    def remove(self, name: Name):
+    def remove(self, name: VectorName):
         """
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
@@ -105,7 +106,7 @@ class PossibleInputs:
 
         del self.__inputs[name]
 
-    def get(self, name: Name) -> "InputDescription":
+    def get(self, name: VectorName) -> "InputDescription":
         """
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
@@ -118,7 +119,7 @@ class PossibleInputs:
 
     def select(
         self,
-        names: list[Name] | None = None,
+        names: list[VectorName] | None = None,
     ) -> list["InputDescription"]:
         """
         Возвращает список векторов управляющих воздействий по указанным именам
@@ -137,7 +138,7 @@ class PossibleInputs:
 
         return inputs_list
 
-    def exists(self, name: Name) -> bool:
+    def exists(self, name: VectorName) -> bool:
         """
         Проверяет существование вектора
         @name - имя вектора для проверки (идентификатор)
@@ -164,7 +165,7 @@ class State:
         self.__output = output
 
         if attributes.name is None or attributes.name.value == "":
-            attributes.name = Name(str(id.value))
+            attributes.name = StateName(str(id.value))
 
         if attributes.description is None:
             attributes.description = Description("")
@@ -273,7 +274,7 @@ class Source:
     def delete_state(self, state_id: StateID):
         """удалить состояние"""
 
-    def get_states_by_name(self, name: Name) -> list[State]:
+    def get_states_by_name(self, name: StateName) -> list[State]:
         """получить все состояния с данным именем"""
 
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
@@ -294,14 +295,14 @@ class Source:
 
     def select_vectors(
         self,
-        names: list[Name] | None = None,
+        names: list[VectorName] | None = None,
     ) -> list["InputDescription"]:
         """
         Возвращает список векторов управляющих воздействий по указанным именам
         @names - список идентификаторов для получения выборки векторов (если =None - вернёт все)
         """
 
-    def get_vector(self, name: Name) -> InputDescription:
+    def get_vector(self, name: VectorName) -> InputDescription:
         """
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
@@ -313,20 +314,20 @@ class Source:
         @input - новый вектор
         """
 
-    def remove_vector(self, name: Name):
+    def remove_vector(self, name: VectorName):
         """
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
         """
 
-    def update_vector(self, name: Name, input: InputDescription):
+    def update_vector(self, name: VectorName, input: InputDescription):
         """
         Обновляет вектор управляющих воздействий
         @name - имя вектора для замены (идентификатор)
         @input - новый вектор
         """
 
-    def check_vector_exists(self, name: Name) -> bool:
+    def check_vector_exists(self, name: VectorName) -> bool:
         """
         Проверяет существование вектора
         @name - имя вектора для проверки (идентификатор)
@@ -351,7 +352,7 @@ class Source:
         self,
         from_state: StateID | None,
         to_state: StateID,
-        input_name: Name,
+        input_name: VectorName,
     ) -> Step:
         """создаёт переходы и связи"""
 
@@ -359,7 +360,7 @@ class Source:
         self,
         from_state: StateID | None,
         to_state: StateID | None,
-        input_name: Name | None = None,
+        input_name: VectorName | None = None,
     ):
         """удаляет переходы и связи"""
 
@@ -385,10 +386,10 @@ class Source:
 #    def remove_synonym(self, input_name: str, synonym: str):
 #        """удаляет синоним"""
 
-    def rename_state(self, state: StateID, name: Name):
+    def rename_state(self, state: StateID, name: StateName):
         """Переименовывает состояние"""
 
-    def rename_vector(self, old_name: Name, new_name: Name):
+    def rename_vector(self, old_name: VectorName, new_name: VectorName):
         """переименовывает группу синонимов"""
 
 
@@ -458,7 +459,7 @@ class Scenario(ScenarioInterface):
                 )
 
         # проверяем существование вектора c именем состояния входа
-        vector_name: Name = self.states([state_id])[state_id].attributes.name
+        vector_name: VectorName = self.states([state_id])[state_id].attributes.name
         if self.check_vector_exists(vector_name):
             raise Exists(vector_name, f'Вектор с именем "{vector_name.value}"')
 
@@ -476,7 +477,7 @@ class Scenario(ScenarioInterface):
                 f'Точка входа в состояние "{state_to.id().value}"',
             )
 
-        input_name = state_to.attributes.name
+        input_name = VectorName(state_to.attributes.name.value)
         self.__src.new_step(None, state_to.id(), input_name)
 
     def create_step_between(
@@ -540,7 +541,7 @@ class Scenario(ScenarioInterface):
 
     # геттеры
 
-    def get_states_by_name(self, name: Name) -> list[State]:
+    def get_states_by_name(self, name: StateName) -> list[State]:
         """получить все состояния с данным именем"""
         return self.__src.get_states_by_name(name)
 
@@ -566,7 +567,7 @@ class Scenario(ScenarioInterface):
 
     def select_vectors(
         self,
-        names: list[Name] | None = None,
+        names: list[VectorName] | None = None,
     ) -> list["InputDescription"]:
         """
         Возвращает список векторов управляющих воздействий по указанным именам
@@ -574,7 +575,7 @@ class Scenario(ScenarioInterface):
         """
         return self.__src.select_vectors(names)
 
-    def get_vector(self, name: Name) -> InputDescription:
+    def get_vector(self, name: VectorName) -> InputDescription:
         """
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
@@ -587,13 +588,13 @@ class Scenario(ScenarioInterface):
 
         return self.__src.add_vector(input)
 
-    def remove_vector(self, name: Name):
+    def remove_vector(self, name: VectorName):
         self.__src.remove_vector(name)
 
-    def update_vector(self, name: Name, input: InputDescription):
+    def update_vector(self, name: VectorName, input: InputDescription):
         self.__src.update_vector(name, input)
 
-    def check_vector_exists(self, name: Name) -> bool:
+    def check_vector_exists(self, name: VectorName) -> bool:
         """
         Проверяет существование вектора
         @name - имя вектора для проверки (идентификатор)
@@ -617,7 +618,7 @@ class Scenario(ScenarioInterface):
 #        """удаляет синоним"""
 #        self.__src.remove_synonym(input_name, synonym)
 
-    def rename_state(self, state: StateID, name: Name):
+    def rename_state(self, state: StateID, name: StateName):
         """Переименовывает состояние"""
         if self.is_enter(self.__src.states([state])[state]):
             raise CoreException(
@@ -641,7 +642,7 @@ class Scenario(ScenarioInterface):
 
         self.__src.rename_state(state, name)
 
-    def rename_vector(self, old_name: Name, new_name: Name):
+    def rename_vector(self, old_name: VectorName, new_name: VectorName):
         """переименовывает группу синонимов"""
         for state in self.get_states_by_name(old_name):
             if self.is_enter(state):

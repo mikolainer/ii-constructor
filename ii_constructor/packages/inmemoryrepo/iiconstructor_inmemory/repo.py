@@ -35,7 +35,8 @@ from iiconstructor_answers.domain import (
     OutputDescription,
 )
 from iiconstructor_core.domain.primitives import (
-    Name,
+    StateName,
+    VectorName,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -71,7 +72,7 @@ class SourceInMemory(Source):
     def delete_state(self, state_id: StateID):
         self.__states.pop(state_id)
 
-    def get_states_by_name(self, name: Name) -> list[State]:
+    def get_states_by_name(self, name: StateName) -> list[State]:
         """получить все состояния с данным именем"""
         result = list[State]()
         for state in self.__states.values():
@@ -126,7 +127,7 @@ class SourceInMemory(Source):
 
     def select_vectors(
         self,
-        names: list[Name] | None = None,
+        names: list[VectorName] | None = None,
     ) -> list["InputDescription"]:
         """
         Возвращает список векторов управляющих воздействий по указанным именам
@@ -134,7 +135,7 @@ class SourceInMemory(Source):
         """
         return self.__input_vectors.select(names)
 
-    def get_vector(self, name: Name) -> InputDescription:
+    def get_vector(self, name: VectorName) -> InputDescription:
         """
         Возвращает вектор управляющих воздействий по имени
         @names - имя вектора (идентификатор)
@@ -148,7 +149,7 @@ class SourceInMemory(Source):
         """
         return self.__input_vectors.add(input)
 
-    def remove_vector(self, name: Name):
+    def remove_vector(self, name: VectorName):
         """
         Удаляет вектор управляющих воздействий
         @name - имя вектора для удаления (идентификатор)
@@ -162,11 +163,11 @@ class SourceInMemory(Source):
 
         return self.__input_vectors.remove(name)
     
-    def update_vector(self, name: Name, input: InputDescription):
+    def update_vector(self, name: VectorName, input: InputDescription):
         self.__input_vectors.remove(name)
         self.__input_vectors.add(input)
 
-    def check_vector_exists(self, name: Name) -> bool:
+    def check_vector_exists(self, name: VectorName) -> bool:
         """
         Проверяет существование вектора
         @name - имя вектора для проверки (идентификатор)
@@ -220,11 +221,11 @@ class SourceInMemory(Source):
         self,
         from_state: StateID | None,
         to_state: StateID,
-        input_name: Name,
+        input_name: VectorName,
     ) -> Step:
         if not isinstance(to_state, StateID):
             raise TypeError(to_state)
-        if not isinstance(input_name, Name):
+        if not isinstance(input_name, VectorName):
             raise TypeError(input_name)
         if not self.check_vector_exists(input_name):
             raise ValueError(input_name)
@@ -283,7 +284,7 @@ class SourceInMemory(Source):
         self,
         from_state: StateID | None,
         to_state: StateID | None,
-        input_name: Name | None = None,
+        input_name: VectorName | None = None,
     ):
         if from_state is None:  # точка входа
             if not isinstance(to_state, StateID):
@@ -318,30 +319,10 @@ class SourceInMemory(Source):
     def get_all_connections(self) -> dict[str, dict]:
         return self.__connections
 
-#    def set_synonym_value(
-#        self,
-#        input_name: str,
-#        old_synonym: str,
-#        new_synonym: str,
-#    ):
-#        vector: LevenshtainVector = self.get_vector(Name(input_name))
-#        synonym = Synonym(new_synonym)
-#        index = vector.synonyms.synonyms.index(Synonym(old_synonym))
-#        vector.synonyms.synonyms[index] = synonym
-#
-#    def create_synonym(self, input_name: str, new_synonym: str):
-#        vector: LevenshtainVector = self.get_vector(Name(input_name))
-#        vector.synonyms.synonyms.append(Synonym(new_synonym))
-#
-#    def remove_synonym(self, input_name: str, synonym: str):
-#        vector: LevenshtainVector = self.get_vector(Name(input_name))
-#        index = vector.synonyms.synonyms.index(Synonym(synonym))
-#        vector.synonyms.synonyms.pop(index)
-
-    def rename_state(self, state: StateID, name: Name):
+    def rename_state(self, state: StateID, name: StateName):
         self.states([state])[state].attributes.name = name
 
-    def rename_vector(self, old_name: Name, new_name: Name):
+    def rename_vector(self, old_name: VectorName, new_name: VectorName):
         self.get_vector(old_name).set_name(new_name)
 
 

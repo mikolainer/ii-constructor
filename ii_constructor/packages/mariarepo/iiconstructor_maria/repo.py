@@ -39,7 +39,9 @@ from iiconstructor_answers.plaintext import (
 )
 from iiconstructor_core.domain.primitives import (
     Description,
-    Name,
+    StateName,
+    VectorName,
+    ProjectName,
     ScenarioID,
     SourceInfo,
     StateAttributes,
@@ -68,13 +70,13 @@ class SourceMariaDB(Source):
         conn.commit()
         name, descr = cur.fetchone()
 
-        info = SourceInfo(Name(name), Description(descr))
+        info = SourceInfo(ProjectName(name), Description(descr))
         super().__init__(id, info)
 
     @staticmethod
     def __find_vector(
         list: list[InputDescription],
-        name: Name,
+        name: VectorName,
     ) -> InputDescription:
         for vector in list:
             if vector.name() == name:
@@ -116,7 +118,7 @@ class SourceMariaDB(Source):
             (self.id.value, state_id.value),
         )
 
-    def get_states_by_name(self, name: Name) -> list[State]:
+    def get_states_by_name(self, name: StateName) -> list[State]:
         query = f"SELECT id, IFNULL( name, id ) AS name, descr, answer, required FROM `states` WHERE project_id = {self.id.value} AND name = '{name.value}'"
 
         conn: mariadb.Connection = self.__db_connection
@@ -130,7 +132,7 @@ class SourceMariaDB(Source):
                 State(
                     StateID(_id),
                     StateAttributes(
-                        Name(_name),
+                        StateName(_name),
                         Description(_descr),
                     ),
                     PlainTextDescription(PlainTextAnswer(_answer)),
@@ -166,7 +168,7 @@ class SourceMariaDB(Source):
             result[s_id] = State(
                 s_id,
                 StateAttributes(
-                    Name(_name),
+                    StateName(_name),
                     Description(_descr),
                 ),
                 PlainTextDescription(PlainTextAnswer(_answer)),
@@ -190,10 +192,10 @@ class SourceMariaDB(Source):
 
         # получить все состояния и вектора
         s_id_list = list[StateID]()
-        vector_names_list = list[Name]()
+        vector_names_list = list[VectorName]()
 
         for _from_state, _to_state, _vector_name in db_result:
-            __vector_name = Name(_vector_name)
+            __vector_name = VectorName(_vector_name)
             if __vector_name not in vector_names_list:
                 vector_names_list.append(__vector_name)
 
@@ -253,7 +255,7 @@ class SourceMariaDB(Source):
 
             _conn = conns[d_key][__state_id]
             step = Step(
-                self.__find_vector(f_vectors, Name(_vector_name)),
+                self.__find_vector(f_vectors, VectorName(_vector_name)),
                 _conn,
             )
             _conn.steps.append(step)
@@ -282,7 +284,7 @@ class SourceMariaDB(Source):
 
     def select_vectors(
         self,
-        names: list[Name] | None = None,
+        names: list[VectorName] | None = None,
     ) -> list["InputDescription"]:
         if not names and names is not None:
             return list["InputDescription"]()
@@ -294,7 +296,7 @@ class SourceMariaDB(Source):
         if names is not None:
             _names = names
         else:
-            _names = list[Name]()
+            _names = list[VectorName]()
 
             cur.execute(
                 "SELECT DISTINCT `name` FROM `vectors` WHERE `project_id` = ?",
@@ -303,7 +305,7 @@ class SourceMariaDB(Source):
             conn.commit()
 
             for (val,) in cur:
-                _names.append(Name(val))
+                _names.append(VectorName(val))
 
         for _name in _names:
             if not self.check_vector_exists(_name):
@@ -323,7 +325,7 @@ class SourceMariaDB(Source):
 
         return result
 
-    def get_vector(self, name: Name) -> InputDescription:
+    def get_vector(self, name: VectorName) -> InputDescription:
         n_val = name.value
 
         if not self.check_vector_exists(name):
@@ -361,13 +363,13 @@ class SourceMariaDB(Source):
                 (_name, input.value(index).value(), self.id.value),
             )
 
-    def remove_vector(self, name: Name):
+    def remove_vector(self, name: VectorName):
         self.__do(
             "DELETE FROM `vectors` WHERE `vectors`.`project_id` = ? AND `vectors`.`name` = ?",
             (self.id.value, name.value),
         )
 
-    def update_vector(self, name: Name, input: InputDescription):
+    def update_vector(self, name: VectorName, input: InputDescription):
         if not self.check_vector_exists(name):
             raise NotExists(name, "Вектор")
         
@@ -383,7 +385,7 @@ class SourceMariaDB(Source):
                 (_name, input.value(index).value(), self.id.value),
             )
 
-    def check_vector_exists(self, name: Name) -> bool:
+    def check_vector_exists(self, name: VectorName) -> bool:
         if name is None:
             return False
 
@@ -427,7 +429,7 @@ class SourceMariaDB(Source):
         return State(
             StateID(id),
             StateAttributes(
-                Name(name),
+                StateName(name),
                 Description(descr),
             ),
             PlainTextDescription(PlainTextAnswer(answer)),
@@ -448,10 +450,10 @@ class SourceMariaDB(Source):
 
         # получить все состояния и вектора
         s_id_list: list[StateID] = []
-        vector_names_list: list[Name] = []
+        vector_names_list: list[VectorName] = []
 
         for _from_state, _to_state, _vector_name in db_result:
-            __vector_name = Name(_vector_name)
+            __vector_name = VectorName(_vector_name)
             if __vector_name not in vector_names_list:
                 vector_names_list.append(__vector_name)
 
@@ -482,7 +484,7 @@ class SourceMariaDB(Source):
             if _from_state is not None:
                 _conn = conns[StateID(_from_state)]
                 step = Step(
-                    self.__find_vector(f_vectors, Name(_vector_name)),
+                    self.__find_vector(f_vectors, VectorName(_vector_name)),
                     _conn,
                 )
                 _conn.steps.append(step)
@@ -519,7 +521,7 @@ class SourceMariaDB(Source):
         self,
         from_state: StateID | None,
         to_state: StateID,
-        input_name: Name,
+        input_name: VectorName,
     ) -> Step:
         conn: mariadb.Connection = self.__db_connection
         cur = conn.cursor()
@@ -544,7 +546,7 @@ class SourceMariaDB(Source):
             else None
         )
         state_to = states[StateID(to_id)]
-        input: LevenshtainVector = self.get_vector(Name(in_name))
+        input: LevenshtainVector = self.get_vector(VectorName(in_name))
 
         return Step(
             input,
@@ -555,7 +557,7 @@ class SourceMariaDB(Source):
         self,
         from_state: StateID | None,
         to_state: StateID | None,
-        input_name: Name | None = None,
+        input_name: VectorName | None = None,
     ):
         if from_state is None:
             self.__do(
@@ -643,7 +645,7 @@ class SourceMariaDB(Source):
                     break
 
             step = Step(
-                self.__find_vector(f_vectors, Name(_vector_name)),
+                self.__find_vector(f_vectors, VectorName(_vector_name)),
                 _conn,
             )
             _conn.steps.append(step)  # вроде должны быть уникальными
@@ -653,7 +655,7 @@ class SourceMariaDB(Source):
             __to_state_id = StateID(_to_state)
             _conn = result["to"][__to_state_id]
             step = Step(
-                self.__find_vector(f_vectors, Name(_vector_name)),
+                self.__find_vector(f_vectors, VectorName(_vector_name)),
                 _conn,
             )
             _conn.steps.append(step)  # вроде должны быть уникальными
@@ -683,13 +685,13 @@ class SourceMariaDB(Source):
 #            (self.id.value, input_name, synonym),
 #        )
 
-    def rename_state(self, state: StateID, name: Name):
+    def rename_state(self, state: StateID, name: StateName):
         self.__do(
             "UPDATE `states` SET `name`= ? WHERE `project_id`= ? AND `id`= ?",
             (name.value, self.id.value, state.value),
         )
 
-    def rename_vector(self, old_name: Name, new_name: Name):
+    def rename_vector(self, old_name: VectorName, new_name: VectorName):
         self.__do(
             "UPDATE `vectors` SET `name`= ? WHERE `project_id`= ? AND `name`= ?",
             (new_name.value, self.id.value, old_name.value),

@@ -29,7 +29,9 @@ from iiconstructor_core.domain import Engine, State
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.primitives import (
     Description,
-    Name,
+    StateName,
+    VectorName,
+    ProjectName,
     Request,
     SourceInfo,
 )
@@ -618,7 +620,7 @@ class ProjectManager:
             return
 
         info = SourceInfo(
-            Name(dialog.name()),
+            ProjectName(dialog.name()),
             Description(dialog.description()),
         )
 
@@ -694,7 +696,7 @@ class ProjectManager:
                     return
 
                 info = SourceInfo(
-                    Name(dialog.name()),
+                    ProjectName(dialog.name()),
                     Description(dialog.description()),
                 )
                 manipulator = HostingManipulator.make_scenario(
@@ -1081,7 +1083,7 @@ class ProjectManager:
                 model,
             )
             synonym_value = data.on[CustomDataRole.Text]
-            old_vector = manipulator.interface().select_vectors([Name(group_name)])[0]
+            old_vector = manipulator.interface().select_vectors([VectorName(group_name)])[0]
             if isinstance(old_vector, LevenshtainVector):
                 new_vector = old_vector.add_synonym(Synonym(synonym_value))
                 manipulator.interface().update_vector(old_vector.name(), new_vector)
@@ -1114,7 +1116,7 @@ class ProjectManager:
                 manipulator,
                 index.model(),
             )
-            old_vector = manipulator.interface().select_vectors([Name(group_name)])[0]
+            old_vector = manipulator.interface().select_vectors([VectorName(group_name)])[0]
             if isinstance(old_vector, LevenshtainVector):
                 new_vector = old_vector.change_synonoym(Synonym(old_value), Synonym(new_value))
                 manipulator.interface().update_vector(old_vector.name(), new_vector)
@@ -1136,7 +1138,7 @@ class ProjectManager:
                 index.model(),
             )
             synonym_value = index.data(CustomDataRole.Text)
-            old_vector = manipulator.interface().select_vectors([Name(group_name)])[0]
+            old_vector = manipulator.interface().select_vectors([VectorName(group_name)])[0]
             if isinstance(old_vector, LevenshtainVector):
                 new_vector = old_vector.remove_synonym(Synonym(synonym_value))
                 manipulator.interface().update_vector(old_vector.name(), new_vector)
@@ -1224,7 +1226,7 @@ class TestDialog(QWidget):
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
 
         start_state: State = manipulator.interface().get_states_by_name(
-            Name("Старт"),
+            StateName("Старт"),
         )[0]
         self.__engine = Engine(
             LevenshtainClassificator(manipulator.interface()),

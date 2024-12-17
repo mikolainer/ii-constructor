@@ -30,7 +30,7 @@ from iiconstructor_core.domain import (
 )
 from iiconstructor_core.domain.exceptions import NotExists, Exists
 from iiconstructor_core.domain.porst import ScenarioInterface
-from iiconstructor_core.domain.primitives import Input, StrInput, Name
+from iiconstructor_core.domain.primitives import Input, StrInput, VectorName
 
 
 class Synonym(StrInput):
@@ -41,7 +41,7 @@ class Synonym(StrInput):
 
 class LevenshtainVector(InputDescription):
 
-    def __init__(self, name: Name, synonyms: list[Synonym] | Synonym | None = None) -> None:
+    def __init__(self, name: VectorName, synonyms: list[Synonym] | Synonym | None = None) -> None:
         super().__init__(name, synonyms)
 
     def _values(self) -> list[Synonym]:
@@ -92,7 +92,7 @@ class LevenshtainClassificator(StepVectorBaseClassificator):
 
         for key, val in possible_inputs.items():
             vector = self._StepVectorBaseClassificator__project.get_vector(
-                Name(key),
+                VectorName(key),
             )
             if not isinstance(vector, LevenshtainVector):
                 continue

@@ -21,9 +21,8 @@
 
 from dataclasses import dataclass
 
-
 @dataclass(frozen=True)
-class Name:
+class ProjectName:
     """Аттрибут названия для именуемых объектов"""
 
     value: str
@@ -36,7 +35,41 @@ class Name:
         return self.__MIN_LEN < _len < self.__MAX_LEN
 
     def __eq__(self, value: object) -> bool:
-        return isinstance(value, Name) and value.value == self.value
+        return isinstance(value, ProjectName) and value.value == self.value
+
+
+@dataclass(frozen=True)
+class VectorName:
+    """Аттрибут названия для именуемых объектов"""
+
+    value: str
+
+    __MIN_LEN: int = 0
+    __MAX_LEN: int = 512
+
+    def is_valid(self) -> bool:
+        _len: int = len(self.value)
+        return self.__MIN_LEN < _len < self.__MAX_LEN
+
+    def __eq__(self, value: object) -> bool:
+        return isinstance(value, VectorName) and value.value == self.value
+
+
+@dataclass(frozen=True)
+class StateName:
+    """Аттрибут названия для именуемых объектов"""
+
+    value: str
+
+    __MIN_LEN: int = 0
+    __MAX_LEN: int = 512
+
+    def is_valid(self) -> bool:
+        _len: int = len(self.value)
+        return self.__MIN_LEN < _len < self.__MAX_LEN
+
+    def __eq__(self, value: object) -> bool:
+        return isinstance(value, StateName) and value.value == self.value
 
 
 @dataclass(frozen=True)
@@ -70,7 +103,7 @@ class StateID:
 class SourceInfo:
     """Класс, инкапсулирующий аттрибуты сценария"""
 
-    name: Name
+    name: ProjectName
     description: Description
 
 
@@ -110,11 +143,11 @@ class StrInput(Input):
         return self.__MIN_LEN < _len < self.__MAX_LEN
     
 class InputDescription:
-    __name: Name
+    __name: VectorName
     __values: list[Input]
 
     # нет сеттеров. только создание целиком.
-    def __init__(self, name: Name, value: list[Input] | Input | None) -> None:
+    def __init__(self, name: VectorName, value: list[Input] | Input | None) -> None:
         self.__name = name
         if value is None:
             self.__values = [StrInput("")]
@@ -129,10 +162,10 @@ class InputDescription:
     def value(self, index:int = 0) -> Input:
         return self.__values[index]
 
-    def name(self) -> Name:
+    def name(self) -> VectorName:
         return self.__name
 
-    def set_name(self, new_name: Name) -> None:
+    def set_name(self, new_name: VectorName) -> None:
         self.__name = new_name
 
     def __eq__(self, value: object) -> bool:
@@ -150,5 +183,5 @@ class InputDescription:
 class StateAttributes:
     """Класс, инкапсулирующий аттрибуты состояния"""
 
-    name: Name
+    name: StateName
     description: Description
