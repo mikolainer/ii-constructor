@@ -24,13 +24,17 @@ from typing import Optional, Union
 
 import Levenshtein
 from iiconstructor_core.domain import (
-    InputDescription,
     State,
     StepVectorBaseClassificator,
 )
 from iiconstructor_core.domain.exceptions import NotExists, Exists
 from iiconstructor_core.domain.porst import ScenarioInterface
-from iiconstructor_core.domain.primitives import Input, StrInput, VectorName
+from iiconstructor_inputvectors.domain import (
+    Input,
+    StrInput,
+    VectorName,
+    InputDescription,
+)
 
 
 class Synonym(StrInput):

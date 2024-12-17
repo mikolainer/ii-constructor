@@ -22,7 +22,6 @@
 from iiconstructor_core.domain import (
     Connection,
     Hosting,
-    InputDescription,
     PossibleInputs,
     Scenario,
     ScenarioInterface,
@@ -34,9 +33,12 @@ from iiconstructor_core.domain.exceptions import Exists, NotExists
 from iiconstructor_answers.domain import (
     OutputDescription,
 )
+from iiconstructor_inputvectors.domain import (
+    InputDescription,
+    VectorName,
+)
 from iiconstructor_core.domain.primitives import (
     StateName,
-    VectorName,
     ScenarioID,
     SourceInfo,
     StateAttributes,

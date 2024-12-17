@@ -30,10 +30,12 @@ from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.primitives import (
     Description,
     StateName,
-    VectorName,
     ProjectName,
     Request,
     SourceInfo,
+)
+from iiconstructor_inputvectors.domain import (
+    VectorName,
 )
 from iiconstructor_inmemory.repo import HostingInmem
 from iiconstructor_levenshtain import (

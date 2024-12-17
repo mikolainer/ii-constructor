@@ -25,7 +25,6 @@ import pymysql
 from iiconstructor_core.domain import (
     Connection,
     Hosting,
-    InputDescription,
     Scenario,
     ScenarioInterface,
     Source,
@@ -37,10 +36,13 @@ from iiconstructor_answers.plaintext import (
     PlainTextAnswer,
     PlainTextDescription,
 )
+from iiconstructor_inputvectors.domain import (
+    InputDescription,
+    VectorName,
+)
 from iiconstructor_core.domain.primitives import (
     Description,
     StateName,
-    VectorName,
     ProjectName,
     ScenarioID,
     SourceInfo,

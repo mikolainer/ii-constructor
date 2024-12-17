@@ -31,19 +31,21 @@ from iiconstructor_answers.plaintext import (
     PlainTextAnswer,
     PlainTextDescription,
 )
-from .primitives import (
-    Description,
+from iiconstructor_inputvectors.domain import (
     Input,
     StrInput,
-    StateName,
     VectorName,
+    InputDescription,
+)
+from .primitives import (
+    Description,
+    StateName,
     Request,
     Response,
     ScenarioID,
     SourceInfo,
     StateAttributes,
     StateID,
-    InputDescription,
 )
 
 

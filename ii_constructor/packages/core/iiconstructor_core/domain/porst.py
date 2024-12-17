@@ -21,9 +21,13 @@
 
 from __future__ import annotations
 
-from .primitives import StateName, StateAttributes, StateID, InputDescription
+from .primitives import StateName, StateAttributes, StateID
 from iiconstructor_answers.domain import (
     OutputDescription,
+)
+from iiconstructor_inputvectors.domain import (
+    InputDescription,
+    VectorName,
 )
 
 class ScenarioInterface:
