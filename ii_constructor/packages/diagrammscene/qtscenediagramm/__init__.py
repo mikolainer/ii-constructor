@@ -1002,15 +1002,27 @@ class EditorView(QGraphicsView):
 
 
 class Editor(QGraphicsScene):
-    __START_SIZE = QRect(0, 0, 2000, 2000)
+    __START_SIZE = QRect(0, 0, 1000, 1000)
     START_SPACINS = 30
 
     doubleClicked = Signal(QPointF)
 
     def __init__(self, parent: QObject | None) -> None:
         super().__init__(parent)
-        # self.setSceneRect(self.__START_SIZE)
+        self.__make_start_rect_anchors()
         self.setBackgroundBrush(QColor("#DDDDDD"))
+
+    def __make_start_rect_anchors(self):
+        temp = self.addRect(0,0,1,1, QColor(Qt.GlobalColor.transparent))
+        temp.moveBy(
+            0 - self.__START_SIZE.x(),
+            0 - self.__START_SIZE.y()
+        )
+        temp = self.addRect(0,0,1,1, QColor(Qt.GlobalColor.transparent))
+        temp.moveBy(
+            self.__START_SIZE.width() - self.__START_SIZE.x() -1,
+            self.__START_SIZE.height() - self.__START_SIZE.y() -1
+        )
 
     def addNode(self, pos: QPoint, content: QWidget = None) -> SceneNode:
         """Добавляет вершину графа на сцену"""

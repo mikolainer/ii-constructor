@@ -18631,7 +18631,7 @@
 							"left": 926,
 							"top": 1996,
 							"width": 1176,
-							"height": 616
+							"height": 340
 						},
 						{
 							"_type": "UMLTextView",
@@ -18641,10 +18641,10 @@
 							},
 							"fillColor": "#c6c6c6",
 							"font": "Arial;36;0",
-							"left": 1454,
-							"top": 2436,
-							"width": 246.337890625,
-							"height": 120,
+							"left": 1176,
+							"top": 2216,
+							"width": 480,
+							"height": 48,
 							"text": "контекст синонимов"
 						},
 						{
@@ -18669,9 +18669,9 @@
 							"fillColor": "#D8F2FF",
 							"font": "Arial;16;0",
 							"left": 3912,
-							"top": 216,
+							"top": 256,
 							"width": 2064,
-							"height": 1464
+							"height": 1424
 						},
 						{
 							"_type": "RectangleView",
@@ -38014,8 +38014,8 @@
 							},
 							"fillColor": "#c6c6c6",
 							"font": "Arial;36;0",
-							"left": 4216,
-							"top": 360,
+							"left": 4104,
+							"top": 440,
 							"width": 182.58203125,
 							"height": 84,
 							"text": "контекст редактора"
