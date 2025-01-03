@@ -474,21 +474,3 @@ class ScenarioAPI:
 
         if len(self.__scenario.get_states_by_name(_name)) > 0:
             raise CoreException(f'Состояние с именем "{name}" уже существует!')
-
-    def create_enter_state(self, name: str) -> dict:
-        """создаёт состояние-вход и вектор
-        возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
-        """
-        vector = self.__scenario.get_vector(VectorName(name))
-        new_enter_state_id: StateID = self.__scenario.create_enter_state(
-            vector,
-        )
-        new_enter_state = self.__scenario.states([new_enter_state_id])[
-            new_enter_state_id
-        ]
-
-        return {
-            "id": new_enter_state.id().value,
-            "name": new_enter_state.attributes.name.value,
-            "text": new_enter_state.attributes.output.value.text,
-        }

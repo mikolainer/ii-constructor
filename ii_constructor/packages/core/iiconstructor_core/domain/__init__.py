@@ -516,6 +516,9 @@ class Scenario(ScenarioInterface):
         if self.states([state_id])[state_id].required:
             raise Exception("Обязательное состояние нельзя удалить!")
 
+        # TODO: изменить логику.
+        # нельзя оставлять состояния без связей.
+        # нужно удалять состояние вместе со всеми связями
         if len(self.steps(state_id)) > 0:
             raise Exists(
                 state_id,
@@ -528,6 +531,8 @@ class Scenario(ScenarioInterface):
         """удаляет связь с командой входа в состояние"""
         enter_state = self.states([state_id])[state_id]
 
+        # TODO: изменить логику.
+        # нельзя оставлять состояния без связей.
         if enter_state.required:
             raise Exception("Обязательную точку входа нельзя удалить!")
 
@@ -539,6 +544,8 @@ class Scenario(ScenarioInterface):
         @from_state_id: состояние - обработчик управляющих воздействий
         @input: управляющее воздействие
         """
+        # TODO: изменить логику.
+        # нельзя оставлять состояния без связей.
         self.__src.delete_step(from_state_id, None, input.name())
 
     # геттеры
