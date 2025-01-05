@@ -230,12 +230,12 @@ class SourceMySQL(Source):
         # сформировать все Connection
         for pair in pairs_to:
             if pair is None:
-                conns["to"][None] = Connection(None, state_mid, [])
+                conns["to"][None] = Connection(None, state_mid.id(), [])
             else:
-                conns["to"][pair] = Connection(f_states[pair], state_mid, [])
+                conns["to"][pair] = Connection(f_states[pair].id(), state_mid.id(), [])
 
         for pair in pairs_from:
-            conns["from"][pair] = Connection(state_mid, f_states[pair], [])
+            conns["from"][pair] = Connection(state_mid.id(), f_states[pair].id(), [])
 
         # заполнить все Connection переходами и сформировать результат
         result = list[Step]()
@@ -478,7 +478,7 @@ class SourceMySQL(Source):
         # сформировать все Connection
         for pair in pairs_from:
             if pair is not None:
-                conns[pair] = Connection(f_states[pair], state_mid, [])
+                conns[pair] = Connection(f_states[pair].id(), state_mid.id(), [])
 
         # заполнить все Connection переходами и сформировать результат
         for _from_state, _to_state, _vector_name in db_result:
@@ -551,7 +551,7 @@ class SourceMySQL(Source):
 
         return Step(
             input,
-            Connection(state_from, state_to, None)#, input.synonyms.synonyms), # wtf?
+            Connection(state_from.id(), state_to.id(), None)#, input.synonyms.synonyms), # wtf?
         )
 
     def delete_step(
@@ -619,7 +619,7 @@ class SourceMySQL(Source):
 
             if skip_append:
                 continue
-            __conn_list.append(Connection(__from_state, __to_state, []))
+            __conn_list.append(Connection(__from_state.id(), __to_state.id(), []))
 
         for _from_state, _to_state, _vector_name in db_result_to:
             __to_state_id = StateID(_to_state)
@@ -628,7 +628,7 @@ class SourceMySQL(Source):
 
             result["to"][__to_state_id] = Connection(
                 None,
-                f_states[__to_state_id],
+                f_states[__to_state_id].id(),
                 [],
             )
 
@@ -641,7 +641,7 @@ class SourceMySQL(Source):
             __to_state_id = StateID(_to_state)
             # raise not _from_state is None
             for __conn in result["from"][__from_state_id]:
-                if __conn.to_state.id() == __to_state_id:
+                if __conn.to_state == __to_state_id:
                     _conn = __conn
                     break
 

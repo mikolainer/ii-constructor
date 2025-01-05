@@ -192,8 +192,8 @@ class Step:
 
 @dataclass
 class Connection:
-    from_state: State | None
-    to_state: State | None
+    from_state: StateID | None
+    to_state: StateID | None
     steps: list[Step]
 
 
@@ -220,7 +220,7 @@ class StepVectorBaseClassificator:
             step: Step = step
 
             cur_state = step.connection.from_state
-            if cur_state is None or cur_state.id() != cur_state_id:
+            if cur_state is None or cur_state != cur_state_id:
                 continue
 
             inputs[step.input.name().value] = step.connection.to_state
@@ -234,7 +234,9 @@ class StepVectorBaseClassificator:
             self.__project.source().get_all_connections()["to"].values()
         ):
             conn: Connection = conn
-            to: State = conn.to_state
+            to: State = None
+            if isinstance(conn.to_state, StateID):
+                to = self.__project.states([conn.to_state])[conn.to_state]
 
             for step in conn.steps:
                 inputs[step.input.name().value] = to
@@ -373,20 +375,6 @@ class Source:
         ключи: 'from', 'to'; значения: to=dict[StateID, Connection], from=dict[StateID, list[Connection]]
         """
         # TODO: оптимизировать API. (фактически в память выгружается вся база)
-
-#    def set_synonym_value(
-#        self,
-#        input_name: str,
-#        old_synonym: str,
-#        new_synonym: str,
-#    ):
-#        """изменяет значение синонима"""
-#
-#    def create_synonym(self, input_name: str, new_synonym: str):
-#        """создаёт синоним"""
-#
-#    def remove_synonym(self, input_name: str, synonym: str):
-#        """удаляет синоним"""
 
     def rename_state(self, state: StateID, name: StateName):
         """Переименовывает состояние"""

@@ -308,7 +308,9 @@ class ScenarioAPI:
             PlainTextDescription(PlainTextAnswer("Текст ответа")),
             vector,
         )
-        to_state: State = step.connection.to_state
+        to_state: State = self.__scenario.states(
+            [step.connection.to_state]
+        )[step.connection.to_state]
 
         return {
             "id": to_state.id().value,
@@ -341,7 +343,7 @@ class ScenarioAPI:
 
             if (
                 step.connection.from_state is None
-                or step.connection.from_state.id().value != from_state
+                or step.connection.from_state.value != from_state
             ):
                 continue
 
@@ -439,7 +441,7 @@ class ScenarioAPI:
                 conn: Connection = conn  # просто аннотирование
                 _step = Element(
                     "Переход",
-                    {"В_состояние": str(conn.to_state.id().value)},
+                    {"В_состояние": str(conn.to_state.value)},
                 )
                 for step in conn.steps:
                     vector: LevenshtainVector = step.input

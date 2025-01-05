@@ -90,7 +90,7 @@ class ConnectionPrivate:
     def to_state(self) -> int:
         return self.__to_state
 
-    def new_input(self, input: InputDescription):
+    def add_input(self, input: InputDescription):
         pass
 
     def delete_input(self, input: InputDescription):

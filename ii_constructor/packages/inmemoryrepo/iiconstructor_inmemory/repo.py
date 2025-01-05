@@ -192,8 +192,8 @@ class SourceInMemory(Source):
         result = list[Connection]()
         for connections in self.__connections["from"].values():
             for conn in connections:
-                to_state: State = conn.to_state
-                if to_state is not None and to_state.id() == state_id:
+                to_state: StateID = conn.to_state
+                if to_state is not None and to_state == state_id:
                     result.append(conn)
 
         return result
@@ -235,7 +235,7 @@ class SourceInMemory(Source):
         new_step: Step
 
         if from_state is None:  # точка входа
-            conn = Connection(None, self.__states[to_state], [])
+            conn = Connection(None, self.__states[to_state].id(), [])
             new_step = Step(self.__input_vectors.get(input_name), conn)
             conn.steps.append(new_step)
             self.__connections["to"][to_state] = conn
@@ -248,8 +248,8 @@ class SourceInMemory(Source):
 
             state_to = self.__states[to_state]
             new_conn = Connection(
-                self.__states[from_state],
-                self.__states[to_state],
+                self.__states[from_state].id(),
+                self.__states[to_state].id(),
                 [],
             )
 
@@ -262,7 +262,7 @@ class SourceInMemory(Source):
                 found: Connection = None
                 for _conn in self.__connections["from"][from_state]:
                     _conn: Connection = _conn
-                    if _conn.to_state == state_to:
+                    if _conn.to_state == state_to.id():
                         found = _conn
                         break
 
