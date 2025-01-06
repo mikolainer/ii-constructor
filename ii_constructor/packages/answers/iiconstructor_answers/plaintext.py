@@ -40,10 +40,12 @@ class PlainTextOutputLib(OutputLib):
     def make_default_output() -> OutputDescription:
         return PlainTextDescription(PlainTextAnswer("Текст ответа"))
 
-    def parse(self, value: str) -> OutputDescription:
+    @staticmethod
+    def parse(value: str) -> OutputDescription:
         return PlainTextDescription(PlainTextAnswer(value))
 
-    def serialize(self, value: OutputDescription) -> str:
+    @staticmethod
+    def serialize(value: OutputDescription) -> str:
         return value.value().as_text()
 
 
