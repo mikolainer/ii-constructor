@@ -47,7 +47,7 @@ from iiconstructor_core.domain.primitives import (
     StateID,
 )
 from iiconstructor_levenshtain import LevenshtainVector, Synonym
-from iiconstructor_maria.repo import SourceMariaDB
+#from iiconstructor_maria.repo import SourceMariaDB
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 
@@ -191,7 +191,8 @@ class ScenarioAPI:
         return self.__scenario.source().info.description.value
 
     def in_db(self) -> bool:
-        return isinstance(self.__scenario.source(), SourceMariaDB)
+        return False
+        #return isinstance(self.__scenario.source(), SourceMariaDB)
 
     # TODO заменить собственным интерфейсом
     def interface(self) -> ScenarioInterface:

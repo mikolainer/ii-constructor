@@ -25,7 +25,7 @@ from typing import Any
 
 from application import HostingManipulator, ScenarioAPI
 from data import LevenshtainVectorSerializer
-from iiconstructor_core.domain import Engine, State
+from iiconstructor_core.domain import Engine, State, Hosting
 from iiconstructor_core.domain.exceptions import CoreException, Exists
 from iiconstructor_core.domain.primitives import (
     Description,
@@ -43,7 +43,7 @@ from iiconstructor_levenshtain import (
     LevenshtainClassificator,
     LevenshtainVector,
 )
-from iiconstructor_maria.repo import Hosting, HostingMaria
+#from iiconstructor_maria.repo import HostingMaria
 from iiconstructor_qtgui.data import CustomDataRole, ItemData, SynonymsSetModel
 from iiconstructor_qtgui.flows import FlowListWidget, FlowsModel, FlowsView
 from iiconstructor_qtgui.main_w import (
@@ -229,14 +229,14 @@ class ProjectManager:
     __esc_sqortcut: QShortcut
 
     __inmem_hosting: HostingInmem
-    __maria_hosting: HostingMaria
+    #__maria_hosting: HostingMaria
 
     __is_enter_create_mode: bool
 
     def __init__(self) -> None:
         self.__is_enter_create_mode = False
 
-        self.__maria_hosting = HostingMaria()
+        #self.__maria_hosting = HostingMaria()
         self.__inmem_hosting = HostingInmem()
         self.__workspaces = Workspaces()
         self.__flow_list = FlowList()
@@ -665,103 +665,104 @@ class ProjectManager:
             )
 
     def db_connections(self):
-        while not self.__maria_hosting.connected():
-            dialog = DBConnectWidget(self.__main_window)
-            ok = dialog.exec()
-            if ok == QDialog.DialogCode.Rejected:
-                return
-
-            data = dialog.data()
-            ip = data["ip"]
-            port = data["port"]
-            username = data["user"]
-            password = data["password"]
-            self.__maria_hosting.connect(ip, port, username, password)
-
-            if not self.__maria_hosting.connected():
-                QMessageBox.warning(
-                    self.__main_window,
-                    "Ошибка",
-                    "Не удалось подключиться!",
-                )
-
-        if self.__maria_hosting.connected():
-            dialog = DBProjLibrary(self.__maria_hosting, self.__main_window)
-            ok = dialog.exec()
-            if ok == QDialog.DialogCode.Rejected:
-                return
-
-            selected_id: int = dialog.proj_id()
-            if selected_id == -1:  # create new
-                dialog = NewProjectDialog(self.__main_window)
-                if dialog.exec() == QDialog.DialogCode.Rejected:
-                    return
-
-                info = SourceInfo(
-                    ProjectName(dialog.name()),
-                    Description(dialog.description()),
-                )
-                manipulator = HostingManipulator.make_scenario(
-                    self.__maria_hosting,
-                    info,
-                )
-
-                scene_ctrl = self.__open_project(manipulator)
-
-            elif selected_id == -2:  # load from file
-                path, filetype = QFileDialog.getOpenFileName(
-                    self.__main_window,
-                    "Выбрать файл для загрузки в БД",
-                )
-
-                if not path:
-                    return
-
-                data: str
-                with open(path) as file:
-                    data = "".join(file.readlines())
-
-                map = dict[int, int]()
-                manipulator = HostingManipulator.load_scenario(
-                    self.__maria_hosting,
-                    data,
-                    map,
-                )
-                scene_ctrl = self.__open_project(manipulator)
-
-                lay_path = path + ".lay"
-                if os.path.exists(lay_path):
-                    with open(path + ".lay") as lay_file:
-                        scene_ctrl.load_layout(
-                            "".join(lay_file.readlines()),
-                            map,
-                        )
-                else:
-                    QMessageBox.warning(
-                        self.__main_window,
-                        "Не удалось найти файл .lay",
-                        "Не удалось найти файл .lay",
-                    )
-
-            else:  # if selected_id >= 0:
-                for proj in self.__projects.values():
-                    if (
-                        proj.manipulator.in_db()
-                        and proj.manipulator.id() == selected_id
-                    ):
-                        QMessageBox.warning(
-                            self.__main_window,
-                            "Невозможно выполнить!",
-                            "Проект уже открыт!",
-                        )
-                        return
-
-                manipulator = HostingManipulator.open_scenario(
-                    self.__maria_hosting,
-                    selected_id,
-                )
-                scene_ctrl = self.__open_project(manipulator)
-                scene_ctrl.load_layout(manipulator.get_layouts())
+        pass
+#        while not self.__maria_hosting.connected():
+#            dialog = DBConnectWidget(self.__main_window)
+#            ok = dialog.exec()
+#            if ok == QDialog.DialogCode.Rejected:
+#                return
+#
+#            data = dialog.data()
+#            ip = data["ip"]
+#            port = data["port"]
+#            username = data["user"]
+#            password = data["password"]
+#            self.__maria_hosting.connect(ip, port, username, password)
+#
+#            if not self.__maria_hosting.connected():
+#                QMessageBox.warning(
+#                    self.__main_window,
+#                    "Ошибка",
+#                    "Не удалось подключиться!",
+#                )
+#
+#        if self.__maria_hosting.connected():
+#            dialog = DBProjLibrary(self.__maria_hosting, self.__main_window)
+#            ok = dialog.exec()
+#            if ok == QDialog.DialogCode.Rejected:
+#                return
+#
+#            selected_id: int = dialog.proj_id()
+#            if selected_id == -1:  # create new
+#                dialog = NewProjectDialog(self.__main_window)
+#                if dialog.exec() == QDialog.DialogCode.Rejected:
+#                    return
+#
+#                info = SourceInfo(
+#                    ProjectName(dialog.name()),
+#                    Description(dialog.description()),
+#                )
+#                manipulator = HostingManipulator.make_scenario(
+#                    self.__maria_hosting,
+#                    info,
+#                )
+#
+#                scene_ctrl = self.__open_project(manipulator)
+#
+#            elif selected_id == -2:  # load from file
+#                path, filetype = QFileDialog.getOpenFileName(
+#                    self.__main_window,
+#                    "Выбрать файл для загрузки в БД",
+#                )
+#
+#                if not path:
+#                    return
+#
+#                data: str
+#                with open(path) as file:
+#                    data = "".join(file.readlines())
+#
+#                map = dict[int, int]()
+#                manipulator = HostingManipulator.load_scenario(
+#                    self.__maria_hosting,
+#                    data,
+#                    map,
+#                )
+#                scene_ctrl = self.__open_project(manipulator)
+#
+#                lay_path = path + ".lay"
+#                if os.path.exists(lay_path):
+#                    with open(path + ".lay") as lay_file:
+#                        scene_ctrl.load_layout(
+#                            "".join(lay_file.readlines()),
+#                            map,
+#                        )
+#                else:
+#                    QMessageBox.warning(
+#                        self.__main_window,
+#                        "Не удалось найти файл .lay",
+#                        "Не удалось найти файл .lay",
+#                    )
+#
+#            else:  # if selected_id >= 0:
+#                for proj in self.__projects.values():
+#                    if (
+#                        proj.manipulator.in_db()
+#                        and proj.manipulator.id() == selected_id
+#                    ):
+#                        QMessageBox.warning(
+#                            self.__main_window,
+#                            "Невозможно выполнить!",
+#                            "Проект уже открыт!",
+#                        )
+#                        return
+#
+#                manipulator = HostingManipulator.open_scenario(
+#                    self.__maria_hosting,
+#                    selected_id,
+#                )
+#                scene_ctrl = self.__open_project(manipulator)
+#                scene_ctrl.load_layout(manipulator.get_layouts())
 
     def __on_vector_remove_from_gui(
         self,
