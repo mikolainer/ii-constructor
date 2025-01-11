@@ -1,9 +1,8 @@
--e ./ii_constructor/packages/core
--e ./ii_constructor/packages/levenshtain
--e ./ii_constructor/packages/mariarepo
--e ./ii_constructor/packages/mysqlrepo
--e ./ii_constructor/packages/inmemoryrepo
--e ./ii_constructor/packages/gui
--e ./ii_constructor/packages/diagrammscene
--e ./ii_constructor/packages/answers
--e ./ii_constructor/packages/inputvectors
+-e ./ii_constructor/packages/scenario # сценарий
+-e ./ii_constructor/packages/answers # ответы
+-e ./ii_constructor/packages/inputvectors # переходы
+-e ./ii_constructor/packages/gui # пользовательский итнерфейс оконной системы
+-e ./ii_constructor/packages/diagrammscene # модуль со сценой - диаграммой
+-e ./ii_constructor/packages/mariarepo # 
+-e ./ii_constructor/packages/mysqlrepo # 
+-e ./ii_constructor/packages/inmemoryrepo # 

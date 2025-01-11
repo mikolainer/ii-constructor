@@ -21,14 +21,14 @@
 
 from xml.etree.ElementTree import Element, fromstring, indent, tostring
 
-from iiconstructor_core.domain import (
+from iiconstructor_scenario.domain import (
     Connection,
     Hosting,
     State,
-    Step,
+    OldStep,
 )
-from iiconstructor_core.domain.exceptions import CoreException, Exists
-from iiconstructor_core.domain.porst import ScenarioInterface
+from iiconstructor_scenario.domain.exceptions import CoreException, Exists
+from iiconstructor_scenario.domain.porst import ScenarioInterface
 from iiconstructor_answers.plaintext import (
     PlainTextAnswer,
     PlainTextDescription,
@@ -37,16 +37,15 @@ from iiconstructor_inputvectors.domain import (
     InputDescription,
     VectorName,
 )
-from iiconstructor_core.domain.primitives import (
+from iiconstructor_scenario.domain.primitives import (
     Description,
     StateName,
     ProjectName,
     ScenarioID,
     SourceInfo,
-    StateAttributes,
     StateID,
 )
-from iiconstructor_levenshtain import LevenshtainVector, Synonym
+from iiconstructor_inputvectors.levenshtein import LevenshtainVector, Synonym
 #from iiconstructor_maria.repo import SourceMariaDB
 from PySide6.QtWidgets import QMessageBox, QWidget
 
@@ -126,10 +125,8 @@ class HostingManipulator:
         # добавляем состояния
         for elem in root.find("Состояния").findall("Состояние"):
             state: State = scenario.source().create_state(
-                StateAttributes(
-                    StateName(elem.attrib["Название"]),
-                    Description(""),
-                ),
+                StateName(elem.attrib["Название"]),
+                Description(""),
                 PlainTextDescription(PlainTextAnswer(elem.text)),
             )
             if id_map is not None:
@@ -206,13 +203,13 @@ class ScenarioAPI:
 
     def create_state(self, name: str) -> dict:
         state: State = self.__scenario.source().create_state(
-            StateAttributes(StateName(name), Description("")),
+            StateName(name), Description(""),
             PlainTextDescription(PlainTextAnswer("Текст ответа")),
         )
 
         return {
             "id": state.id().value,
-            "name": state.attributes.name.value,
+            "name": state.name().value,
             "text": state.output().value().as_text(),
         }
 
@@ -246,7 +243,7 @@ class ScenarioAPI:
         state_id_d = StateID(state_id)
         state: State = self.__scenario.states([state_id_d])[state_id_d]
 
-        vector_name = VectorName(state.attributes.name.value)
+        vector_name = VectorName(state.name().value)
 
         try:  # создаём новый вектор
             vector = LevenshtainVector(vector_name)
@@ -300,22 +297,16 @@ class ScenarioAPI:
         возвращает словарь с аттрибутами нового состояния: `id`, `name`, `text`
         """
         vector = self.__scenario.get_vector(VectorName(input_name))
-        step: Step = self.__scenario.create_step_to_new(
+        to_state: State = self.__scenario.create_step_to_new(
             StateID(from_state_id),
-            StateAttributes(
-                StateName(new_state_name),
-                Description(""),
-            ),
+            StateName(new_state_name),
+            Description(""),
             PlainTextDescription(PlainTextAnswer("Текст ответа")),
             vector,
         )
-        to_state: State = self.__scenario.states(
-            [step.connection.to_state]
-        )[step.connection.to_state]
 
         return {
             "id": to_state.id().value,
-            "name": to_state.attributes.name.value,
             "text": to_state.output().value().as_text(),
         }
 
@@ -337,7 +328,7 @@ class ScenarioAPI:
     def steps_from(self, from_state: int) -> dict[int, list[str]]:
         """возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов"""
         result = dict[int, list[str]]()
-        steps: list[Step] = self.__scenario.steps(StateID(from_state))
+        steps: list[OldStep] = self.__scenario.steps(StateID(from_state))
         for step in steps:
             if step.connection is None:
                 continue
@@ -403,7 +394,7 @@ class ScenarioAPI:
                 "Состояние",
                 {
                     "Идентификатор": str(state.id().value),
-                    "Название": state.attributes.name.value,
+                    "Название": state.name().value,
                 },
             )
             _state.text = state.output().value().as_text()

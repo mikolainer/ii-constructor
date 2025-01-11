@@ -1,6 +1,6 @@
 from .domain import State, OutputDescription
 from .plaintext import PlainTextDescription, PlainTextOutputLib
-from iiconstructor_core.domain import StateID
+from iiconstructor_scenario.domain import StateID
 
 class StateTranslator:
     @staticmethod

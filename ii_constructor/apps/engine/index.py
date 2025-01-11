@@ -29,7 +29,7 @@ from iiconstructor_core.domain.primitives import (
     ScenarioID,
     StateID,
 )
-from iiconstructor_levenshtain import LevenshtainClassificator
+from iiconstructor_inputvectors.levenshtein import LevenshtainClassificator
 from mysqlrepo import HostingMySQL
 
 ip = os.environ.get("IP")

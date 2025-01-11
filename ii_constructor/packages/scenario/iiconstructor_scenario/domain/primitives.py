@@ -100,11 +100,3 @@ class Response:
     """Базовый класс представления ответа для платформы"""
 
     text: str
-    
-
-@dataclass
-class StateAttributes:
-    """Класс, инкапсулирующий аттрибуты состояния"""
-
-    name: StateName
-    description: Description

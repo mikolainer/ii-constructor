@@ -25,9 +25,9 @@ from typing import Any
 
 from application import HostingManipulator, ScenarioAPI
 from data import LevenshtainVectorSerializer
-from iiconstructor_core.domain import Engine, State, Hosting
-from iiconstructor_core.domain.exceptions import CoreException, Exists
-from iiconstructor_core.domain.primitives import (
+from iiconstructor_scenario.domain import Engine, State, Hosting
+from iiconstructor_scenario.domain.exceptions import CoreException, Exists
+from iiconstructor_scenario.domain.primitives import (
     Description,
     StateName,
     ProjectName,
@@ -38,7 +38,7 @@ from iiconstructor_inputvectors.domain import (
     VectorName,
 )
 from iiconstructor_inmemory.repo import HostingInmem
-from iiconstructor_levenshtain import (
+from iiconstructor_inputvectors.levenshtein import (
     Synonym,
     LevenshtainClassificator,
     LevenshtainVector,
@@ -591,10 +591,10 @@ class ProjectManager:
                     # формирование элемента модели содержания
                     input_item = ItemData()
                     input_item.on[CustomDataRole.Name] = (
-                        state.attributes.name.value
+                        state.name().value
                     )
                     input_item.on[CustomDataRole.Description] = (
-                        state.attributes.description.value
+                        state.description().value
                     )
                     input_item.on[CustomDataRole.SynonymsSet] = s_model
                     input_item.on[CustomDataRole.EnterStateId] = (
@@ -606,7 +606,7 @@ class ProjectManager:
             # формирование элемента модели состояний
             item = ItemData()
             item.on[CustomDataRole.Id] = state.id().value
-            item.on[CustomDataRole.Name] = state.attributes.name.value
+            item.on[CustomDataRole.Name] = state.name().value
             item.on[CustomDataRole.Text] = state.output().value().as_text()
 
             # добавление элемента модели состояний
@@ -944,7 +944,7 @@ class ProjectManager:
             )
 
             to_state_item.on[CustomDataRole.Id] = new_state_info["id"]
-            to_state_item.on[CustomDataRole.Name] = new_state_info["name"]
+            to_state_item.on[CustomDataRole.Name] = vector_name
             to_state_item.on[CustomDataRole.Text] = new_state_info["text"]
 
         except CoreException as e:

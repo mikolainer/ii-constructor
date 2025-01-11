@@ -44,7 +44,6 @@ from .primitives import (
     Response,
     ScenarioID,
     SourceInfo,
-    StateAttributes,
     StateID,
 )
 
@@ -63,7 +62,7 @@ def get_type_name(obj: Any) -> str:
     elif issubclass(type(obj), Connection):
         _obj_type = "Связь"
 
-    elif issubclass(type(obj), Step):
+    elif issubclass(type(obj), OldStep):
         _obj_type = "Переход"
 
     elif issubclass(type(obj), InputDescription):
@@ -150,42 +149,64 @@ class PossibleInputs:
 
 class State:
     __id: StateID
-    required: bool
-    attributes: StateAttributes
+    __required: bool
+    __name: StateName
+    __description: Description
     __output: OutputDescription
 
     def __init__(
         self,
         id: StateID,
-        attributes: StateAttributes,
+        name: StateName,
+        description: Description,
         output: OutputDescription,
         required: bool = False,
     ) -> None:
         self.__id = id
-        self.required = required
-        self.attributes = attributes
+        self.__required = required
+        self.__name = name
+        self.__description = description
         self.__output = output
 
-        if attributes.name is None or attributes.name.value == "":
-            attributes.name = StateName(str(id.value))
+        if name is None or name.value == "":
+            name = StateName(str(id.value))
 
-        if attributes.description is None:
-            attributes.description = Description("")
+        if description is None:
+            description = Description("")
 
         if output is None or output.value().as_text() == "":
             self.__output = PlainTextDescription(PlainTextAnswer("текст ответа"))
 
     def id(self) -> StateID:
         return self.__id
+    
+    def is_required(self) -> bool:
+        return self.__required
 
     def output(self) -> OutputDescription:
         return self.__output
     
+    def name(self) -> StateName:
+        return self.__name
+    
+    def set_name(self, new_name: StateName):
+        self.__name = new_name
+    
+    def description(self) -> Description:
+        return self.__description
+    
+    def set_description(self, new_descr: Description):
+        self.__name = new_descr
+
     def set_output(self, output: OutputDescription):
         self.__output = output
 
 @dataclass
 class Step:
+    name: str
+
+@dataclass
+class OldStep:
     input: InputDescription
     connection: Optional["Connection"] = None
 
@@ -194,7 +215,7 @@ class Step:
 class Connection:
     from_state: StateID | None
     to_state: StateID | None
-    steps: list[Step]
+    steps: list[OldStep]
 
 
 class StepVectorBaseClassificator:
@@ -217,7 +238,7 @@ class StepVectorBaseClassificator:
     ) -> dict[str, State]:
         inputs = dict[str, State]()
         for step in self.__project.steps(cur_state_id):
-            step: Step = step
+            step: OldStep = step
 
             cur_state = step.connection.from_state
             if cur_state is None or cur_state != cur_state_id:
@@ -284,7 +305,7 @@ class Source:
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
         """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
 
-    def steps(self, state_id: StateID) -> list[Step]:
+    def steps(self, state_id: StateID) -> list[OldStep]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
 
     def is_enter(self, state: State) -> bool:
@@ -340,7 +361,8 @@ class Source:
     # Scenario private
     def create_state(
         self,
-        attributes: StateAttributes,
+        name: StateName,
+        description: Description,
         output: OutputDescription,
         required: bool = False,
     ) -> State:
@@ -357,7 +379,7 @@ class Source:
         from_state: StateID | None,
         to_state: StateID,
         input_name: VectorName,
-    ) -> Step:
+    ) -> OldStep:
         """создаёт переходы и связи"""
 
     def delete_step(
@@ -427,7 +449,7 @@ class Scenario(ScenarioInterface):
 
         # создаём состояние
         state_to = self.__src.create_state(
-            StateAttributes(StateName(input.name().value), Description("")),
+            StateName(input.name().value), Description(""),
             PlainTextDescription(PlainTextAnswer("Текст ответа")),
             required,
         )
@@ -441,7 +463,7 @@ class Scenario(ScenarioInterface):
         state_to = _states[state_id]
         for _state in _states.values():
             if (
-                _state.attributes.name == state_to.attributes.name
+                _state.name() == state_to.name()
                 and _state.id() != state_to.id()
             ):
                 raise CoreException(
@@ -449,7 +471,7 @@ class Scenario(ScenarioInterface):
                 )
 
         # проверяем существование вектора c именем состояния входа
-        vector_name: VectorName = self.states([state_id])[state_id].attributes.name
+        vector_name: VectorName = self.states([state_id])[state_id].name()
         if self.check_vector_exists(vector_name):
             raise Exists(vector_name, f'Вектор с именем "{vector_name.value}"')
 
@@ -467,7 +489,7 @@ class Scenario(ScenarioInterface):
                 f'Точка входа в состояние "{state_to.id().value}"',
             )
 
-        input_name = VectorName(state_to.attributes.name.value)
+        input_name = VectorName(state_to.name().value)
         self.__src.new_step(None, state_to.id(), input_name)
 
     def create_step_between(
@@ -475,33 +497,35 @@ class Scenario(ScenarioInterface):
         from_state_id: StateID,
         to_state: StateID,
         input: InputDescription,
-    ) -> Step:
-        return self.__src.new_step(from_state_id, to_state, input.name())
+    ):
+        self.__src.new_step(from_state_id, to_state, input.name())
 
     def create_step_to_new(
         self,
         from_state_id: StateID,
-        to_state: StateAttributes,
+        name: StateName,
+        description: Description,
         output: OutputDescription,
         input: InputDescription,
-    ) -> Step:
+    ) -> State:
         _states = self.states()
         for _state in _states.values():
-            if _state.attributes.name == to_state.name and self.is_enter(
+            if _state.name() == name and self.is_enter(
                 _state,
             ):
                 raise CoreException(
-                    f'Cуществует состояние-вход с именем "{to_state.name.value}"! Состояние-вход должно иметь уникальное имя.',
+                    f'Cуществует состояние-вход с именем "{name.value}"! Состояние-вход должно иметь уникальное имя.',
                 )
 
-        state_to = self.__src.create_state(to_state, output)
-        return self.__src.new_step(from_state_id, state_to.id(), input.name())
+        state_to = self.__src.create_state(name, description, output)
+        self.__src.new_step(from_state_id, state_to.id(), input.name())
+        return state_to
 
     # удаление сущностей
 
     def remove_state(self, state_id: StateID):
         """удаляет состояние"""
-        if self.states([state_id])[state_id].required:
+        if self.states([state_id])[state_id].is_required():
             raise Exception("Обязательное состояние нельзя удалить!")
 
         # TODO: изменить логику.
@@ -521,7 +545,7 @@ class Scenario(ScenarioInterface):
 
         # TODO: изменить логику.
         # нельзя оставлять состояния без связей.
-        if enter_state.required:
+        if enter_state.is_required():
             raise Exception("Обязательную точку входа нельзя удалить!")
 
         self.__src.delete_step(None, state_id)
@@ -546,7 +570,7 @@ class Scenario(ScenarioInterface):
         """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
         return self.__src.states(ids)
 
-    def steps(self, state_id: StateID) -> list[Step]:
+    def steps(self, state_id: StateID) -> list[OldStep]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
         return self.__src.steps(state_id)
 

@@ -19,8 +19,8 @@
 # см. <https://www.gnu.org/licenses/>.
 
 
-from iiconstructor_core.infrastructure.data import BaseSerializer, ItemData
-from iiconstructor_levenshtain import LevenshtainVector
+from iiconstructor_scenario.infrastructure.data import BaseSerializer, ItemData
+from iiconstructor_inputvectors.levenshtein import LevenshtainVector
 from iiconstructor_qtgui.data import CustomDataRole, SynonymsSetModel
 
 

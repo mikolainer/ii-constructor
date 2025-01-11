@@ -23,7 +23,7 @@ from collections.abc import Callable
 from enum import UNIQUE, IntEnum, verify
 from typing import Any
 
-from iiconstructor_core.infrastructure.data import ItemData
+from iiconstructor_scenario.infrastructure.data import ItemData
 from PySide6.QtCore import (
     QAbstractItemModel,
     QIdentityProxyModel,

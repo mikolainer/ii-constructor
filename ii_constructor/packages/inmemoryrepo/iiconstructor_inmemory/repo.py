@@ -19,7 +19,7 @@
 # см. <https://www.gnu.org/licenses/>.
 
 
-from iiconstructor_core.domain import (
+from iiconstructor_scenario.domain import (
     Connection,
     Hosting,
     PossibleInputs,
@@ -27,9 +27,9 @@ from iiconstructor_core.domain import (
     ScenarioInterface,
     Source,
     State,
-    Step,
+    OldStep,
 )
-from iiconstructor_core.domain.exceptions import Exists, NotExists
+from iiconstructor_scenario.domain.exceptions import Exists, NotExists
 from iiconstructor_answers.domain import (
     OutputDescription,
 )
@@ -37,14 +37,14 @@ from iiconstructor_inputvectors.domain import (
     InputDescription,
     VectorName,
 )
-from iiconstructor_core.domain.primitives import (
+from iiconstructor_scenario.domain.primitives import (
     StateName,
+    Description,
     ScenarioID,
     SourceInfo,
-    StateAttributes,
     StateID,
 )
-from iiconstructor_levenshtain import LevenshtainVector, Synonym
+from iiconstructor_inputvectors.levenshtein import LevenshtainVector, Synonym
 
 
 class SourceInMemory(Source):
@@ -78,7 +78,7 @@ class SourceInMemory(Source):
         """получить все состояния с данным именем"""
         result = list[State]()
         for state in self.__states.values():
-            if state.attributes.name == name:
+            if state.name() == name:
                 result.append(state)
 
         return result
@@ -96,9 +96,9 @@ class SourceInMemory(Source):
 
         return states
 
-    def steps(self, state_id: StateID) -> list[Step]:
+    def steps(self, state_id: StateID) -> list[OldStep]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
-        result = list[Step]()
+        result = list[OldStep]()
 
         if state_id in self.__connections["from"].keys():
             for conn in self.__connections["from"][state_id]:
@@ -179,11 +179,12 @@ class SourceInMemory(Source):
     # Scenario private
     def create_state(
         self,
-        attributes: StateAttributes,
+        name: StateName,
+        description: Description,
         output: OutputDescription,
         required: bool = False,
     ) -> State:
-        new_state = State(StateID(self.__new_state_id), attributes, output, required)
+        new_state = State(StateID(self.__new_state_id), name, description, output, required)
         self.__new_state_id += 1
         self.__states[new_state.id()] = new_state
         return new_state
@@ -224,7 +225,7 @@ class SourceInMemory(Source):
         from_state: StateID | None,
         to_state: StateID,
         input_name: VectorName,
-    ) -> Step:
+    ) -> OldStep:
         if not isinstance(to_state, StateID):
             raise TypeError(to_state)
         if not isinstance(input_name, VectorName):
@@ -232,11 +233,11 @@ class SourceInMemory(Source):
         if not self.check_vector_exists(input_name):
             raise ValueError(input_name)
 
-        new_step: Step
+        new_step: OldStep
 
         if from_state is None:  # точка входа
             conn = Connection(None, self.__states[to_state].id(), [])
-            new_step = Step(self.__input_vectors.get(input_name), conn)
+            new_step = OldStep(self.__input_vectors.get(input_name), conn)
             conn.steps.append(new_step)
             self.__connections["to"][to_state] = conn
 
@@ -277,7 +278,7 @@ class SourceInMemory(Source):
                 if step.input.name() == input_name:
                     raise RuntimeError("переход уже существует")
 
-            new_step = Step(self.get_vector(input_name), conn)
+            new_step = OldStep(self.get_vector(input_name), conn)
             conn.steps.append(new_step)
 
         return new_step
@@ -306,7 +307,7 @@ class SourceInMemory(Source):
                 conn: Connection = conn
 
                 for step in conn.steps:
-                    step: Step = step
+                    step: OldStep = step
                     if step.input.name() == input_name:
                         conn.steps.remove(step)
 
@@ -322,7 +323,7 @@ class SourceInMemory(Source):
         return self.__connections
 
     def rename_state(self, state: StateID, name: StateName):
-        self.states([state])[state].attributes.name = name
+        self.states([state])[state].set_name(name)
 
     def rename_vector(self, old_name: VectorName, new_name: VectorName):
         self.get_vector(old_name).set_name(new_name)

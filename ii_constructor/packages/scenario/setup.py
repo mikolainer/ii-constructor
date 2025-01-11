@@ -29,12 +29,12 @@ if __name__ == "__main__":
     #    requirements = f.read().splitlines()
 
     setup(
-        name="iiconstructor_core",
+        name="iiconstructor_scenario",
         version="0.0",
         description='Parts of project "interactive instructons constructor"',
         long_description=readme,
         author="Nikolay Ivantsov",
         author_email="mikolainer@mail.ru",
-        packages=["iiconstructor_core"],
+        packages=["iiconstructor_scenario"],
         # install_requires=requirements,
     )

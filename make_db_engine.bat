@@ -9,6 +9,5 @@ echo Levenshtein >> ./engine/requirements.txt
 
 copy .\ii_constructor\apps\engine\index.py .\engine\index.py
 copy .\ii_constructor\packages\mysqlrepo\iiconstructor_mysqlrepo\__ini__.py .\engine\mysqlrepo.py
-copy .\ii_constructor\packages\levenshtain\iiconstructor_levenshtain\__init__.py .\engine\iiconstructor_levenshtain.py
 
 pause

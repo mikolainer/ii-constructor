@@ -23,12 +23,12 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 import Levenshtein
-from iiconstructor_core.domain import (
+from iiconstructor_scenario.domain import (
     State,
     StepVectorBaseClassificator,
 )
-from iiconstructor_core.domain.exceptions import NotExists, Exists
-from iiconstructor_core.domain.porst import ScenarioInterface
+from iiconstructor_scenario.domain.exceptions import NotExists, Exists
+from iiconstructor_scenario.domain.porst import ScenarioInterface
 from iiconstructor_inputvectors.domain import (
     Input,
     StrInput,

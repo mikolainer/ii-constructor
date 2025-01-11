@@ -22,16 +22,16 @@
 from collections.abc import Sequence
 
 import pymysql
-from iiconstructor_core.domain import (
+from iiconstructor_scenario.domain import (
     Connection,
     Hosting,
     Scenario,
     ScenarioInterface,
     Source,
     State,
-    Step,
+    OldStep,
 )
-from iiconstructor_core.domain.exceptions import CoreException, NotExists
+from iiconstructor_scenario.domain.exceptions import CoreException, NotExists
 from iiconstructor_answers.plaintext import (
     PlainTextAnswer,
     PlainTextDescription,
@@ -40,16 +40,15 @@ from iiconstructor_inputvectors.domain import (
     InputDescription,
     VectorName,
 )
-from iiconstructor_core.domain.primitives import (
+from iiconstructor_scenario.domain.primitives import (
     Description,
     StateName,
     ProjectName,
     ScenarioID,
     SourceInfo,
-    StateAttributes,
     StateID,
 )
-from iiconstructor_levenshtain import LevenshtainVector, Synonym
+from iiconstructor_inputvectors.levenshtein import LevenshtainVector, Synonym
 
 
 class SourceMySQL(Source):
@@ -133,10 +132,8 @@ class SourceMySQL(Source):
             result.append(
                 State(
                     StateID(_id),
-                    StateAttributes(
-                        StateName(_name),
-                        Description(_descr),
-                    ),
+                    StateName(_name),
+                    Description(_descr),
                     PlainTextDescription(PlainTextAnswer(_answer)),
                     _required,
                 ),
@@ -169,17 +166,15 @@ class SourceMySQL(Source):
             s_id = StateID(_id)
             result[s_id] = State(
                 s_id,
-                StateAttributes(
-                    StateName(_name),
-                    Description(_descr),
-                ),
+                StateName(_name),
+                Description(_descr),
                 PlainTextDescription(PlainTextAnswer(_answer)),
                 _required,
             )
 
         return result
 
-    def steps(self, state_id: StateID) -> list[Step]:
+    def steps(self, state_id: StateID) -> list[OldStep]:
         conn: pymysql.Connection = self.__db_connection
         cur = conn.cursor()
         cur.execute(
@@ -238,7 +233,7 @@ class SourceMySQL(Source):
             conns["from"][pair] = Connection(state_mid.id(), f_states[pair].id(), [])
 
         # заполнить все Connection переходами и сформировать результат
-        result = list[Step]()
+        result = list[OldStep]()
         for _from_state, _to_state, _vector_name in db_result:
             d_key = None
             if StateID(_from_state) == state_id:
@@ -256,7 +251,7 @@ class SourceMySQL(Source):
                 __state_id = StateID(_from_state)
 
             _conn = conns[d_key][__state_id]
-            step = Step(
+            step = OldStep(
                 self.__find_vector(f_vectors, VectorName(_vector_name)),
                 _conn,
             )
@@ -402,7 +397,8 @@ class SourceMySQL(Source):
 
     def create_state(
         self,
-        attributes: StateAttributes,
+        name: StateName, 
+        description: Description,
         output: PlainTextDescription,
         required: bool = False,
     ) -> State:
@@ -411,11 +407,11 @@ class SourceMySQL(Source):
 
         _proj_id = self.id.value
         _name = "DEFAULT"
-        if attributes.name is not None:
-            _name = f"'{attributes.name.value}'"
+        if name is not None:
+            _name = f"'{name.value}'"
         _descr = "DEFAULT"
-        if attributes.description is not None:
-            _descr = f"'{attributes.description.value}'"
+        if description is not None:
+            _descr = f"'{description.value}'"
         _answ = "DEFAULT"
         if (
             output is not None
@@ -426,15 +422,13 @@ class SourceMySQL(Source):
         query = f"INSERT INTO `states` (`project_id`, `name`, `descr`, `answer`, `required`) VALUES (%s, {_name}, {_descr}, {_answ}, %s) RETURNING `id`, `answer`, `name`, `descr`, `required`"
         cur.execute(query, (_proj_id, required))
         conn.commit()
-        id, answer, name, descr, required = cur.fetchone()
+        _id, _answer, _name, _descr, _required = cur.fetchone()
         return State(
-            StateID(id),
-            StateAttributes(
-                StateName(name),
-                Description(descr),
-            ),
-            PlainTextDescription(PlainTextAnswer(answer)),
-            required,
+            StateID(_id),
+            StateName(_name),
+            Description(_descr),
+            PlainTextDescription(PlainTextAnswer(_answer)),
+            _required,
         )
 
     def find_connections_to(self, state_id: StateID) -> list[Connection]:
@@ -484,7 +478,7 @@ class SourceMySQL(Source):
         for _from_state, _to_state, _vector_name in db_result:
             if _from_state is not None:
                 _conn = conns[StateID(_from_state)]
-                step = Step(
+                step = OldStep(
                     self.__find_vector(f_vectors, VectorName(_vector_name)),
                     _conn,
                 )
@@ -523,7 +517,7 @@ class SourceMySQL(Source):
         from_state: StateID | None,
         to_state: StateID,
         input_name: VectorName,
-    ) -> Step:
+    ) -> OldStep:
         conn: pymysql.Connection = self.__db_connection
         cur = conn.cursor()
         cur.execute(
@@ -549,7 +543,7 @@ class SourceMySQL(Source):
         state_to = states[StateID(to_id)]
         input: LevenshtainVector = self.get_vector(VectorName(in_name))
 
-        return Step(
+        return OldStep(
             input,
             Connection(state_from.id(), state_to.id(), None)#, input.synonyms.synonyms), # wtf?
         )
@@ -645,7 +639,7 @@ class SourceMySQL(Source):
                     _conn = __conn
                     break
 
-            step = Step(
+            step = OldStep(
                 self.__find_vector(f_vectors, VectorName(_vector_name)),
                 _conn,
             )
@@ -655,7 +649,7 @@ class SourceMySQL(Source):
             __from_state_id = None  # always is None
             __to_state_id = StateID(_to_state)
             _conn = result["to"][__to_state_id]
-            step = Step(
+            step = OldStep(
                 self.__find_vector(f_vectors, VectorName(_vector_name)),
                 _conn,
             )

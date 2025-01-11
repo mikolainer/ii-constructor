@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 
-from .primitives import StateName, StateAttributes, StateID
+from .primitives import StateID, StateName, Description
 from iiconstructor_answers.domain import (
     OutputDescription,
 )
@@ -55,7 +55,7 @@ class ScenarioInterface:
         from_state_id: StateID,
         to_state: StateID,
         input: InputDescription,
-    ) -> Step:
+    ):
         """
         Создаёт переход из from_state в to_state по переходу input
         @from_state_id: id состояния для обработки управляющего воздействия input
@@ -66,16 +66,18 @@ class ScenarioInterface:
     def create_step_to_new(
         self,
         from_state_id: StateID,
-        to_state: StateAttributes,
+        name: StateName,
+        description: Description,
         output: OutputDescription,
         input: InputDescription,
-    ) -> Step:
+    ) -> State:
         """
         Создаёт переход из from_state в to_state по переходу input
         @from_state_id: id состояния для обработки управляющего воздействия input
         @to_state: аттрибуты для создания нового состояния
         @output: ответ нового состояния
         @input: управляющее воздействие
+        @returns new state
         """
 
     # удаление сущностей
@@ -101,7 +103,7 @@ class ScenarioInterface:
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
         """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
 
-    def steps(self, state_id: StateID) -> list[Step]:
+    def steps(self, state_id: StateID) -> list[OldStep]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
 
     # сеттеры

@@ -23,15 +23,6 @@ class State:
     value: int
 
 
-@dataclass
-class OutputLibAttributes:
-    """Класс, инкапсулирующий аттрибуты библиотеки выходных значений"""
-
-    name: str
-    description: str
-    items_type: str
-
-
 class OutputRepository:
     def create(self, state: State, value: OutputDescription):
         """Создать привязку ответа к состоянию"""
@@ -49,10 +40,8 @@ class OutputRepository:
 class OutputLib:
     """Интерфейс репозитория абстрактного описания ответа"""
     __repo: OutputRepository
-    __attributes: OutputLibAttributes
 
-    def __init__(self, attributes: OutputLibAttributes, repo: OutputRepository):
-        self.__attribbutes = attributes
+    def __init__(self, repo: OutputRepository):
         self.__repo = repo
 
     # нет сеттеров. только создание целиком.
@@ -68,13 +57,8 @@ class OutputLib:
     def serialize(value: OutputDescription) -> str:
         """Сериализовать значение ответа"""
 
-    def attributes(self) -> OutputLibAttributes:
-        """Получить аттрибуты библиотеки"""
-        return self.__attributes
-    
-    def update_attributes(self, data:OutputLibAttributes):
-        """Установить новые аттрибуты библиотеки"""
-        self.__attributes = data
+    def items_type(self) -> str:
+        """Тип обработываетмых ответов"""
 
     def create(self, state: State, value: OutputDescription):
         """Создать привязку ответа к состоянию"""
