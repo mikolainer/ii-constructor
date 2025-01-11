@@ -379,7 +379,7 @@ class Source:
         from_state: StateID | None,
         to_state: StateID,
         input_name: VectorName,
-    ) -> OldStep:
+    ):
         """создаёт переходы и связи"""
 
     def delete_step(

@@ -225,7 +225,7 @@ class SourceInMemory(Source):
         from_state: StateID | None,
         to_state: StateID,
         input_name: VectorName,
-    ) -> OldStep:
+    ):
         if not isinstance(to_state, StateID):
             raise TypeError(to_state)
         if not isinstance(input_name, VectorName):
@@ -280,8 +280,6 @@ class SourceInMemory(Source):
 
             new_step = OldStep(self.get_vector(input_name), conn)
             conn.steps.append(new_step)
-
-        return new_step
 
     def delete_step(
         self,

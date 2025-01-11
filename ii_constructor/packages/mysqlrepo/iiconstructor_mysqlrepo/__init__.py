@@ -517,7 +517,7 @@ class SourceMySQL(Source):
         from_state: StateID | None,
         to_state: StateID,
         input_name: VectorName,
-    ) -> OldStep:
+    ):
         conn: pymysql.Connection = self.__db_connection
         cur = conn.cursor()
         cur.execute(
@@ -542,11 +542,6 @@ class SourceMySQL(Source):
         )
         state_to = states[StateID(to_id)]
         input: LevenshtainVector = self.get_vector(VectorName(in_name))
-
-        return OldStep(
-            input,
-            Connection(state_from.id(), state_to.id(), None)#, input.synonyms.synonyms), # wtf?
-        )
 
     def delete_step(
         self,
