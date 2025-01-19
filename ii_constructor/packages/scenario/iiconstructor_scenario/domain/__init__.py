@@ -244,7 +244,7 @@ class StepVectorBaseClassificator:
             if cur_state is None or cur_state != cur_state_id:
                 continue
 
-            inputs[step.input.name().value] = step.connection.to_state
+            inputs[step.input.name().value] = self.__project.states([step.connection.to_state])[step.connection.to_state]
 
         return inputs
 
@@ -698,7 +698,7 @@ class Engine:
 
     def handle(self, request: Request) -> Response:
         req = request.text
-        prev_state = self.__cur_state.id()
+        prev_state = self.__cur_state
 
         self.__cur_state = self.__classif.get_next_state(
             StrInput(req),
@@ -707,7 +707,7 @@ class Engine:
 
         result = Response()
 
-        if prev_state == self.__cur_state.id():
+        if prev_state == self.__cur_state:
             result.text = "Запрос не понятен"
         else:
             result.text = self.__cur_state.output().value().as_text()
