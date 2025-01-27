@@ -201,18 +201,6 @@ class ScenarioAPI:
     def save_lay(self, id: int, x: float, y: float):
         self.__scenario.save_lay(StateID(id), x, y)
 
-    def create_state(self, name: str) -> dict:
-        state: State = self.__scenario.source().create_state(
-            StateName(name), Description(""),
-            PlainTextDescription(PlainTextAnswer("Текст ответа")),
-        )
-
-        return {
-            "id": state.id().value,
-            "name": state.name().value,
-            "text": state.output().value().as_text(),
-        }
-
     def remove_vector(self, input_name: str):
         """удаляет вектор"""
         self.__scenario.remove_vector(VectorName(input_name))
@@ -309,6 +297,26 @@ class ScenarioAPI:
             "id": to_state.id().value,
             "text": to_state.output().value().as_text(),
         }
+    
+    def create_enter_to_new_state(self, new_state_name: str) -> dict[str, str]:
+        self.check_can_create_enter_state(new_state_name)
+
+        state: State = self.__scenario.source().create_state(
+            StateName(new_state_name), Description(""),
+            PlainTextDescription(PlainTextAnswer("Текст ответа")),
+        )
+    
+        self.make_enter(
+            state.id().value,
+            False,
+        )
+
+        return {
+            "id": state.id().value,
+            "name": state.name().value,
+            "text": state.output().value().as_text(),
+        }
+        
 
     def set_state_answer(self, state_id: int, new_value: str):
         """изменяет ответ состояния"""
