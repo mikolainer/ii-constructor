@@ -252,7 +252,7 @@ class StepVectorBaseClassificator:
         inputs = dict[str, State]()
 
         for conn in (
-            self.__project.source().get_all_connections()["to"].values()
+            self.__project.enters()
         ):
             conn: Connection = conn
             to: State = None
@@ -307,6 +307,9 @@ class Source:
 
     def steps(self, state_id: StateID) -> list[OldStep]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
+
+    def enters(self) -> list[Connection]:
+        """получить все переходы в точки входа"""
 
     def is_enter(self, state: State) -> bool:
         """Проверить является ли состояние входом"""

@@ -106,6 +106,9 @@ class ScenarioInterface:
     def steps(self, state_id: StateID) -> list[OldStep]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
 
+    def enters(self) -> list[Connection]:
+        """получить все переходы в точки входа"""
+
     # сеттеры
 
     def set_answer(self, state_id: StateID, data: OutputDescription):

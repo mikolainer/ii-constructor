@@ -114,6 +114,9 @@ class SourceInMemory(Source):
                 result.append(step)
 
         return list(result)
+    
+    def enters(self) -> list[Connection]:
+        return list(self.__connections["to"].values())
 
     def is_enter(self, state: State) -> bool:
         """Проверить является ли состояние входом"""
