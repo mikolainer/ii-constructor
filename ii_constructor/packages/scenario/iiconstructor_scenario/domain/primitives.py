@@ -88,6 +88,7 @@ class SourceInfo:
 
     name: ProjectName
     description: Description
+    is_remote: bool
 
 
 class Request:

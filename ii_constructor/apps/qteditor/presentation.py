@@ -624,6 +624,7 @@ class ProjectManager:
         info = SourceInfo(
             ProjectName(dialog.name()),
             Description(dialog.description()),
+            False
         )
 
         # создание проекта

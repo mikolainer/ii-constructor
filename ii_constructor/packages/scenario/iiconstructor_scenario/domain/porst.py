@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 
-from .primitives import StateID, StateName, Description
+from .primitives import StateID, StateName, Description, ScenarioID, ProjectName
 from iiconstructor_answers.domain import (
     OutputDescription,
 )
@@ -31,6 +31,18 @@ from iiconstructor_inputvectors.domain import (
 )
 
 class ScenarioInterface:
+    def is_source_in_db(self) -> bool:
+        """Проверить использование удалённого хранилища"""
+
+    def source_id(self) -> ScenarioID:
+        """Получить идентификатор хранилища"""
+
+    def source_name(self) -> ProjectName:
+        """Получить имя хранилища"""
+
+    def source_description(self) -> Description:
+        """Получить информацию о хранилище"""
+
     def get_layouts(self) -> str:
         """получить строку данные отобрадения"""
 
@@ -79,6 +91,9 @@ class ScenarioInterface:
         @input: управляющее воздействие
         @returns new state
         """
+
+#    def create_enter_to_new(self) -> State:
+#        """Создаёт новое состояние - точку входа"""
 
     # удаление сущностей
 

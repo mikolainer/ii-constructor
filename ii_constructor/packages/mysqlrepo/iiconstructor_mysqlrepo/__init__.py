@@ -71,7 +71,7 @@ class SourceMySQL(Source):
         conn.commit()
         name, descr = cur.fetchone()
 
-        info = SourceInfo(ProjectName(name), Description(descr))
+        info = SourceInfo(ProjectName(name), Description(descr), True)
         super().__init__(id, info)
 
     @staticmethod

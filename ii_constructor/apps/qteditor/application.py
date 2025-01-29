@@ -106,6 +106,7 @@ class HostingManipulator:
         info = SourceInfo(
             ProjectName(root.attrib["Название"]),
             Description(root.attrib["Краткое_описание"]),
+            False
         )
         scenario = hosting.get_scenario(hosting.add_source(info))
 
@@ -179,17 +180,16 @@ class ScenarioAPI:
         self.__scenario = scenario
 
     def id(self) -> int:
-        return self.__scenario.source().id.value
+        return self.__scenario.source_id().value
 
     def name(self) -> str:
-        return self.__scenario.source().info.name.value
+        return self.__scenario.source_name().value
 
     def description(self) -> str:
-        return self.__scenario.source().info.description.value
+        return self.__scenario.source_description().value
 
     def in_db(self) -> bool:
         return False
-        #return isinstance(self.__scenario.source(), SourceMariaDB)
 
     # TODO заменить собственным интерфейсом
     def interface(self) -> ScenarioInterface:

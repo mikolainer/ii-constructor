@@ -351,9 +351,12 @@ class HostingInmem(Hosting):
         result = list[tuple[int, str, str]]
 
         for scenario in self.__sources.values():
-            src: Source = scenario.source()
             result.append(
-                (src.id.value, src.info.name.value, src.info.description),
+                (
+                    scenario.source_id().value, 
+                    scenario.source_name().value, 
+                    scenario.source_description().value
+                )
             )
 
         return result

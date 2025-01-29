@@ -45,6 +45,7 @@ from .primitives import (
     ScenarioID,
     SourceInfo,
     StateID,
+    ProjectName,
 )
 
 
@@ -432,6 +433,18 @@ class Scenario(ScenarioInterface):
 
     def source(self) -> Source:
         return self.__src
+    
+    def is_source_in_db(self) -> bool:
+        return self.__src.info.is_remote
+
+    def source_id(self) -> ScenarioID:
+        return self.__src.id()
+    
+    def source_name(self) -> ProjectName:
+        return self.__src.info.name
+
+    def source_description(self) -> Description:
+        return self.__src.info.description
 
     def get_layouts(self) -> str:
         return self.__src.get_layouts()
@@ -523,6 +536,25 @@ class Scenario(ScenarioInterface):
         state_to = self.__src.create_state(name, description, output)
         self.__src.new_step(from_state_id, state_to.id(), input.name())
         return state_to
+    
+#    def create_enter_to_new(
+#        self, name: StateName,
+#        description: Description,
+#        output: OutputDescription
+#    ) -> State:
+#        self.check_can_create_enter_state(new_state_name)
+#
+#        state: State = self.__scenario.source().create_state(
+#            StateName(new_state_name), Description(""),
+#            PlainTextDescription(PlainTextAnswer("Текст ответа")),
+#        )
+#    
+#        self.make_enter(
+#            state.id().value,
+#            False,
+#        )
+#
+#        return state
 
     # удаление сущностей
 
