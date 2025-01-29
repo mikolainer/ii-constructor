@@ -299,16 +299,10 @@ class ScenarioAPI:
         }
     
     def create_enter_to_new_state(self, new_state_name: str) -> dict[str, str]:
-        self.check_can_create_enter_state(new_state_name)
-
-        state: State = self.__scenario.source().create_state(
-            StateName(new_state_name), Description(""),
-            PlainTextDescription(PlainTextAnswer("Текст ответа")),
-        )
-    
-        self.make_enter(
-            state.id().value,
-            False,
+        state = self.__scenario.create_enter_to_new(
+            StateName(new_state_name),
+            Description(""),
+            PlainTextDescription(PlainTextAnswer("текст ответа"))
         )
 
         return {
@@ -467,12 +461,6 @@ class ScenarioAPI:
         indent(root)
         return tostring(root, "unicode")
 
-    def check_can_create_enter_state(self, name: str):
+    def check_can_create_enter_state(self, name: str) -> bool:
         """проверяет условия для создания точки входа в новое состояние"""
-        _name = VectorName(name)
-
-        # должно подняться исключение если не существует
-        self.__scenario.get_vector(_name)
-
-        if len(self.__scenario.get_states_by_name(_name)) > 0:
-            raise CoreException(f'Состояние с именем "{name}" уже существует!')
+        return self.__scenario.check_vector_exists(VectorName(name))

@@ -537,24 +537,27 @@ class Scenario(ScenarioInterface):
         self.__src.new_step(from_state_id, state_to.id(), input.name())
         return state_to
     
-#    def create_enter_to_new(
-#        self, name: StateName,
-#        description: Description,
-#        output: OutputDescription
-#    ) -> State:
-#        self.check_can_create_enter_state(new_state_name)
-#
-#        state: State = self.__scenario.source().create_state(
-#            StateName(new_state_name), Description(""),
-#            PlainTextDescription(PlainTextAnswer("Текст ответа")),
-#        )
-#    
-#        self.make_enter(
-#            state.id().value,
-#            False,
-#        )
-#
-#        return state
+    def create_enter_to_new(
+        self, name: StateName,
+        description: Description,
+        output: OutputDescription
+    ) -> State:
+        self.check_can_create_enter_state(VectorName(name.value))
+
+        state: State = self.__src.create_state(
+            name, description, output,
+        )
+    
+        self.make_enter(state.id())
+
+        return state
+    
+    def check_can_create_enter_state(self, name: VectorName) -> bool:
+         # должно подняться исключение если не существует
+        self.get_vector(name)
+
+        if len(self.get_states_by_name(StateName(name.value))) > 0:
+            raise CoreException(f'Состояние с именем "{name.value}" уже существует!')
 
     # удаление сущностей
 

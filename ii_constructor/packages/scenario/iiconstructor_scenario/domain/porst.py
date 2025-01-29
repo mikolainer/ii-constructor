@@ -92,8 +92,12 @@ class ScenarioInterface:
         @returns new state
         """
 
-#    def create_enter_to_new(self) -> State:
-#        """Создаёт новое состояние - точку входа"""
+    def create_enter_to_new(self,
+        name: StateName,
+        description: Description,
+        output: OutputDescription
+    ) -> State:
+        """Создаёт новое состояние - точку входа"""
 
     # удаление сущностей
 

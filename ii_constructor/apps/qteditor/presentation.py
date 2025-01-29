@@ -826,7 +826,7 @@ class ProjectManager:
             )
             return
 
-        except Exception:
+        except Exception as e:
             return
 
         enter_item = ItemData()
