@@ -209,7 +209,7 @@ class SourceInMemory(Source):
         for conn in self.__connections["to"].values():
             conn: Connection = conn
             for step in conn.steps:
-                if step.input == input:
+                if step.name == input.name().value:
                     result.append(conn)
                     break
 
@@ -217,7 +217,7 @@ class SourceInMemory(Source):
             for conn in conn_list:
                 conn: Connection = conn
                 for step in conn.steps:
-                    if step.input == input:
+                    if step.name == input.name().value:
                         result.append(conn)
                         break
 
@@ -278,7 +278,7 @@ class SourceInMemory(Source):
                     conn = found
 
             for step in conn.steps:
-                if step.input.name() == input_name:
+                if step.name == input_name.value:
                     raise RuntimeError("переход уже существует")
 
             new_step = OldStep(self.get_vector(input_name), conn)
@@ -309,7 +309,7 @@ class SourceInMemory(Source):
 
                 for step in conn.steps:
                     step: OldStep = step
-                    if step.input.name() == input_name:
+                    if step.name == input_name.value:
                         conn.steps.remove(step)
 
                         if len(conn.steps) == 0:

@@ -265,7 +265,7 @@ class StepVectorBaseClassificator:
                 to = self.__project.states([conn.to_state])[conn.to_state]
 
             for step in conn.steps:
-                inputs[step.input.name().value] = to
+                inputs[step.name] = to
 
         return inputs
 

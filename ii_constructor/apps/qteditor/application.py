@@ -440,7 +440,7 @@ class ScenarioAPI:
                     {"В_состояние": str(conn.to_state.value)},
                 )
                 for step in conn.steps:
-                    vector: LevenshtainVector = step.input
+                    vector: LevenshtainVector = self.__scenario.get_vector(VectorName(step.name))
                     if isinstance(vector, LevenshtainVector):
                         _vector = Element(
                             "Управляющее_воздействие",
