@@ -208,6 +208,10 @@ class Step:
 
 @dataclass
 class OldStep:
+    @property
+    def name(self):
+        return self.input.name().value
+    
     input: InputDescription
     connection: Optional["Connection"] = None
 
@@ -438,7 +442,7 @@ class Scenario(ScenarioInterface):
         return self.__src.info.is_remote
 
     def source_id(self) -> ScenarioID:
-        return self.__src.id()
+        return self.__src.id
     
     def source_name(self) -> ProjectName:
         return self.__src.info.name
@@ -611,6 +615,10 @@ class Scenario(ScenarioInterface):
     def steps(self, state_id: StateID) -> list[OldStep]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
         return self.__src.steps(state_id)
+    
+    def enters(self) -> list[Connection]:
+        """получить все переходы в точки входа"""
+        return self.__src.enters()
 
     def is_enter(self, state: State) -> bool:
         """Проверить является ли состояние входом"""

@@ -341,7 +341,7 @@ class ScenarioAPI:
             ):
                 continue
 
-            to_state: int = step.connection.to_state.id().value
+            to_state: int = step.connection.to_state.value
             input_name: str = step.input.name().value
             if to_state not in result.keys():
                 result[to_state] = [input_name]
@@ -402,16 +402,17 @@ class ScenarioAPI:
             _state.text = state.output().value().as_text()
             states.append(_state)
 
-        connections = self.__scenario.source().get_all_connections()
-        for enter_state_id in connections["to"].keys():
-            enter_conn: Connection = connections["to"][enter_state_id]
+        enter_connections: list[Connection] = self.__scenario.enters()
+        for enter_conn in enter_connections:
+            enter_state_id = enter_conn.to_state
+
             _enter = Element(
                 "Точка_входа",
                 {"Состояние": str(enter_state_id.value)},
             )
 
             for step in enter_conn.steps:
-                vector: LevenshtainVector = step.input
+                vector: LevenshtainVector = self.__scenario.get_vector(VectorName(step.name))
                 if isinstance(vector, LevenshtainVector):
                     _vector = Element(
                         "Управляющее_воздействие",
@@ -429,6 +430,7 @@ class ScenarioAPI:
 
             enters.append(_enter)
 
+        connections = self.__scenario.source().get_all_connections()
         for from_state_id in connections["from"].keys():
             _conn = Element("Связи", {"Состояние": str(from_state_id.value)})
             for conn in connections["from"][from_state_id]:
