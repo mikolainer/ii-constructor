@@ -25,7 +25,7 @@ from iiconstructor_scenario.domain import (
     Connection,
     Hosting,
     State,
-    OldStep,
+    Step,
 )
 from iiconstructor_scenario.domain.exceptions import CoreException, Exists
 from iiconstructor_scenario.domain.porst import ScenarioInterface
@@ -330,23 +330,24 @@ class ScenarioAPI:
     def steps_from(self, from_state: int) -> dict[int, list[str]]:
         """возвращает словарь переходов из состояния from_state. key - id состояния, val - список имём векторов"""
         result = dict[int, list[str]]()
-        steps: list[OldStep] = self.__scenario.steps(StateID(from_state))
-        for step in steps:
-            if step.connection is None:
+        steps: list[Connection] = self.__scenario.steps(StateID(from_state))
+        for conn in steps:
+            if conn is None:
                 continue
 
             if (
-                step.connection.from_state is None
-                or step.connection.from_state.value != from_state
+                conn.from_state is None
+                or conn.from_state.value != from_state
             ):
                 continue
 
-            to_state: int = step.connection.to_state.value
-            input_name: str = step.input.name().value
-            if to_state not in result.keys():
-                result[to_state] = [input_name]
-            else:
-                result[to_state].append(input_name)
+            to_state: int = conn.to_state.value
+            for step in conn.steps:
+                input_name: str = step.name
+                if to_state not in result.keys():
+                    result[to_state] = [input_name]
+                else:
+                    result[to_state].append(input_name)
 
         return result
 

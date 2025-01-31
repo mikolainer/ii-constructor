@@ -122,7 +122,7 @@ class ScenarioInterface:
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
         """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
 
-    def steps(self, state_id: StateID) -> list[OldStep]:
+    def steps(self, state_id: StateID) -> list[Connection]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
 
     def enters(self) -> list[Connection]:

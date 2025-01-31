@@ -63,7 +63,7 @@ def get_type_name(obj: Any) -> str:
     elif issubclass(type(obj), Connection):
         _obj_type = "Связь"
 
-    elif issubclass(type(obj), OldStep):
+    elif issubclass(type(obj), Step):
         _obj_type = "Переход"
 
     elif issubclass(type(obj), InputDescription):
@@ -220,7 +220,7 @@ class OldStep:
 class Connection:
     from_state: StateID | None
     to_state: StateID | None
-    steps: list[OldStep]
+    steps: list[Step]
 
 
 class StepVectorBaseClassificator:
@@ -242,14 +242,15 @@ class StepVectorBaseClassificator:
         cur_state_id: StateID,
     ) -> dict[str, State]:
         inputs = dict[str, State]()
-        for step in self.__project.steps(cur_state_id):
-            step: OldStep = step
+        for conn in self.__project.steps(cur_state_id):
+            conn: Connection = conn
 
-            cur_state = step.connection.from_state
+            cur_state = conn.from_state
             if cur_state is None or cur_state != cur_state_id:
                 continue
 
-            inputs[step.input.name().value] = self.__project.states([step.connection.to_state])[step.connection.to_state]
+            for step in conn.steps:
+                inputs[step.name] = self.__project.states([conn.to_state])[conn.to_state]
 
         return inputs
 
@@ -310,7 +311,7 @@ class Source:
     def states(self, ids: list[StateID] = None) -> dict[StateID, State]:
         """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
 
-    def steps(self, state_id: StateID) -> list[OldStep]:
+    def steps(self, state_id: StateID) -> list[Connection]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
 
     def enters(self) -> list[Connection]:
@@ -612,7 +613,7 @@ class Scenario(ScenarioInterface):
         """получить состояния по идентификаторам. если ids=None - вернёт все существующие состояния"""
         return self.__src.states(ids)
 
-    def steps(self, state_id: StateID) -> list[OldStep]:
+    def steps(self, state_id: StateID) -> list[Connection]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
         return self.__src.steps(state_id)
     

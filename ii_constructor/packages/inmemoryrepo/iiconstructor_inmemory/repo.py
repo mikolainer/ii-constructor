@@ -27,7 +27,7 @@ from iiconstructor_scenario.domain import (
     ScenarioInterface,
     Source,
     State,
-    OldStep,
+    Step,
 )
 from iiconstructor_scenario.domain.exceptions import Exists, NotExists
 from iiconstructor_answers.domain import (
@@ -96,22 +96,19 @@ class SourceInMemory(Source):
 
         return states
 
-    def steps(self, state_id: StateID) -> list[OldStep]:
+    def steps(self, state_id: StateID) -> list[Connection]:
         """получить все переходы, связанные с состоянием по его идентификатору"""
-        result = list[OldStep]()
+        result = list[Connection]()
 
         if state_id in self.__connections["from"].keys():
             for conn in self.__connections["from"][state_id]:
-                for step in conn.steps:
-                    result.append(step)
+                result.append(conn)
 
         if state_id in self.__connections["to"].keys():
-            for step in self.__connections["to"][state_id].steps:
-                result.append(step)
+            result.append(self.__connections["to"][state_id])
 
         for conn in self.find_connections_to(state_id):
-            for step in conn.steps:
-                result.append(step)
+            result.append(conn)
 
         return list(result)
     
@@ -236,11 +233,11 @@ class SourceInMemory(Source):
         if not self.check_vector_exists(input_name):
             raise ValueError(input_name)
 
-        new_step: OldStep
+        new_step: Step
 
         if from_state is None:  # точка входа
             conn = Connection(None, self.__states[to_state].id(), [])
-            new_step = OldStep(self.__input_vectors.get(input_name), conn)
+            new_step = Step(self.__input_vectors.get(input_name).name().value)
             conn.steps.append(new_step)
             self.__connections["to"][to_state] = conn
 
@@ -281,7 +278,7 @@ class SourceInMemory(Source):
                 if step.name == input_name.value:
                     raise RuntimeError("переход уже существует")
 
-            new_step = OldStep(self.get_vector(input_name), conn)
+            new_step = Step(self.get_vector(input_name).name().value)
             conn.steps.append(new_step)
 
     def delete_step(
@@ -308,7 +305,7 @@ class SourceInMemory(Source):
                 conn: Connection = conn
 
                 for step in conn.steps:
-                    step: OldStep = step
+                    step: Step = step
                     if step.name == input_name.value:
                         conn.steps.remove(step)
 

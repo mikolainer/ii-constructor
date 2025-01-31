@@ -25,7 +25,7 @@ from typing import Any
 
 from application import HostingManipulator, ScenarioAPI
 from data import LevenshtainVectorSerializer
-from iiconstructor_scenario.domain import Engine, State, Hosting
+from iiconstructor_scenario.domain import Engine, State, Hosting, Connection
 from iiconstructor_scenario.domain.exceptions import CoreException, Exists
 from iiconstructor_scenario.domain.primitives import (
     Description,
@@ -576,32 +576,32 @@ class ProjectManager:
             input_items = list[ItemData]()
 
             # подготовка шагов для модели состояний
-            for step in manipulator.interface().steps(state.id()):
-                conn = step.connection
+            for conn in manipulator.interface().steps(state.id()):
+                conn: Connection = conn
                 if conn is None:
                     continue  # вообще-то не норм ситуация. возможно стоит бросать исключение
 
-                vector_data = proj.vectors_model.get_item_by(
-                    CustomDataRole.Name,
-                    step.input.name().value,
-                )
-                s_model = vector_data.on[CustomDataRole.SynonymsSet]
+                for step in conn.steps:
+                    vector_data = proj.vectors_model.get_item_by(
+                        CustomDataRole.Name, step.name,
+                    )
+                    s_model = vector_data.on[CustomDataRole.SynonymsSet]
 
-                if step.connection.from_state is None:
-                    # формирование элемента модели содержания
-                    input_item = ItemData()
-                    input_item.on[CustomDataRole.Name] = (
-                        state.name().value
-                    )
-                    input_item.on[CustomDataRole.Description] = (
-                        state.description().value
-                    )
-                    input_item.on[CustomDataRole.SynonymsSet] = s_model
-                    input_item.on[CustomDataRole.EnterStateId] = (
-                        state.id().value
-                    )
-                    input_item.on[CustomDataRole.SliderVisability] = False
-                    input_items.append(input_item)
+                    if conn.from_state is None:
+                        # формирование элемента модели содержания
+                        input_item = ItemData()
+                        input_item.on[CustomDataRole.Name] = (
+                            state.name().value
+                        )
+                        input_item.on[CustomDataRole.Description] = (
+                            state.description().value
+                        )
+                        input_item.on[CustomDataRole.SynonymsSet] = s_model
+                        input_item.on[CustomDataRole.EnterStateId] = (
+                            state.id().value
+                        )
+                        input_item.on[CustomDataRole.SliderVisability] = False
+                        input_items.append(input_item)
 
             # формирование элемента модели состояний
             item = ItemData()
