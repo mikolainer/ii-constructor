@@ -206,15 +206,6 @@ class State:
 class Step:
     name: str
 
-@dataclass
-class OldStep:
-    @property
-    def name(self):
-        return self.input.name().value
-    
-    input: InputDescription
-    connection: Optional["Connection"] = None
-
 
 @dataclass
 class Connection:
