@@ -431,11 +431,18 @@ class ScenarioAPI:
 
             enters.append(_enter)
 
-        connections = self.__scenario.source().get_all_connections()
-        for from_state_id in connections["from"].keys():
+        for state in self.__scenario.states().values():
+            state: State = state
+            from_state_id: StateID = state.id()
             _conn = Element("Связи", {"Состояние": str(from_state_id.value)})
-            for conn in connections["from"][from_state_id]:
-                conn: Connection = conn  # просто аннотирование
+            step_count: int = 0
+
+            for conn in self.__scenario.steps(from_state_id):
+                conn: Connection = conn
+                if conn.from_state is not from_state_id:
+                    continue # пропускаем входящие связи
+
+                step_count = step_count +1
                 _step = Element(
                     "Переход",
                     {"В_состояние": str(conn.to_state.value)},
@@ -459,10 +466,11 @@ class ScenarioAPI:
 
                 _conn.append(_step)
 
-            steps.append(_conn)
+            if step_count > 0:    
+                steps.append(_conn)
 
         indent(root)
-        return tostring(root, "unicode")
+        return tostring(root, encoding="unicode")
 
     def check_can_create_enter_state(self, name: str) -> bool:
         """проверяет условия для создания точки входа в новое состояние"""

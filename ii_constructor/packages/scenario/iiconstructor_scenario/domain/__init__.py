@@ -390,14 +390,6 @@ class Source:
     ):
         """удаляет переходы и связи"""
 
-    def get_all_connections(self) -> dict[str, dict]:
-        """
-        !!! DEPRECATED !!!\n
-        получить все связи\n
-        ключи: 'from', 'to'; значения: to=dict[StateID, Connection], from=dict[StateID, list[Connection]]
-        """
-        # TODO: оптимизировать API. (фактически в память выгружается вся база)
-
     def rename_state(self, state: StateID, name: StateName):
         """Переименовывает состояние"""
 

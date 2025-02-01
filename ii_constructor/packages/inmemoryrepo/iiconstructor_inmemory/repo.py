@@ -317,9 +317,6 @@ class SourceInMemory(Source):
 
                         return
 
-    def get_all_connections(self) -> dict[str, dict]:
-        return self.__connections
-
     def rename_state(self, state: StateID, name: StateName):
         self.states([state])[state].set_name(name)
 
