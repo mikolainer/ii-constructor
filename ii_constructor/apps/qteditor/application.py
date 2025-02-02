@@ -30,6 +30,7 @@ from iiconstructor_scenario.domain import (
 from iiconstructor_scenario.domain.exceptions import CoreException, Exists
 from iiconstructor_scenario.domain.porst import ScenarioInterface
 from iiconstructor_answers.plaintext import (
+    OutputDescription,
     PlainTextAnswer,
     PlainTextDescription,
 )
@@ -48,6 +49,178 @@ from iiconstructor_scenario.domain.primitives import (
 from iiconstructor_inputvectors.levenshtein import LevenshtainVector, Synonym
 #from iiconstructor_maria.repo import SourceMariaDB
 from PySide6.QtWidgets import QMessageBox, QWidget
+
+class Vector_DTO:
+    __name: str
+    __values: list[str]
+
+    def __init__(self, obj: InputDescription | dict):
+        if isinstance(obj, InputDescription):
+            self.__name = obj.name().value()
+            self.__values = []
+            for val_index in len(obj):
+                self.__values.append(obj.value(val_index).value())
+        
+        elif isinstance(obj, dict):
+            self.__name = obj["name"]
+            self.__values = obj["values"]
+
+    @staticmethod
+    def parse(data_str: str) -> "Vector_DTO":
+        obj: dict
+        splitted: list[str] = data_str.split(";")
+        obj["name"] = splitted[0][splitted[0].index("=")+1 :]
+        obj["values"] = splitted[1][splitted[1].index("=")+1 :].split(',')
+        return Vector_DTO(obj)
+
+    def serialize(self) -> str:
+        return f"name={self.__name};values={','.join(self.__values)}"
+
+    def data(self) -> dict:
+        return {
+            "name": self.__name,
+            "values": self.__values
+        }
+
+class Output_DTO:
+    __values: list[str]
+
+    def __init__(self, obj: OutputDescription | dict):
+        if isinstance(obj, OutputDescription):
+            self.__values = list[str]()
+            for val_index in len(obj):
+                self.__values.append(obj.value(val_index).as_text())
+
+        elif isinstance(obj, dict):
+            self.__values = obj["values"]
+
+    @staticmethod
+    def parse(data_str: str) -> "Output_DTO":
+        return {
+            "values": data_str.split(",")
+        }
+
+    def serialize(self) -> str:
+        return ",".join(self.__values)
+
+    def data(self) -> dict:
+        return {
+            "values": self.__values
+        }
+
+class State_DTO:
+    __id: str
+    __required: str
+    __name: str
+    __description: str
+    __output: Output_DTO
+
+    def __init__(self, obj: State | dict):
+        if isinstance(obj, State):
+            self.__id = str(obj.id().value)
+            self.__required = str(obj.is_required())
+            self.__name = obj.name().value
+            self.__description = obj.description().value
+
+            values = list[str]
+            for val_index in len(obj):
+                values.append(obj.output().value(val_index).as_text())
+            
+            self.__output = Output_DTO({"values":values})
+
+        elif isinstance(obj, dict):
+            self.__id = obj["id"]
+            self.__required = obj["required"]
+            self.__name = obj["name"]
+            self.__description = obj["description"]
+            self.__output = obj["output"]
+
+    @staticmethod
+    def parse(data_str: str) -> "State_DTO":
+        splitted = data_str.split(",")
+        data = {}
+        for sub_str in splitted:
+            sep_index = sub_str.index("=")
+            name = sub_str[:sep_index]
+            value = sub_str[sep_index:]
+
+            if name == "id":
+                data["id"] = value
+            
+            elif name == "required":
+                data["required"] = value
+
+            elif name == "name":
+                data["name"] = value
+
+            elif name == "description":
+                data["description"] = value
+
+            elif name == "output":
+                data["output"] = Connection_DTO.parse(data)
+
+        return State_DTO(data)
+
+    def serialize(self) -> str:
+        return f"id={self.__id};required={self.__required};name={self.__name};description={self.__description};output={self.__output.serialize()}"
+
+    def data(self) -> dict:
+        return {
+            "id": self.__id,
+            "required": self.__required,
+            "name": self.__name,
+            "description": self.__description,
+            "output": self.__output,
+        }
+
+class Connection_DTO:
+    __from_state_id: str
+    __to_state_id: str
+    __steps: list[str]
+
+    def __init__(self, obj: Connection | dict):
+        if isinstance(obj, Connection):
+            self.__from_state_id = str(obj.from_state.value)
+            self.__to_state_id = str(obj.to_state.value)
+            self.__steps = []
+            for step in obj.steps():
+                step: Step = step
+                self.__steps.append(step.name())
+
+        elif isinstance(obj, dict):
+            self.__from_state_id = str(obj["from_state"])
+            self.__to_state_id = str(obj["to_state"])
+            self.__steps = obj["steps"]
+
+    @staticmethod
+    def parse(data_str: str) -> "Connection_DTO":
+        splitted = data_str.split(",")
+        data = {}
+        for sub_str in splitted:
+            sep_index = sub_str.index("=")
+            name = sub_str[:sep_index]
+            value = sub_str[sep_index:]
+
+            if name == "from_state":
+                data["from_state"] = value
+            
+            elif name == "to_state":
+                data["to_state"] = value
+
+            elif name == "steps":
+                data["steps"] = value.split(",")
+
+        return Connection_DTO(data)
+
+    def serialize(self) -> str:
+        return f"from_state={self.__from_state_id};to_state={self.__to_state_id};steps={','.join(self.__steps)}"
+
+    def data(self) -> dict:
+        return {
+            "from_state": self.__from_state_id,
+            "to_state": self.__to_state_id,
+            "steps": self.__steps
+        }
 
 
 class HostingManipulator:
@@ -353,6 +526,63 @@ class ScenarioAPI:
 
     def save_to_file(self):
         """сохраняет сценарий в файл"""
+
+    def get_vectors(self, names: list[str] | None = None) -> list[Vector_DTO]:
+        """Чтение векторов"""
+        answer = list[Vector_DTO]()
+        vector_names = list[VectorName]()
+        for name in names:
+            vector_names.append(VectorName(name))
+        for input in self.__scenario.select_vectors(None if names is None else vector_names):
+            answer.append(Vector_DTO(input))
+        return answer
+
+    def get_states(self, ids: list[str] | None = None) -> dict[str, State_DTO]:
+        """Чтение состояний"""
+        ids_list = None
+        
+        if ids is not None:
+            ids_list = list[StateID]()
+            for id in ids:
+                ids_list.append(StateID(int(id)))
+
+        result = dict[str, State_DTO]()
+        for state in self.__scenario.states(ids_list).values():
+            state: State = state
+            result[str(state.id().value)] = State_DTO(state)
+
+        return result
+
+    def get_steps(self, id: str) -> list[Connection_DTO]:
+        """Чтение переходов"""
+        result = list[Connection_DTO]()
+        for conn in self.__scenario.steps(StateID(int(id))):
+            conn: Connection = conn
+            result.append(Connection_DTO(conn))
+        
+        return result
+
+    def get_states_by_name(self, name: str) -> list[State_DTO]:
+        """Чтение состояний"""
+        result = list[State_DTO]()
+        for state in self.__scenario.get_states_by_name(StateName(name)):
+            state: State = state
+            result.append(State_DTO(state))
+
+        return result
+
+    def update_vector(self, vector_name:str, new_data:Vector_DTO):
+        """Обновление векторов"""
+        values = list[Synonym]()
+        for val in new_data.data()["values"]:
+            val:str = val
+            values.append(Synonym(val))
+
+        new_vector = LevenshtainVector(
+            VectorName(new_data.data()["name"]),
+            values
+        )
+        self.__scenario.update_vector(VectorName(vector_name), new_vector)
 
     def serialize(self) -> str:
         """сформировать строку для сохранения в файл"""
