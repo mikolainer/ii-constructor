@@ -56,9 +56,9 @@ class Vector_DTO:
 
     def __init__(self, obj: InputDescription | dict):
         if isinstance(obj, InputDescription):
-            self.__name = obj.name().value()
+            self.__name = obj.name().value
             self.__values = []
-            for val_index in len(obj):
+            for val_index in range(len(obj)):
                 self.__values.append(obj.value(val_index).value())
         
         elif isinstance(obj, dict):
@@ -88,7 +88,7 @@ class Output_DTO:
     def __init__(self, obj: OutputDescription | dict):
         if isinstance(obj, OutputDescription):
             self.__values = list[str]()
-            for val_index in len(obj):
+            for val_index in range(len(obj)):
                 self.__values.append(obj.value(val_index).as_text())
 
         elif isinstance(obj, dict):
@@ -123,7 +123,7 @@ class State_DTO:
             self.__description = obj.description().value
 
             values = list[str]
-            for val_index in len(obj):
+            for val_index in range(len(obj)):
                 values.append(obj.output().value(val_index).as_text())
             
             self.__output = Output_DTO({"values":values})
@@ -530,10 +530,14 @@ class ScenarioAPI:
     def get_vectors(self, names: list[str] | None = None) -> list[Vector_DTO]:
         """Чтение векторов"""
         answer = list[Vector_DTO]()
-        vector_names = list[VectorName]()
-        for name in names:
-            vector_names.append(VectorName(name))
-        for input in self.__scenario.select_vectors(None if names is None else vector_names):
+        vector_names = None
+
+        if names is not None:
+            vector_names = list[VectorName]()
+            for name in names:
+                vector_names.append(VectorName(name))
+                
+        for input in self.__scenario.select_vectors(vector_names):
             answer.append(Vector_DTO(input))
         return answer
 

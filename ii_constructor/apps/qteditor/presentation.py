@@ -23,8 +23,7 @@ import os.path
 from collections.abc import Callable
 from typing import Any
 
-from application import HostingManipulator, ScenarioAPI
-from data import LevenshtainVectorSerializer
+from application import HostingManipulator, ScenarioAPI, Vector_DTO
 from iiconstructor_scenario.domain import Engine, State, Hosting, Connection
 from iiconstructor_scenario.domain.exceptions import CoreException, Exists
 from iiconstructor_scenario.domain.primitives import (
@@ -552,12 +551,23 @@ class ProjectManager:
 
         ### векторы переходов
         ## наполнение представления
-        for vector in manipulator.interface().select_vectors():
+        for vector in manipulator.get_vectors():
             # пока только левенштейн
-            serialiser = LevenshtainVectorSerializer()
 
-            if isinstance(vector, LevenshtainVector):
-                vector_item = serialiser.to_data(vector)
+            if isinstance(vector, Vector_DTO):
+                vector_item = ItemData()
+                vector_item.on[CustomDataRole.Name] = vector.data()["name"]
+
+                synonyms = SynonymsSetModel()
+                for value in vector.data()["values"]:
+                    synonym = ItemData()
+                    synonym.on[CustomDataRole.Text] = value
+                    synonyms.prepare_item(synonym)
+                    synonyms.insertRow()
+                    # synonyms.add_item(synonym)
+                vector_item.on[CustomDataRole.SynonymsSet] = synonyms
+                vector_item.on[CustomDataRole.Description] = ""
+
                 proj.vectors_model.prepare_item(vector_item)
                 proj.vectors_model.insertRow()
 
@@ -1081,11 +1091,17 @@ class ProjectManager:
                 manipulator,
                 model,
             )
-            synonym_value = data.on[CustomDataRole.Text]
-            old_vector = manipulator.interface().select_vectors([VectorName(group_name)])[0]
-            if isinstance(old_vector, LevenshtainVector):
-                new_vector = old_vector.add_synonym(Synonym(synonym_value))
-                manipulator.interface().update_vector(old_vector.name(), new_vector)
+            synonym_value:str = data.on[CustomDataRole.Text]
+            old_vector = manipulator.get_vectors([group_name])[0]
+            if isinstance(old_vector, Vector_DTO):
+                name = old_vector.data()["name"]
+                new_vector = Vector_DTO(
+                    {
+                        "name": name,
+                        "values": old_vector.data()["values"] + [synonym_value]
+                    }
+                )
+                manipulator.update_vector(name, new_vector)
 
         except Exists as e:
             QMessageBox.critical(
@@ -1115,10 +1131,19 @@ class ProjectManager:
                 manipulator,
                 index.model(),
             )
-            old_vector = manipulator.interface().select_vectors([VectorName(group_name)])[0]
-            if isinstance(old_vector, LevenshtainVector):
-                new_vector = old_vector.change_synonoym(Synonym(old_value), Synonym(new_value))
-                manipulator.interface().update_vector(old_vector.name(), new_vector)
+            old_vector = manipulator.get_vectors([group_name])[0]
+            if isinstance(old_vector, Vector_DTO):
+                name = old_vector.data()["name"]
+                values: list[str] = old_vector.data()["values"]
+                values[values.index(old_value)] = new_value
+                new_vector = Vector_DTO(
+                    {
+                        "name": name,
+                        "values": values
+                    }
+                )
+                manipulator.update_vector(name, new_vector)
+
         except Exception as e:
             return False
 
@@ -1137,10 +1162,18 @@ class ProjectManager:
                 index.model(),
             )
             synonym_value = index.data(CustomDataRole.Text)
-            old_vector = manipulator.interface().select_vectors([VectorName(group_name)])[0]
-            if isinstance(old_vector, LevenshtainVector):
-                new_vector = old_vector.remove_synonym(Synonym(synonym_value))
-                manipulator.interface().update_vector(old_vector.name(), new_vector)
+            old_vector = manipulator.get_vectors([group_name])[0]
+            if isinstance(old_vector, Vector_DTO):
+                name = old_vector.data()["name"]
+                values: list[str] = old_vector.data()["values"]
+                values.remove(synonym_value)
+                new_vector = Vector_DTO(
+                    {
+                        "name": name,
+                        "values": values
+                    }
+                )
+                manipulator.update_vector(name, new_vector)
 
         except Exception as e:
             return False
