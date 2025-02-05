@@ -23,7 +23,7 @@ import os.path
 from collections.abc import Callable
 from typing import Any
 
-from application import HostingManipulator, ScenarioAPI, Vector_DTO
+from application import HostingManipulator, ScenarioAPI, Vector_DTO, State_DTO, Output_DTO
 from iiconstructor_scenario.domain import Engine, State, Hosting, Connection
 from iiconstructor_scenario.domain.exceptions import CoreException, Exists
 from iiconstructor_scenario.domain.primitives import (
@@ -582,42 +582,43 @@ class ProjectManager:
 
         ### сцена (состояния и переходы)
         ## наполнение представления
-        for state in manipulator.interface().states().values():
+        for state in manipulator.get_states().values():
             input_items = list[ItemData]()
 
             # подготовка шагов для модели состояний
-            for conn in manipulator.interface().steps(state.id()):
-                conn: Connection = conn
+            for conn in manipulator.get_steps(state.data()["id"]):
                 if conn is None:
                     continue  # вообще-то не норм ситуация. возможно стоит бросать исключение
 
-                for step in conn.steps:
+                for step_name in conn.data()["steps"]:
+                    step_name:str = step_name
                     vector_data = proj.vectors_model.get_item_by(
-                        CustomDataRole.Name, step.name,
+                        CustomDataRole.Name, step_name,
                     )
-                    s_model = vector_data.on[CustomDataRole.SynonymsSet]
+                    s_model:SynonymsSetModel = vector_data.on[CustomDataRole.SynonymsSet]
 
-                    if conn.from_state is None:
+                    if conn.data()["from_state"] == "None":
                         # формирование элемента модели содержания
                         input_item = ItemData()
                         input_item.on[CustomDataRole.Name] = (
-                            state.name().value
+                            state.data()["name"]
                         )
                         input_item.on[CustomDataRole.Description] = (
-                            state.description().value
+                            state.data()["description"]
                         )
                         input_item.on[CustomDataRole.SynonymsSet] = s_model
                         input_item.on[CustomDataRole.EnterStateId] = (
-                            state.id().value
+                            int(state.data()["id"])
                         )
                         input_item.on[CustomDataRole.SliderVisability] = False
                         input_items.append(input_item)
 
             # формирование элемента модели состояний
+            state_output: Output_DTO = state.data()["output"]
             item = ItemData()
-            item.on[CustomDataRole.Id] = state.id().value
-            item.on[CustomDataRole.Name] = state.name().value
-            item.on[CustomDataRole.Text] = state.output().value().as_text()
+            item.on[CustomDataRole.Id] = int(state.data()["id"])
+            item.on[CustomDataRole.Name] = state.data()["name"]
+            item.on[CustomDataRole.Text] = state_output.data()["values"][0]
 
             # добавление элемента модели состояний
             scene_controll.on_insert_node(proj.scene(), item, input_items)

@@ -122,9 +122,10 @@ class State_DTO:
             self.__name = obj.name().value
             self.__description = obj.description().value
 
-            values = list[str]
-            for val_index in range(len(obj)):
-                values.append(obj.output().value(val_index).as_text())
+            values = list[str]()
+            _out = obj.output()
+            for val_index in range(len(_out)):
+                values.append(_out.value(val_index).as_text())
             
             self.__output = Output_DTO({"values":values})
 
@@ -180,12 +181,18 @@ class Connection_DTO:
 
     def __init__(self, obj: Connection | dict):
         if isinstance(obj, Connection):
-            self.__from_state_id = str(obj.from_state.value)
-            self.__to_state_id = str(obj.to_state.value)
+            self.__from_state_id = "None"
+            if obj.from_state is not None:
+                self.__from_state_id = str(obj.from_state.value)
+            
+            self.__to_state_id = "None"
+            if obj.to_state is not None:
+                self.__to_state_id = str(obj.to_state.value)
+            
             self.__steps = []
-            for step in obj.steps():
+            for step in obj.steps:
                 step: Step = step
-                self.__steps.append(step.name())
+                self.__steps.append(step.name)
 
         elif isinstance(obj, dict):
             self.__from_state_id = str(obj["from_state"])
