@@ -32,7 +32,9 @@ from iiconstructor_scenario.domain.primitives import (
     ProjectName,
     Request,
     SourceInfo,
+    StateID
 )
+from iiconstructor_answers.plaintext import PlainTextAnswer, PlainTextDescription
 from iiconstructor_inputvectors.domain import (
     VectorName,
 )
@@ -1258,9 +1260,15 @@ class TestDialog(QWidget):
         self.setWindowTitle(title)
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
 
-        start_state: State = manipulator.interface().get_states_by_name(
-            StateName("Старт"),
-        )[0]
+        start_state_dto = manipulator.get_states_by_name("Старт")[0]
+        out:Output_DTO = start_state_dto.data()["output"]
+        start_state = State(
+            StateID(int(start_state_dto.data()["id"])),
+            StateName(start_state_dto.data()["name"]),
+            Description(start_state_dto.data()["description"]),
+            PlainTextDescription(PlainTextAnswer(out.data()["values"][0])),
+            bool(start_state_dto.data()["required"] == str(True))
+        )
         self.__engine = Engine(
             LevenshtainClassificator(manipulator.interface()),
             start_state,
