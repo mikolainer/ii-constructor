@@ -29,9 +29,9 @@ from iiconstructor_scenario.domain import (
 )
 from iiconstructor_scenario.domain.exceptions import CoreException, Exists
 from iiconstructor_scenario.domain.porst import ScenarioInterface
+from iiconstructor_answers import Output_DTO
 from iiconstructor_answers.plaintext import (
     OutputDescription,
-    PlainTextAnswer,
     PlainTextDescription,
 )
 from iiconstructor_inputvectors.domain import (
@@ -65,14 +65,6 @@ class Vector_DTO:
             self.__name = obj["name"]
             self.__values = obj["values"]
 
-    @staticmethod
-    def parse(data_str: str) -> "Vector_DTO":
-        obj: dict
-        splitted: list[str] = data_str.split(";")
-        obj["name"] = splitted[0][splitted[0].index("=")+1 :]
-        obj["values"] = splitted[1][splitted[1].index("=")+1 :].split(',')
-        return Vector_DTO(obj)
-
     def serialize(self) -> str:
         return f"name={self.__name};values={','.join(self.__values)}"
 
@@ -81,32 +73,7 @@ class Vector_DTO:
             "name": self.__name,
             "values": self.__values
         }
-
-class Output_DTO:
-    __values: list[str]
-
-    def __init__(self, obj: OutputDescription | dict):
-        if isinstance(obj, OutputDescription):
-            self.__values = list[str]()
-            for val_index in range(len(obj)):
-                self.__values.append(obj.value(val_index).as_text())
-
-        elif isinstance(obj, dict):
-            self.__values = obj["values"]
-
-    @staticmethod
-    def parse(data_str: str) -> "Output_DTO":
-        return {
-            "values": data_str.split(",")
-        }
-
-    def serialize(self) -> str:
-        return ",".join(self.__values)
-
-    def data(self) -> dict:
-        return {
-            "values": self.__values
-        }
+    
 
 class State_DTO:
     __id: str
@@ -121,13 +88,7 @@ class State_DTO:
             self.__required = str(obj.is_required())
             self.__name = obj.name().value
             self.__description = obj.description().value
-
-            values = list[str]()
-            _out = obj.output()
-            for val_index in range(len(_out)):
-                values.append(_out.value(val_index).as_text())
-            
-            self.__output = Output_DTO({"values":values})
+            self.__output = Output_DTO({"value" : obj.output().as_text()})
 
         elif isinstance(obj, dict):
             self.__id = obj["id"]
@@ -135,32 +96,6 @@ class State_DTO:
             self.__name = obj["name"]
             self.__description = obj["description"]
             self.__output = obj["output"]
-
-    @staticmethod
-    def parse(data_str: str) -> "State_DTO":
-        splitted = data_str.split(",")
-        data = {}
-        for sub_str in splitted:
-            sep_index = sub_str.index("=")
-            name = sub_str[:sep_index]
-            value = sub_str[sep_index:]
-
-            if name == "id":
-                data["id"] = value
-            
-            elif name == "required":
-                data["required"] = value
-
-            elif name == "name":
-                data["name"] = value
-
-            elif name == "description":
-                data["description"] = value
-
-            elif name == "output":
-                data["output"] = Connection_DTO.parse(data)
-
-        return State_DTO(data)
 
     def serialize(self) -> str:
         return f"id={self.__id};required={self.__required};name={self.__name};description={self.__description};output={self.__output.serialize()}"
@@ -198,26 +133,6 @@ class Connection_DTO:
             self.__from_state_id = str(obj["from_state"])
             self.__to_state_id = str(obj["to_state"])
             self.__steps = obj["steps"]
-
-    @staticmethod
-    def parse(data_str: str) -> "Connection_DTO":
-        splitted = data_str.split(",")
-        data = {}
-        for sub_str in splitted:
-            sep_index = sub_str.index("=")
-            name = sub_str[:sep_index]
-            value = sub_str[sep_index:]
-
-            if name == "from_state":
-                data["from_state"] = value
-            
-            elif name == "to_state":
-                data["to_state"] = value
-
-            elif name == "steps":
-                data["steps"] = value.split(",")
-
-        return Connection_DTO(data)
 
     def serialize(self) -> str:
         return f"from_state={self.__from_state_id};to_state={self.__to_state_id};steps={','.join(self.__steps)}"
@@ -308,7 +223,7 @@ class HostingManipulator:
             state: State = scenario.source().create_state(
                 StateName(elem.attrib["Название"]),
                 Description(""),
-                PlainTextDescription(PlainTextAnswer(elem.text)),
+                PlainTextDescription(elem.text),
             )
             if id_map is not None:
                 id_map[int(elem.attrib["Идентификатор"])] = state.id().value
@@ -469,26 +384,26 @@ class ScenarioAPI:
             StateID(from_state_id),
             StateName(new_state_name),
             Description(""),
-            PlainTextDescription(PlainTextAnswer("Текст ответа")),
+            PlainTextDescription("Текст ответа"),
             vector,
         )
 
         return {
             "id": to_state.id().value,
-            "text": to_state.output().value().as_text(),
+            "text": to_state.output().as_text(),
         }
     
     def create_enter_to_new_state(self, new_state_name: str) -> dict[str, str]:
         state = self.__scenario.create_enter_to_new(
             StateName(new_state_name),
             Description(""),
-            PlainTextDescription(PlainTextAnswer("текст ответа"))
+            PlainTextDescription("текст ответа")
         )
 
         return {
             "id": state.id().value,
             "name": state.name().value,
-            "text": state.output().value().as_text(),
+            "text": state.output().as_text(),
         }
         
 
@@ -496,7 +411,7 @@ class ScenarioAPI:
         """изменяет ответ состояния"""
         self.__scenario.set_answer(
             StateID(state_id),
-            PlainTextDescription(PlainTextAnswer(new_value)),
+            PlainTextDescription(new_value),
         )
 
     def rename_state(self, state_id: int, new_name: str):
@@ -641,7 +556,7 @@ class ScenarioAPI:
                     "Название": state.name().value,
                 },
             )
-            _state.text = state.output().value().as_text()
+            _state.text = state.output().as_text()
             states.append(_state)
 
         enter_connections: list[Connection] = self.__scenario.enters()

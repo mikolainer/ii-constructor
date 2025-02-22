@@ -21,9 +21,26 @@
 from .domain import (
     OutputLib,
     OutputID,
-    OutputDescription,
-    AnswerValue,
+    OutputDescription
 )
+
+
+class Output_DTO:
+    __value: str
+
+    def __init__(self, obj: OutputDescription | dict):
+        if isinstance(obj, OutputDescription):
+            self.__value = obj.as_text()
+
+        elif isinstance(obj, dict):
+            self.__value = obj["value"]
+
+    def serialize(self) -> str:
+        return self.__value
+
+    def data(self) -> dict:
+        return {"value": self.__value}
+    
 
 class OutputsLibAPI():
     """Интерфейс к библиотеке ответов для прикладного уровня"""
@@ -35,27 +52,21 @@ class OutputsLibAPI():
     def type(self) -> str:
         return self.__lib.attributes().items_type
 
-    def read(self, id:int) -> list[list[str]]:
+    def read(self, id:int) -> list[str]:
         """Получить описание всех выходов состояния"""
-        result = list[list[str]]()
+        result = list[str]()
 
         for output_descr in self.__lib.read(OutputID(id)):
             output_descr: OutputDescription = output_descr
-
-            out_values = list[str]()
-            for index in range(len(output_descr)):
-                val: AnswerValue = output_descr.value(index)
-                out_values.append(val.as_text())
-
-            result.append(out_values)
+            result.append(output_descr.as_text())
 
         return result
 
     def update(self, id:int, old_data:str, new_data:str):
         """Заменить одно значение другим"""
         _id = OutputID(id)
-        old_value: OutputDescription = self.__lib.parse(old_data)
-        new_value: OutputDescription = self.__lib.parse(new_data)
+        old_value = OutputDescription(old_data)
+        new_value = OutputDescription(new_data)
         self.__lib.delete(_id, old_value)
         self.__lib.create(new_value, _id)
 

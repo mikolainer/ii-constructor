@@ -34,7 +34,7 @@ from iiconstructor_scenario.domain.primitives import (
     SourceInfo,
     StateID
 )
-from iiconstructor_answers.plaintext import PlainTextAnswer, PlainTextDescription
+from iiconstructor_answers.plaintext import PlainTextDescription
 from iiconstructor_inputvectors.domain import (
     VectorName,
 )
@@ -620,7 +620,7 @@ class ProjectManager:
             item = ItemData()
             item.on[CustomDataRole.Id] = int(state.data()["id"])
             item.on[CustomDataRole.Name] = state.data()["name"]
-            item.on[CustomDataRole.Text] = state_output.data()["values"][0]
+            item.on[CustomDataRole.Text] = state_output.data()["value"]
 
             # добавление элемента модели состояний
             scene_controll.on_insert_node(proj.scene(), item, input_items)
@@ -1266,7 +1266,7 @@ class TestDialog(QWidget):
             StateID(int(start_state_dto.data()["id"])),
             StateName(start_state_dto.data()["name"]),
             Description(start_state_dto.data()["description"]),
-            PlainTextDescription(PlainTextAnswer(out.data()["values"][0])),
+            PlainTextDescription(out.data()["value"]),
             bool(start_state_dto.data()["required"] == str(True))
         )
         self.__engine = Engine(
@@ -1277,7 +1277,7 @@ class TestDialog(QWidget):
         self.__chat_history = QListWidget(self)
         self.__chat_history.insertItem(
             0,
-            start_state.output().value().as_text(),
+            start_state.output().as_text(),
         )
 
         self.__chat_history.setSelectionMode(

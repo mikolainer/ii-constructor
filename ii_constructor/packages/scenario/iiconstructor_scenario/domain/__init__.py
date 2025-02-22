@@ -28,7 +28,6 @@ from iiconstructor_answers.domain import (
     OutputDescription,
 )
 from iiconstructor_answers.plaintext import (
-    PlainTextAnswer,
     PlainTextDescription,
 )
 from iiconstructor_inputvectors.domain import (
@@ -175,8 +174,8 @@ class State:
         if description is None:
             description = Description("")
 
-        if output is None or output.value().as_text() == "":
-            self.__output = PlainTextDescription(PlainTextAnswer("текст ответа"))
+        if output is None or output.as_text() == "":
+            self.__output = PlainTextDescription("текст ответа")
 
     def id(self) -> StateID:
         return self.__id
@@ -454,7 +453,7 @@ class Scenario(ScenarioInterface):
         # создаём состояние
         state_to = self.__src.create_state(
             StateName(input.name().value), Description(""),
-            PlainTextDescription(PlainTextAnswer("Текст ответа")),
+            PlainTextDescription("Текст ответа"),
             required,
         )
 
@@ -740,7 +739,7 @@ class Engine:
         if prev_state == self.__cur_state:
             result.text = "Запрос не понятен"
         else:
-            result.text = self.__cur_state.output().value().as_text()
+            result.text = self.__cur_state.output().as_text()
 
         return result
 

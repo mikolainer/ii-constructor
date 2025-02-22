@@ -1,24 +1,13 @@
 from dataclasses import dataclass
-
-class AnswerValue:
-    def as_text(self) -> str:
-        """Строковое представление"""
-
-
-class OutputDescription:
-    """Описание ответа - аттрибут состояния"""
-    _values: list[AnswerValue]
-
-    def value(self, index:int = 0) -> AnswerValue:
-        return self._values[index]
-
-    def __len__(self) -> int:
-        return len(self._values)
     
-
 @dataclass(frozen=True)
 class OutputID:
     value: int
+
+
+class OutputDescription:
+    def as_text(self) -> str:
+        """Строковое представление"""
 
 
 class OutputRepository:
@@ -43,12 +32,9 @@ class OutputLib:
         self.__repo = repo
 
     @staticmethod
-    def parse(value: str) -> OutputDescription:
-        """Деериализовать значение ответа"""
-
-    @staticmethod
     def serialize(value: OutputDescription) -> str:
         """Сериализовать значение ответа"""
+        return value.as_text()
 
     def items_type(self) -> str:
         """Тип обработываетмых ответов"""

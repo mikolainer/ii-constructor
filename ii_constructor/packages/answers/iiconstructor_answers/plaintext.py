@@ -1,47 +1,20 @@
 from .domain import (
-    AnswerValue,
     OutputDescription,
     OutputID,
     OutputRepository,
     OutputLib,
 )
 
-class PlainTextAnswer(AnswerValue):
-    """Базовый класс описания ответа"""
 
+class PlainTextDescription(OutputDescription):
+    # нет сеттеров. только создание целиком.
     __text: str
-    __MIN_LEN: int = 1
-    __MAX_LEN: int = 1024
 
     def __init__(self, text:str):
         self.__text = text
 
     def as_text(self) -> str:
         return self.__text
-
-    def is_valid(self) -> bool:
-        _len: int = len(self.text)
-        return self.__MIN_LEN < _len < self.__MAX_LEN
-
-
-class PlainTextDescription(OutputDescription):
-
-    # нет сеттеров. только создание целиком.
-    def __init__(self, answer: PlainTextAnswer):
-        if isinstance(answer, PlainTextAnswer):
-            self._values = [answer]
-        
-        else: raise TypeError(answer)
-
-
-class PlainTextOutputLib(OutputLib):
-    @staticmethod
-    def parse(value: str) -> OutputDescription:
-        return PlainTextDescription(PlainTextAnswer(value))
-
-    @staticmethod
-    def serialize(value: OutputDescription) -> str:
-        return value.value().as_text()
 
 
 class PlainTextOutputInmemoryRepository(OutputRepository):
