@@ -17,23 +17,21 @@ class OutputDescription:
     
 
 @dataclass(frozen=True)
-class State:
-    """Состояние"""
-
+class OutputID:
     value: int
 
 
 class OutputRepository:
-    def create(self, state: State, value: OutputDescription):
+    def create(self, value: OutputDescription, id: OutputID = None):
         """Создать привязку ответа к состоянию"""
 
-    def read(self, state: State) -> list[OutputDescription]:
+    def read(self, id: OutputID) -> list[OutputDescription]:
         """Получить описание всех ответов состояния"""
 
-    def update(self, state: State, old: OutputDescription, new: OutputDescription):
+    def update(self, id: OutputID, old: OutputDescription, new: OutputDescription):
         """Заменить одно значение ответа другим"""
 
-    def delete(self, state: State, value: OutputDescription):
+    def delete(self, id: OutputID, value: OutputDescription):
         """Удалить значение ответа, привязанного к состоянию"""
 
 
@@ -43,11 +41,6 @@ class OutputLib:
 
     def __init__(self, repo: OutputRepository):
         self.__repo = repo
-
-    # нет сеттеров. только создание целиком.
-    @staticmethod
-    def make_default_output() -> OutputDescription:
-        """Создать ответ по умолчанию"""
 
     @staticmethod
     def parse(value: str) -> OutputDescription:
@@ -60,19 +53,19 @@ class OutputLib:
     def items_type(self) -> str:
         """Тип обработываетмых ответов"""
 
-    def create(self, state: State, value: OutputDescription):
+    def create(self, value: OutputDescription, id: OutputID = None):
         """Создать привязку ответа к состоянию"""
-        self.__repo.create(state, value)
+        self.__repo.create(value, id)
 
-    def read(self, state: State) -> list[OutputDescription]:
+    def read(self, id: OutputID) -> list[OutputDescription]:
         """Получить описание всех ответов состояния"""
-        return self.__repo.read(state)
+        return self.__repo.read(id)
 
-    def update(self, state: State, old: OutputDescription, new: OutputDescription):
+    def update(self, id: OutputID, old: OutputDescription, new: OutputDescription):
         """Заменить одно значение ответа другим"""
-        self.__repo.update(state, old, new)
+        self.__repo.update(id, old, new)
 
-    def delete(self, state: State, value: OutputDescription):
+    def delete(self, id: OutputID, value: OutputDescription):
         """Удалить значение ответа, привязанного к состоянию"""
-        self.__repo.delete(state, value)
+        self.__repo.delete(id, value)
 

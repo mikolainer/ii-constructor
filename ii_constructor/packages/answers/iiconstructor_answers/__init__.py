@@ -20,14 +20,9 @@
 
 from .domain import (
     OutputLib,
-    State,
+    OutputID,
     OutputDescription,
     AnswerValue,
-)
-
-from .plaintext import (
-    PlainTextAnswer,
-    PlainTextDescription,
 )
 
 class OutputsLibAPI():
@@ -40,15 +35,11 @@ class OutputsLibAPI():
     def type(self) -> str:
         return self.__lib.attributes().items_type
 
-    def create_default_for(self, state_id:int):
-        """Создать привязку выходного значения по умолчанию к состоянию"""
-        self.__lib.create(State(state_id), self.__lib.make_default_output())
-
-    def read(self, state_id:int) -> list[list[str]]:
+    def read(self, id:int) -> list[list[str]]:
         """Получить описание всех выходов состояния"""
         result = list[list[str]]()
 
-        for output_descr in self.__lib.read(State(state_id)):
+        for output_descr in self.__lib.read(OutputID(id)):
             output_descr: OutputDescription = output_descr
 
             out_values = list[str]()
@@ -60,19 +51,19 @@ class OutputsLibAPI():
 
         return result
 
-    def update(self, state_id:int, old_data:str, new_data:str):
+    def update(self, id:int, old_data:str, new_data:str):
         """Заменить одно значение другим"""
-        state = State(state_id)
+        _id = OutputID(id)
         old_value: OutputDescription = self.__lib.parse(old_data)
         new_value: OutputDescription = self.__lib.parse(new_data)
-        self.__lib.delete(state, old_value)
-        self.__lib.create(state, new_value)
+        self.__lib.delete(_id, old_value)
+        self.__lib.create(new_value, _id)
 
-    def delete(self, state_id:int):
+    def delete(self, id:int):
         """Удалить ответы состояния"""
-        state = State(state_id)
+        _id = OutputID(id)
 
-        for value in self.__lib.read(state):
+        for value in self.__lib.read(_id):
             value: OutputDescription = value
-            self.__lib.delete(state, value)
+            self.__lib.delete(_id, value)
 

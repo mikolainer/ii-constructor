@@ -1,7 +1,7 @@
 from .domain import (
     AnswerValue,
     OutputDescription,
-    State,
+    OutputID,
     OutputRepository,
     OutputLib,
 )
@@ -35,11 +35,6 @@ class PlainTextDescription(OutputDescription):
 
 
 class PlainTextOutputLib(OutputLib):
-    # нет сеттеров. только создание целиком.
-    @staticmethod
-    def make_default_output() -> OutputDescription:
-        return PlainTextDescription(PlainTextAnswer("Текст ответа"))
-
     @staticmethod
     def parse(value: str) -> OutputDescription:
         return PlainTextDescription(PlainTextAnswer(value))
@@ -50,31 +45,31 @@ class PlainTextOutputLib(OutputLib):
 
 
 class PlainTextOutputInmemoryRepository(OutputRepository):
-    __outputs: dict[State, list[OutputDescription]]
+    __outputs: dict[OutputID, list[OutputDescription]]
 
     def __init__(self):
-        self.__outputs = dict[State, list[OutputDescription]]()
+        self.__outputs = dict[OutputID, list[OutputDescription]]()
 
-    def create(self, state: State, value: OutputDescription):
-        if state in self.__outputs.keys():
-            self.__outputs[state] = [value]
+    def create(self, value: OutputDescription, id: OutputID = None):
+        if id in self.__outputs.keys():
+            self.__outputs[id] = [value]
         else:
-            self.__outputs[state].append[value]
+            self.__outputs[id].append[value]
 
-    def read(self, state: State) -> list[OutputDescription]:
-        return self.__outputs[state]
+    def read(self, id: OutputID) -> list[OutputDescription]:
+        return self.__outputs[id]
 
-    def update(self, state: State, old: OutputDescription, new: OutputDescription):
-        old_index = self.__outputs[state].index(old)
-        self.__outputs[state].pop(old_index)
+    def update(self, id: OutputID, old: OutputDescription, new: OutputDescription):
+        old_index = self.__outputs[id].index(old)
+        self.__outputs[id].pop(old_index)
 
         new_index = old_index + 1
         if new_index >= len(new_index):
-            self.__outputs[state].insert(new_index, new)
+            self.__outputs[id].insert(new_index, new)
 
-    def delete(self, state: State, value: OutputDescription):
-        index = self.__outputs[state].index(value)
-        self.__outputs[state].pop(index)
+    def delete(self, id: OutputID, value: OutputDescription):
+        index = self.__outputs[id].index(value)
+        self.__outputs[id].pop(index)
 
-        if len(self.__outputs[state]) == 0:
-            self.__outputs.pop(state)
+        if len(self.__outputs[id]) == 0:
+            self.__outputs.pop(id)
