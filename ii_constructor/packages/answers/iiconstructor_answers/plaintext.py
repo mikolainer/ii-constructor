@@ -5,7 +5,28 @@ from .domain import (
     OutputLib,
 )
 
+from iiconstructor_answers import Output_DTO
 
+class PlainTextOutput_DTO(Output_DTO):
+    __value: str
+
+    def __init__(self, obj: "PlainTextDescription" | dict):
+        if isinstance(obj, PlainTextDescription):
+            self.__value = obj.as_text()
+
+        elif isinstance(obj, dict):
+            self.__value = obj["value"]
+
+    @staticmethod
+    def as_dict(obj: Output) -> dict:
+        return {"value": self.__value}
+
+    def as_text(self) -> str:
+        return self.__value
+    
+    def as_value(self) -> OutputDescription:
+        return PlainTextDescription(self.__value)
+    
 class PlainTextDescription(OutputDescription):
     # нет сеттеров. только создание целиком.
     __text: str

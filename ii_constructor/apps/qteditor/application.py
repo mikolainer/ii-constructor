@@ -98,7 +98,7 @@ class State_DTO:
             self.__output = obj["output"]
 
     def serialize(self) -> str:
-        return f"id={self.__id};required={self.__required};name={self.__name};description={self.__description};output={self.__output.serialize()}"
+        return f"id={self.__id};required={self.__required};name={self.__name};description={self.__description};output={self.__output.as_text()}"
 
     def data(self) -> dict:
         return {

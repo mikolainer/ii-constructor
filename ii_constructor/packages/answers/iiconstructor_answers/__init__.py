@@ -21,25 +21,31 @@
 from .domain import (
     OutputLib,
     OutputID,
-    OutputDescription
+    OutputDescription,
+    Output,
 )
 
+class OutputSpec_DTO:
+    @staticmethod
+    def as_dict(obj: IsOutputSpec) -> dict:
+        pass
+    
+    def as_text(self) -> str:
+        pass
+    
+    def as_value(self) -> IsOutputSpec:
+        pass
 
 class Output_DTO:
-    __value: str
-
-    def __init__(self, obj: OutputDescription | dict):
-        if isinstance(obj, OutputDescription):
-            self.__value = obj.as_text()
-
-        elif isinstance(obj, dict):
-            self.__value = obj["value"]
-
-    def serialize(self) -> str:
-        return self.__value
-
-    def data(self) -> dict:
-        return {"value": self.__value}
+    @staticmethod
+    def as_dict(obj: Output) -> dict:
+        pass
+    
+    def as_text(self) -> str:
+        pass
+    
+    def as_value(self) -> OutputDescription:
+        pass
     
 
 class OutputsLibAPI():

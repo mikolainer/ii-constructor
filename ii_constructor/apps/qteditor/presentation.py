@@ -620,7 +620,7 @@ class ProjectManager:
             item = ItemData()
             item.on[CustomDataRole.Id] = int(state.data()["id"])
             item.on[CustomDataRole.Name] = state.data()["name"]
-            item.on[CustomDataRole.Text] = state_output.data()["value"]
+            item.on[CustomDataRole.Text] = state_output.as_dict()["value"]
 
             # добавление элемента модели состояний
             scene_controll.on_insert_node(proj.scene(), item, input_items)
@@ -1266,7 +1266,7 @@ class TestDialog(QWidget):
             StateID(int(start_state_dto.data()["id"])),
             StateName(start_state_dto.data()["name"]),
             Description(start_state_dto.data()["description"]),
-            PlainTextDescription(out.data()["value"]),
+            PlainTextDescription(out.as_dict()["value"]),
             bool(start_state_dto.data()["required"] == str(True))
         )
         self.__engine = Engine(
