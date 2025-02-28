@@ -30,7 +30,7 @@ from iiconstructor_scenario.domain import (
     Step,
 )
 from iiconstructor_scenario.domain.exceptions import Exists, NotExists
-from iiconstructor_answers.domain import (
+from iiconstructor_answers.operations import (
     OutputDescription,
 )
 from iiconstructor_inputvectors.domain import (

@@ -1,6 +1,23 @@
 from .dataaccess import DataAccess
-from .primitives import OutputType, OutputID, IsOutputSpec
+from .spec import Iexpression, Expression
+from .primitives import OutputType, OutputID
 from .abstract import OutputDescription, Output
+
+class IsOutputSpec:
+    __expr: Iexpression
+    
+    def __init__(self, expr: Iexpression):
+        setattr(self, "_IsOutputSpec__expr", expr)
+
+    def expr(self) -> Iexpression:
+        return getattr(self, "_Expression__field_value")
+
+class OneIdOutputSpec(IsOutputSpec):
+    def __init__(self, id: OutputID):
+        super().__init__(Expression("id", id))
+    
+    def expr(self) -> Expression:
+        return super().expr()
 
 class OutputRepository:
     def __init__(self, data_access: DataAccess):

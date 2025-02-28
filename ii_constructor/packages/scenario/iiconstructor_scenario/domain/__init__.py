@@ -24,7 +24,7 @@ from typing import Any, Optional
 
 from .exceptions import CoreException, Exists, NotExists
 from .porst import ScenarioInterface
-from iiconstructor_answers.domain import (
+from iiconstructor_answers.operations import (
     OutputDescription,
 )
 from iiconstructor_answers.plaintext import (

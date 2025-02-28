@@ -22,7 +22,7 @@
 from __future__ import annotations
 
 from .primitives import StateID, StateName, Description, ScenarioID, ProjectName
-from iiconstructor_answers.domain import (
+from iiconstructor_answers.operations import (
     OutputDescription,
 )
 from iiconstructor_inputvectors.domain import (

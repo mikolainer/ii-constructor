@@ -18,7 +18,7 @@
 # вместе с этой программой. Если это не так,
 # см. <https://www.gnu.org/licenses/>.
 
-from .domain import (
+from .operations import (
     OutputLib,
     OutputID,
     OutputDescription,

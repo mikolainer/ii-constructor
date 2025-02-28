@@ -1,4 +1,4 @@
-from .domain import (
+from .operations import (
     OutputDescription,
     OutputID,
     OutputRepository,
