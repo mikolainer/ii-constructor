@@ -7,3 +7,7 @@ class OutputID:
 @dataclass(frozen=True)
 class OutputType:
     name: str
+
+@dataclass(frozen=True)
+class StorageType:
+    name: str

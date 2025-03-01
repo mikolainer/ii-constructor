@@ -1,8 +1,27 @@
-from .dataaccess import DataAccess
+from typing import TypeVar
+
+from .dataaccess import DataAccess, StorageType
 from .spec import Iexpression, Expression
 from .primitives import OutputType, OutputID
-from .abstract import OutputDescription, Output
 
+class OutputDescription:
+    def get_type(self) -> OutputType:
+        pass
+
+class Output:
+    __id: OutputID
+    __description: OutputDescription
+
+    def __init__(self, id: OutputID, description: OutputDescription):
+        setattr(self, "_Output__id", id)
+        setattr(self, "_Output__description", description)
+
+    def id(self) -> OutputID:
+        return getattr(self, "_Output__id")
+    
+    def description(self) -> OutputID:
+        return getattr(self, "_Output__description")
+    
 class IsOutputSpec:
     __expr: Iexpression
     
@@ -23,13 +42,13 @@ class OutputRepository:
     def __init__(self, data_access: DataAccess):
         pass
 
-    def is_open():
+    def is_open(self) -> bool:
         pass
 
-    def open():
+    def open(self):
         pass
 
-    def close():
+    def close(self):
         pass
 
     def save(self, spec: IsOutputSpec, item:OutputDescription):
@@ -44,18 +63,21 @@ class OutputRepository:
     def total_count(self) -> int:
         pass
 
-    def unused_identificator() -> OutputID:
+    def unused_identificator(self) -> OutputID:
         pass
 
-    def have_unused_id() -> bool:
+    def have_unused_id(self) -> bool:
         pass
 
-    def get_type() -> OutputType:
+    @staticmethod
+    def get_output_type() -> OutputType:
+        pass
+
+    @staticmethod
+    def get_storage_type() -> StorageType:
         pass
 
 class OutputFactory:
-    __repo: OutputRepository
-
     def __init__(self, repo: OutputRepository):
         setattr(self, "_OutputFactory__repo", repo)
 
