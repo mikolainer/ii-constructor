@@ -1,11 +1,23 @@
-from typing import TypeVar
+from spec import Iexpression, Expression
+from primitives import OutputType, OutputID, StorageType
 
-from .dataaccess import DataAccess, StorageType
-from .spec import Iexpression, Expression
-from .primitives import OutputType, OutputID
+class DataAccess:
+    __outputs_type: OutputType
+    __storage_type: StorageType
 
+    def __init__(self, outputs_type: OutputType, storage_type: StorageType):
+        setattr(self, "_DataAccess__outputs_type", type)
+        setattr(self, "_DataAccess__storage_type", type)
+
+    def outputs_type(self) -> OutputType:
+        return getattr(self, "_DataAccess__outputs_type")
+    
+    def storage_type(self) -> StorageType:
+        return getattr(self, "_DataAccess__storage_type")
+    
 class OutputDescription:
-    def get_type(self) -> OutputType:
+    @staticmethod
+    def get_type() -> OutputType:
         pass
 
 class Output:
@@ -19,8 +31,9 @@ class Output:
     def id(self) -> OutputID:
         return getattr(self, "_Output__id")
     
-    def description(self) -> OutputID:
+    def description(self) -> OutputDescription:
         return getattr(self, "_Output__description")
+
     
 class IsOutputSpec:
     __expr: Iexpression
@@ -29,7 +42,7 @@ class IsOutputSpec:
         setattr(self, "_IsOutputSpec__expr", expr)
 
     def expr(self) -> Iexpression:
-        return getattr(self, "_Expression__field_value")
+        return getattr(self, "_IsOutputSpec__expr")
 
 class OneIdOutputSpec(IsOutputSpec):
     def __init__(self, id: OutputID):
@@ -37,6 +50,9 @@ class OneIdOutputSpec(IsOutputSpec):
     
     def expr(self) -> Expression:
         return super().expr()
+    
+    def id(self) -> OutputID:
+        return self.expr().value()
 
 class OutputRepository:
     def __init__(self, data_access: DataAccess):
@@ -76,23 +92,3 @@ class OutputRepository:
     @staticmethod
     def get_storage_type() -> StorageType:
         pass
-
-class OutputFactory:
-    def __init__(self, repo: OutputRepository):
-        setattr(self, "_OutputFactory__repo", repo)
-
-    def _repo(self) -> OutputRepository:
-        return getattr(self, "_OutputFactory__repo")
-    
-    def create(self, description: OutputDescription) -> Output:
-        if not super()._repo().is_open():
-            print(f"ERROR: соединение с репозиторием не установлено")
-            raise AttributeError(super()._repo())
-
-        new_id: OutputID
-        if super()._repo().have_unused_id():
-            new_id = super()._repo().unused_identificator()
-        else:
-            new_id = OutputID(super()._repo().total_count())
-        
-        return Output(new_id, description)

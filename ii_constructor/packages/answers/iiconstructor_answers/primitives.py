@@ -11,3 +11,4 @@ class OutputType:
 @dataclass(frozen=True)
 class StorageType:
     name: str
+    is_inmemory: bool

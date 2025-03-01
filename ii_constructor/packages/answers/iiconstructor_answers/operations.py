@@ -1,28 +1,47 @@
 from typing import TypeVar
 from dataclasses import dataclass
 
-from data import OutputRepository, OutputFactory, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output
-from dataaccess import DataAccess, InmemData, RemoteData
-from primitives import OutputType
+from data import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output, DataAccess
+from primitives import OutputType, OutputID
 
-from plaintext import PlainTextOutputRepository, PlainTextOutputFactory, PlainTextDescription
+from plaintext import PlainTextOutputInmemoryRepository, PlainTextDescription
 
 Toutdescdiption = TypeVar("Toutdescdiption", bound=OutputDescription)
 Trepo = TypeVar("Trepo", bound=OutputRepository)
-Tfactory = TypeVar("Tfactory", bound=OutputRepository)
+
 @dataclass(frozen=True)
 class Plugin:
     repo: Trepo
-    factory: Tfactory
     output_value_type: Toutdescdiption
 
 plugins: set[Plugin] = set([
-    Plugin(PlainTextOutputRepository, PlainTextOutputFactory, PlainTextDescription),
+    Plugin(PlainTextOutputInmemoryRepository, PlainTextDescription),
 ])
+
+class OutputFactory:
+    def __init__(self, repo: OutputRepository):
+        setattr(self, "_OutputFactory__repo", repo)
+
+    def _repo(self) -> OutputRepository:
+        return getattr(self, "_OutputFactory__repo")
+    
+    def create(self, description: OutputDescription) -> Output:
+        if not super()._repo().is_open():
+            print(f"ERROR: соединение с репозиторием не установлено")
+            raise AttributeError(super()._repo())
+
+        new_id: OutputID
+        if super()._repo().have_unused_id():
+            new_id = super()._repo().unused_identificator()
+        else:
+            new_id = OutputID(super()._repo().total_count())
+        
+        return Output(new_id, description)
 
 class OutputLibService:
     @staticmethod
-    def create(value: OutputDescription, factory: OutputFactory) -> Output:
+    def create(value: OutputDescription, repo: OutputRepository) -> Output:
+        factory = OutputFactory(repo)
         new_item = factory.create(value)
         factory._repo().save(OneIdOutputSpec(new_item.id()), new_item.value())
         return new_item
@@ -73,12 +92,12 @@ class OutputLibManager:
         return {plugin.repo.get_output_type() for plugin in self.__libs.keys()}
     
     def connect(self, connection: DataAccess):
-        if self.is_inmemory() and not issubclass(type(connection), InmemData):
-            print(f"ERROR: подключиться к удалённому хранилищу в Inmemory менеджере")
+        if self.is_inmemory() and not connection.storage_type().is_inmemory:
+            print(f"ERROR: попытка подключиться к удалённому хранилищу в Inmemory менеджере")
             raise ValueError(connection)
         
-        if not self.is_inmemory() and not issubclass(type(connection), RemoteData):
-            print(f"ERROR: подключиться к Inmemory хранилищу в удалённом менеджере")
+        if not self.is_inmemory() and connection.storage_type().is_inmemory:
+            print(f"ERROR: попытка подключиться к Inmemory хранилищу в удалённом менеджере")
             raise ValueError(connection)
 
         new_type = connection.outputs_type()
@@ -88,15 +107,15 @@ class OutputLibManager:
         
         for plugin in plugins:
             _repo_type = plugin.repo
-            if connection.storage_type() is _repo_type.get_storage_type():
+            if connection.storage_type().name == _repo_type.get_storage_type().name:
                 self.__libs[plugin] = connection
                 return
 
-        print(f"ERROR: енизвестный тип подключения к БД")
+        print(f"ERROR: неизвестный тип подключения к БД")
         raise ValueError(connection)
     
-    def make(self, connection: DataAccess):
-        raise NotImplementedError()
-
-    def remove(self, connection: DataAccess):
-        raise NotImplementedError()
+#    def make(self, connection: DataAccess):
+#        raise NotImplementedError()
+#
+#    def remove(self, connection: DataAccess):
+#        raise NotImplementedError()
