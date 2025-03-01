@@ -1,19 +1,5 @@
-from spec import Iexpression, Expression
-from primitives import OutputType, OutputID, StorageType
-
-class DataAccess:
-    __outputs_type: OutputType
-    __storage_type: StorageType
-
-    def __init__(self, outputs_type: OutputType, storage_type: StorageType):
-        setattr(self, "_DataAccess__outputs_type", type)
-        setattr(self, "_DataAccess__storage_type", type)
-
-    def outputs_type(self) -> OutputType:
-        return getattr(self, "_DataAccess__outputs_type")
-    
-    def storage_type(self) -> StorageType:
-        return getattr(self, "_DataAccess__storage_type")
+from iiconstructor_answers.spec import Iexpression, Expression
+from iiconstructor_answers.shared_core import OutputType, OutputID, StorageType, DataAccess
     
 class OutputDescription:
     @staticmethod

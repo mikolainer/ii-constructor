@@ -1,10 +1,10 @@
 from typing import TypeVar
 from dataclasses import dataclass
 
-from data import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output, DataAccess
-from primitives import OutputType, OutputID
+from iiconstructor_answers.data import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output
+from iiconstructor_answers.shared_core import OutputType, OutputID, DataAccess
 
-from plaintext import PlainTextOutputInmemoryRepository, PlainTextDescription
+from iiconstructor_answers.plaintext import PlainTextOutputInmemoryRepository, PlainTextDescription
 
 Toutdescdiption = TypeVar("Toutdescdiption", bound=OutputDescription)
 Trepo = TypeVar("Trepo", bound=OutputRepository)

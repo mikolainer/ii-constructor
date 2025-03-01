@@ -1,5 +1,5 @@
-from primitives import OutputType, OutputID, StorageType
-from data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, DataAccess
+from iiconstructor_answers.shared_core import OutputType, OutputID, StorageType
+from iiconstructor_answers.data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, DataAccess
 
 class PlainTextDescription(OutputDescription):
     __text: str
