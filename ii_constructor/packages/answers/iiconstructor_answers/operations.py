@@ -2,21 +2,16 @@ from typing import TypeVar
 from dataclasses import dataclass
 
 from iiconstructor_answers.data import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output
-from iiconstructor_answers.shared_core import OutputType, OutputID, DataAccess
+from iiconstructor_answers.primitives import OutputType, OutputID, DataAccess, StorageType
 
-from iiconstructor_answers.plaintext import PlainTextOutputInmemoryRepository, PlainTextDescription
+from iiconstructor_answers.plaintext import PlainTextOutputInmemoryRepository, PlainTextDescription, PlainTextPlugin
 
-Toutdescdiption = TypeVar("Toutdescdiption", bound=OutputDescription)
-Trepo = TypeVar("Trepo", bound=OutputRepository)
-
-@dataclass(frozen=True)
 class Plugin:
-    repo: Trepo
-    output_value_type: Toutdescdiption
+    def output_type() -> OutputType:
+        pass
 
-plugins: set[Plugin] = set([
-    Plugin(PlainTextOutputInmemoryRepository, PlainTextDescription),
-])
+    def storage_type() -> StorageType:
+        pass
 
 class OutputFactory:
     def __init__(self, repo: OutputRepository):
@@ -78,18 +73,20 @@ class OutputLibService:
         repo.remove(spec)
 
 class OutputLibManager:
-    __is_inmemory: bool
-    __libs: dict[Plugin, DataAccess]
+    __all_plugins: set[Plugin]
+    __connected: dict[Plugin, DataAccess]
 
     def __init__(self, inmemory: bool):
         setattr(self, "_OutputLibManager__is_inmemory", inmemory)
-        self.__libs = dict[Plugin, DataAccess]()
+        self.__connected = dict[Plugin, DataAccess]()
 
     def is_inmemory(self) -> bool:
         return getattr(self, "_OutputLibManager__is_inmemory")
-    
-    def connected(self) -> set[OutputType]:
-        return {plugin.repo.get_output_type() for plugin in self.__libs.keys()}
+
+    def load_plugins(self):
+        self.__all_plugins = set([
+            PlainTextPlugin(),
+        ])
     
     def connect(self, connection: DataAccess):
         if self.is_inmemory() and not connection.storage_type().is_inmemory:
@@ -101,18 +98,28 @@ class OutputLibManager:
             raise ValueError(connection)
 
         new_type = connection.outputs_type()
-        if connection.outputs_type() in self.connected():
+        
+        connected_types = {plugin.output_type() for plugin in self.connected_plugins()}
+        if connection.outputs_type() in connected_types:
             print(f"ERROR: попытка повторно подключить библиотеку с типом `{new_type.name}`")
             raise ValueError(connection)
         
-        for plugin in plugins:
-            _repo_type = plugin.repo
-            if connection.storage_type().name == _repo_type.get_storage_type().name:
-                self.__libs[plugin] = connection
+        for plugin in self.__all_plugins:
+            if connection.storage_type().name == plugin.storage_type().name:
+                self.__connected[self.__all_plugins] = connection
                 return
 
         print(f"ERROR: неизвестный тип подключения к БД")
         raise ValueError(connection)
+    
+    def disconnect(self, plugin:Plugin):
+        self.__connected.pop(plugin)
+    
+    def connected_plugins(self) -> set[Plugin]:
+        return {self.__connected.keys()}
+    
+    def available_plugins(self) -> set[Plugin]:
+        return self.__all_plugins.keys()
     
 #    def make(self, connection: DataAccess):
 #        raise NotImplementedError()

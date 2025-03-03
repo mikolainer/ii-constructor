@@ -1,5 +1,5 @@
 from iiconstructor_answers.spec import Iexpression, Expression
-from iiconstructor_answers.shared_core import OutputType, OutputID, StorageType, DataAccess
+from iiconstructor_answers.primitives import OutputType, OutputID, StorageType, DataAccess
     
 class OutputDescription:
     @staticmethod

@@ -1,5 +1,7 @@
-from iiconstructor_answers.shared_core import OutputType, OutputID, StorageType
+
+from iiconstructor_answers.primitives import OutputType, OutputID, StorageType
 from iiconstructor_answers.data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, DataAccess
+from iiconstructor_answers.operations import Plugin
 
 class PlainTextDescription(OutputDescription):
     __text: str
@@ -76,3 +78,10 @@ class PlainTextOutputInmemoryRepository(OutputRepository):
 
     def have_unused_id(self) -> bool:
         return len(self.__unused_ids) > 0
+
+class PlainTextPlugin(Plugin):
+    def output_type() -> OutputType:
+        return PlainTextOutputInmemoryRepository.get_output_type()
+
+    def storage_type() -> StorageType:
+        return PlainTextOutputInmemoryRepository.get_storage_type()
