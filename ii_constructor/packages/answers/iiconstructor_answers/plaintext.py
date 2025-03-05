@@ -1,6 +1,6 @@
 
 from iiconstructor_answers.primitives import OutputType, OutputID, StorageType
-from iiconstructor_answers.data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, DataAccess
+from iiconstructor_answers.data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, Storage
 from iiconstructor_answers.operations import Plugin
 
 class PlainTextDescription(OutputDescription):
@@ -27,7 +27,8 @@ class PlainTextOutputInmemoryRepository(OutputRepository):
     __data: dict[OutputID, Output]
     __unused_ids: set[OutputID]
 
-    def __init__(self, data_access: DataAccess):
+    def __init__(self, connection: Storage):
+        super().__init__(connection)
         self.__data = dict[OutputID, Output]()
         self.__unused_ids = set[OutputID]()
 
@@ -38,15 +39,6 @@ class PlainTextOutputInmemoryRepository(OutputRepository):
     @staticmethod
     def get_storage_type() -> StorageType:
         return StorageType("inmemory", True)
-
-    def is_open(self) -> bool:
-        return True
-
-    def open(self):
-        pass
-
-    def close(self):
-        pass
 
     def save(self, spec: IsOutputSpec, item:OutputDescription):
         if isinstance(spec, OneIdOutputSpec):
@@ -70,14 +62,11 @@ class PlainTextOutputInmemoryRepository(OutputRepository):
         
         build_query(spec)
 
-    def total_count(self) -> int:
-        return len(self.__data)
-
     def unused_identificator(self) -> OutputID:
+        if len(self.__unused_ids) == 0:
+            return OutputID(len(self.__data))
+        
         return next(iter(self.__unused_ids))
-
-    def have_unused_id(self) -> bool:
-        return len(self.__unused_ids) > 0
 
 class PlainTextPlugin(Plugin):
     def output_type() -> OutputType:

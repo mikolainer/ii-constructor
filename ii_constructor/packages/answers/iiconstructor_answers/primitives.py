@@ -13,16 +13,26 @@ class StorageType:
     name: str
     is_inmemory: bool
 
+@dataclass(frozen=True)
+class LibID:
+    value: int
+
+@dataclass(frozen=True)
+class Host:
+    addr: str
+
+@dataclass(frozen=True)
 class DataAccess:
-    __outputs_type: OutputType
-    __storage_type: StorageType
+    host: Host
+    outputs_type: OutputType
+    storage_type: StorageType
 
-    def __init__(self, outputs_type: OutputType, storage_type: StorageType):
-        setattr(self, "_DataAccess__outputs_type", type)
-        setattr(self, "_DataAccess__storage_type", type)
-
-    def outputs_type(self) -> OutputType:
-        return getattr(self, "_DataAccess__outputs_type")
-    
-    def storage_type(self) -> StorageType:
-        return getattr(self, "_DataAccess__storage_type")
+@dataclass(frozen=True)
+class PluginInfo:
+    name: str
+    version: str
+    author: str
+    contacts: str
+    url: str
+    outputs: OutputType
+    storages: set[StorageType]

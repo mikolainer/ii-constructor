@@ -1,6 +1,28 @@
 from iiconstructor_answers.spec import Iexpression, Expression
-from iiconstructor_answers.primitives import OutputType, OutputID, StorageType, DataAccess
+from iiconstructor_answers.primitives import OutputType, OutputID, StorageType, DataAccess, Host
     
+class Storage:
+    __host: Host
+
+    def __init__(self, host: Host):
+        setattr(self, "_Storage__host", host)
+
+    def host(self) -> Host:
+        return getattr(self, "_Storage__host")
+    
+    @staticmethod
+    def storage_type(self) -> StorageType:
+        pass
+
+    def is_open(self) -> bool:
+        pass
+
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
 class OutputDescription:
     @staticmethod
     def get_type() -> OutputType:
@@ -41,17 +63,13 @@ class OneIdOutputSpec(IsOutputSpec):
         return self.expr().value()
 
 class OutputRepository:
-    def __init__(self, data_access: DataAccess):
-        pass
+    __connection: Storage
 
-    def is_open(self) -> bool:
-        pass
+    def __init__(self, connection: Storage):
+        setattr(self, "_OutputRepository__connection", connection)
 
-    def open(self):
-        pass
-
-    def close(self):
-        pass
+    def storage(self) -> Storage:
+        return getattr(self, "_OutputRepository__connection")
 
     def save(self, spec: IsOutputSpec, item:OutputDescription):
         pass
@@ -62,13 +80,7 @@ class OutputRepository:
     def remove(self, spec: IsOutputSpec):
         pass
 
-    def total_count(self) -> int:
-        pass
-
     def unused_identificator(self) -> OutputID:
-        pass
-
-    def have_unused_id(self) -> bool:
         pass
 
     @staticmethod
