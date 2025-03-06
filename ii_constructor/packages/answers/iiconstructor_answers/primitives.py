@@ -36,3 +36,9 @@ class PluginInfo:
     url: str
     outputs: OutputType
     storages: set[StorageType]
+
+@dataclass(frozen=True)
+class LibInfo:
+    name: str
+    descr: str
+    plugin: PluginInfo

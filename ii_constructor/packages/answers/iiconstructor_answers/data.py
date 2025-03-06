@@ -1,5 +1,5 @@
 from iiconstructor_answers.spec import Iexpression, Expression
-from iiconstructor_answers.primitives import OutputType, OutputID, StorageType, DataAccess, Host
+from iiconstructor_answers.primitives import OutputType, OutputID, StorageType, Host
     
 class Storage:
     __host: Host
@@ -11,11 +11,28 @@ class Storage:
         return getattr(self, "_Storage__host")
     
     @staticmethod
-    def storage_type(self) -> StorageType:
+    def storage_type() -> StorageType:
         pass
 
     def is_open(self) -> bool:
         pass
+
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
+class InmemoryStorage(Storage):
+    def __init__(self):
+        super().__init__(Host(""))
+
+    @staticmethod
+    def storage_type() -> StorageType:
+        return StorageType("inmemory", True)
+
+    def is_open(self) -> bool:
+        return True
 
     def open(self):
         pass
@@ -70,6 +87,9 @@ class OutputRepository:
 
     def storage(self) -> Storage:
         return getattr(self, "_OutputRepository__connection")
+    
+    def get_storage_type(self) -> StorageType:
+        return self.storage().storage_type()
 
     def save(self, spec: IsOutputSpec, item:OutputDescription):
         pass
@@ -77,16 +97,15 @@ class OutputRepository:
     def get(self, spec: IsOutputSpec) -> set[Output]:
         pass
 
-    def remove(self, spec: IsOutputSpec):
+    def delete(self, spec: IsOutputSpec):
         pass
 
     def unused_identificator(self) -> OutputID:
         pass
 
-    @staticmethod
-    def get_output_type() -> OutputType:
+    def remove(self):
         pass
 
     @staticmethod
-    def get_storage_type() -> StorageType:
+    def get_output_type() -> OutputType:
         pass
