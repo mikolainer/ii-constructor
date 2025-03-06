@@ -128688,12 +128688,13 @@
 											"_parent": {
 												"$ref": "AAAAAAGVU4CvZLW1ypY="
 											},
-											"visible": false,
 											"fillColor": "#D8FFD8",
 											"font": "Arial;16;0",
-											"left": -1808,
-											"top": 656,
-											"height": 16
+											"left": 789,
+											"top": 820,
+											"width": 340.2890625,
+											"height": 16,
+											"text": "«semantic core»"
 										},
 										{
 											"_type": "LabelView",
@@ -128704,10 +128705,10 @@
 											"fillColor": "#D8FFD8",
 											"font": "Arial;16;1",
 											"left": 789,
-											"top": 822,
+											"top": 838,
 											"width": 340.2890625,
 											"height": 16,
-											"text": "Plugin"
+											"text": "OutputPlugin"
 										},
 										{
 											"_type": "LabelView",
@@ -128744,7 +128745,7 @@
 									"left": 784,
 									"top": 815,
 									"width": 350.2890625,
-									"height": 28,
+									"height": 44,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGVU4CvZLW2w4Q="
 									},
@@ -128770,7 +128771,7 @@
 									"fillColor": "#D8FFD8",
 									"font": "Arial;16;0",
 									"left": 784,
-									"top": 843,
+									"top": 859,
 									"width": 350.2890625,
 									"height": 10
 								},
@@ -128796,7 +128797,7 @@
 											"fillColor": "#D8FFD8",
 											"font": "Arial;16;2",
 											"left": 789,
-											"top": 858,
+											"top": 874,
 											"width": 340.2890625,
 											"height": 16,
 											"text": "+info(): PluginInfo",
@@ -128814,7 +128815,7 @@
 											"fillColor": "#D8FFD8",
 											"font": "Arial;16;2",
 											"left": 789,
-											"top": 876,
+											"top": 892,
 											"width": 340.2890625,
 											"height": 16,
 											"text": "+create_lib(storage, id, name, descr): OutputLib",
@@ -128824,7 +128825,7 @@
 									"fillColor": "#D8FFD8",
 									"font": "Arial;16;0",
 									"left": 784,
-									"top": 853,
+									"top": 869,
 									"width": 350.2890625,
 									"height": 44
 								},
@@ -128869,7 +128870,7 @@
 							"left": 784,
 							"top": 815,
 							"width": 349.2890625,
-							"height": 82,
+							"height": 98,
 							"nameCompartment": {
 								"$ref": "AAAAAAGVU4CvZLW1ypY="
 							},
@@ -130470,7 +130471,7 @@
 									"fillColor": "#c6c6c6",
 									"font": "Arial;16;0",
 									"left": 1006,
-									"top": 967,
+									"top": 975,
 									"height": 16,
 									"alpha": 1.5707963267948966,
 									"distance": 15,
@@ -130492,7 +130493,7 @@
 									"fillColor": "#c6c6c6",
 									"font": "Arial;16;0",
 									"left": 1021,
-									"top": 967,
+									"top": 975,
 									"height": 16,
 									"alpha": 1.5707963267948966,
 									"distance": 30,
@@ -130514,7 +130515,7 @@
 									"fillColor": "#c6c6c6",
 									"font": "Arial;16;0",
 									"left": 977,
-									"top": 968,
+									"top": 976,
 									"height": 16,
 									"alpha": -1.5707963267948966,
 									"distance": 15,
@@ -130532,7 +130533,7 @@
 							"tail": {
 								"$ref": "AAAAAAGVU4CvZLW0Y5s="
 							},
-							"points": "992:897;992:1056",
+							"points": "992:913;992:1056",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAGVXkbatCvASls="
@@ -133915,7 +133916,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGO+BwGndbfl1U="
 					},
-					"name": "Plugin",
+					"name": "OutputPlugin",
 					"ownedElements": [
 						{
 							"_type": "UMLAssociation",
@@ -133972,6 +133973,7 @@
 							}
 						}
 					],
+					"stereotype": "semantic core",
 					"operations": [
 						{
 							"_type": "UMLOperation",
