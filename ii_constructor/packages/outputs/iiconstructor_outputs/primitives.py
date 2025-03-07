@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from iiconstructor_storages.primitives import StorageType
 
 @dataclass(frozen=True)
 class OutputID:
@@ -9,23 +10,8 @@ class OutputType:
     name: str
 
 @dataclass(frozen=True)
-class StorageType:
-    name: str
-    is_inmemory: bool
-
-@dataclass(frozen=True)
 class LibID:
     value: int
-
-@dataclass(frozen=True)
-class Host:
-    addr: str
-
-@dataclass(frozen=True)
-class DataAccess:
-    host: Host
-    outputs_type: OutputType
-    storage_type: StorageType
 
 @dataclass(frozen=True)
 class PluginInfo:

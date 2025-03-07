@@ -1,7 +1,7 @@
 
-from iiconstructor_answers.primitives import OutputType, OutputID, StorageType, PluginInfo, LibID, LibInfo
-from iiconstructor_answers.data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, Storage, InmemoryStorage
-from iiconstructor_answers.operations import OutputPlugin, OutputLib
+from iiconstructor_outputs.primitives import OutputType, OutputID, StorageType, PluginInfo, LibID, LibInfo
+from iiconstructor_outputs.data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, Storage, InmemoryStorage
+from iiconstructor_outputs.operations import OutputPlugin, OutputLib
 
 class PlainTextOutputType(OutputType):
     def __init__(self):

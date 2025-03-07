@@ -1,5 +1,5 @@
-from iiconstructor_answers.spec import Iexpression, Expression
-from iiconstructor_answers.primitives import OutputType, OutputID, StorageType, Host
+from iiconstructor_expressions.domain import Iexpression, EqExpression
+from iiconstructor_outputs.primitives import OutputType, OutputID, StorageType, Host
     
 class Storage:
     __host: Host
@@ -71,9 +71,9 @@ class IsOutputSpec:
 
 class OneIdOutputSpec(IsOutputSpec):
     def __init__(self, id: OutputID):
-        super().__init__(Expression("id", id))
+        super().__init__(EqExpression("id", id))
     
-    def expr(self) -> Expression:
+    def expr(self) -> EqExpression:
         return super().expr()
     
     def id(self) -> OutputID:

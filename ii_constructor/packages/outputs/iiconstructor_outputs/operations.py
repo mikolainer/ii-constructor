@@ -1,8 +1,8 @@
 from typing import TypeVar
 from dataclasses import dataclass
 
-from iiconstructor_answers.data import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output, Storage
-from iiconstructor_answers.primitives import OutputType, OutputID, DataAccess, StorageType, Host, LibID, PluginInfo, LibInfo
+from iiconstructor_outputs.data import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output, Storage
+from iiconstructor_outputs.primitives import OutputType, OutputID, DataAccess, StorageType, Host, LibID, PluginInfo, LibInfo
 
 class OutputLib:
     __id: LibID

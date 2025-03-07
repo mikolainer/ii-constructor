@@ -1,8 +1,10 @@
--e ./ii_constructor/packages/scenario # сценарий
+-e ./ii_constructor/packages/storages # доступ к данным
+-e ./ii_constructor/packages/expressions # выражения для спецификаций создания и выборки
 -e ./ii_constructor/packages/answers # ответы
 -e ./ii_constructor/packages/inputvectors # переходы
--e ./ii_constructor/packages/gui # пользовательский итнерфейс оконной системы
--e ./ii_constructor/packages/diagrammscene # модуль со сценой - диаграммой
+-e ./ii_constructor/packages/scenario # сценарии
+-e ./ii_constructor/packages/gui # пользовательский итнерфейс qt
+-e ./ii_constructor/packages/diagrammscene # модуль с qt сценой - диаграммой
 -e ./ii_constructor/packages/mariarepo # 
 -e ./ii_constructor/packages/mysqlrepo # 
 -e ./ii_constructor/packages/inmemoryrepo # 
