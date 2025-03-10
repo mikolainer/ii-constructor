@@ -1,13 +1,13 @@
 
 from iiconstructor_outputs.primitives import OutputType, OutputID, StorageType, PluginInfo, LibID, LibInfo
-from iiconstructor_outputs.data import OutputRepository, OutputDescription, Output, IsOutputSpec, OneIdOutputSpec, Storage, InmemoryStorage
+from iiconstructor_outputs.plugin_base import OutputRepository, OutputContent, Output, IsOutputSpec, OneIdOutputSpec, Storage, InmemoryStorage
 from iiconstructor_outputs.operations import OutputPlugin, OutputLib
 
 class PlainTextOutputType(OutputType):
     def __init__(self):
         super().__init__("plaintext")
 
-class PlainTextDescription(OutputDescription):
+class PlainTextDescription(OutputContent):
     __text: str
 
     def __init__(self, text: str):
@@ -40,7 +40,7 @@ class PlainTextOutputInmemoryRepository(OutputRepository):
     def get_output_type() -> OutputType:
         return PlainTextDescription.get_type()
 
-    def save(self, spec: IsOutputSpec, item:OutputDescription):
+    def save(self, spec: IsOutputSpec, item:OutputContent):
         if isinstance(spec, OneIdOutputSpec):
             id = spec.id()
             self.__data[id].description() = item

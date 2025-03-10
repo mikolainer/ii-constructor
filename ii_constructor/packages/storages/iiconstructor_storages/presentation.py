@@ -4,22 +4,22 @@ from iiconstructor_storages.plugis_base import StorageConnection, StoragePlugin
 from iiconstructor_storages.operations import StoragesManager
 
 @dataclass
-class StorageConnectionView:
+class StorageConnectionViewModel:
     storage_type: tuple[str, bool]
     host: str
     is_open: bool
     is_enabled: bool
 
 @dataclass
-class StoragePluginView:
+class StoragePluginViewModel:
     storage_type: tuple[str, bool]
     have_connections: bool
     is_enabled: bool
 
 class StorageConnectionPresenter:
     @staticmethod
-    def present(obj: StorageConnection) -> StorageConnectionView:
-        return StorageConnectionView(
+    def present(obj: StorageConnection) -> StorageConnectionViewModel:
+        return StorageConnectionViewModel(
             (obj.storage_type().name, obj.storage_type().is_inmemory),
             obj.host().addr,
             obj.is_open(),
@@ -27,7 +27,7 @@ class StorageConnectionPresenter:
         )
     
     @staticmethod
-    def get(view: StorageConnectionView, manager: StoragesManager) -> StorageConnection | None:
+    def get(view: StorageConnectionViewModel, manager: StoragesManager) -> StorageConnection | None:
         for _plugin in manager.available_plugins():
             _type = _plugin.storage_type()
             if _type.name == view.storage_type[0] and _type.is_inmemory == view.storage_type[1]:
@@ -41,15 +41,15 @@ class StorageConnectionPresenter:
 
 class StoragePluginPresenter:
     @staticmethod
-    def present(obj: StoragePlugin, manager: StoragesManager) -> StoragePluginView:
-        return StoragePluginView(
+    def present(obj: StoragePlugin, manager: StoragesManager) -> StoragePluginViewModel:
+        return StoragePluginViewModel(
             (obj.storage_type().name, obj.storage_type().is_inmemory),
             obj.storage_type() in manager.connected_types(),
             True
         )
     
     @staticmethod
-    def get(view: StoragePluginView, manager: StoragesManager) -> StoragePlugin | None:
+    def get(view: StoragePluginViewModel, manager: StoragesManager) -> StoragePlugin | None:
         for plugin in manager.available_plugins():
             _type = plugin.storage_type()
             if _type.name == view.storage_type[0] and _type.is_inmemory == view.storage_type[1]:

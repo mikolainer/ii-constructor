@@ -1,7 +1,7 @@
 from typing import TypeVar
 from dataclasses import dataclass
 
-from iiconstructor_outputs.data import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputDescription, Output, Storage
+from ii_constructor.packages.outputs.iiconstructor_outputs.plugin_base import OutputRepository, IsOutputSpec, OneIdOutputSpec, OutputContent, Output, Storage
 from iiconstructor_outputs.primitives import OutputType, OutputID, DataAccess, StorageType, Host, LibID, PluginInfo, LibInfo
 
 class OutputLib:
@@ -20,7 +20,7 @@ class OutputLib:
     def info(self) -> LibInfo:
         return self.__info
 
-    def create(self, value: OutputDescription) -> Output:
+    def create(self, value: OutputContent) -> Output:
         factory = OutputFactory(self.__repo)
         new_item = factory.create(value)
         self.__repo.save(OneIdOutputSpec(new_item.id()), new_item.value())
@@ -33,7 +33,7 @@ class OutputLib:
         
         return self.__repo.get(spec)
 
-    def update(self, spec: IsOutputSpec, new_value: OutputDescription):
+    def update(self, spec: IsOutputSpec, new_value: OutputContent):
         if not self.__repo.storage().is_open():
             print(f"ERROR: соединение с репозиторием не установлено")
             raise AttributeError(self.__repo())
@@ -77,7 +77,7 @@ class OutputFactory:
     def _repo(self) -> OutputRepository:
         return getattr(self, "_OutputFactory__repo")
     
-    def create(self, description: OutputDescription) -> Output:
+    def create(self, description: OutputContent) -> Output:
         if not self._repo().storage().is_open():
             print(f"ERROR: соединение с репозиторием не установлено")
             raise AttributeError(self._repo())

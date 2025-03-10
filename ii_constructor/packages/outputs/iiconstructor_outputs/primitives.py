@@ -2,15 +2,11 @@ from dataclasses import dataclass
 from iiconstructor_storages.primitives import StorageType
 
 @dataclass(frozen=True)
-class OutputID:
-    value: int
-
-@dataclass(frozen=True)
 class OutputType:
     name: str
-
+    
 @dataclass(frozen=True)
-class LibID:
+class OutputID:
     value: int
 
 @dataclass(frozen=True)
@@ -22,6 +18,10 @@ class PluginInfo:
     url: str
     outputs: OutputType
     storages: set[StorageType]
+
+@dataclass(frozen=True)
+class LibID:
+    value: int
 
 @dataclass(frozen=True)
 class LibInfo:
