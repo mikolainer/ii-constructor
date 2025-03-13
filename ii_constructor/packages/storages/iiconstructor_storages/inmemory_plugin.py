@@ -12,8 +12,11 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+    
+class AbstractSingletonMeta(ABCMeta, Singleton):
+    pass
 
-class InmemoryStorageConnection(StorageConnection, metaclass=Singleton):
+class InmemoryStorageConnection(StorageConnection, metaclass=AbstractSingletonMeta):
     @staticmethod
     def storage_type() -> StorageType:
         return InmemoryStorateType()
@@ -35,7 +38,15 @@ class InmemoryStoragePlugin(StoragePlugin, metaclass=ABCMeta):
     def storage_type() -> StorageType:
         return InmemoryStorageConnection.storage_type()
     
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def get_connection(host: Host = None, auth: Auth = None) -> InmemoryStorageConnection:
         pass
+
+class InmemoryStorageFakeConnection(InmemoryStorageConnection):
+        pass
+
+class InmemoryStorageFakePlugin(InmemoryStoragePlugin):
+    @staticmethod
+    def get_connection(host: Host = None, auth: Auth = None) -> InmemoryStorageConnection:
+        return InmemoryStorageFakeConnection()

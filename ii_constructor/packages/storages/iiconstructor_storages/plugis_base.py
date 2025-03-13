@@ -2,8 +2,8 @@ from abc import ABC, ABCMeta, abstractmethod
 from iiconstructor_storages.primitives import StorageType, Host, Auth
 
 class StorageConnection(ABC):
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def storage_type() -> StorageType: pass
 
     @abstractmethod
@@ -19,10 +19,10 @@ class StorageConnection(ABC):
     def is_open(self) -> bool: pass
 
 class StoragePlugin(ABC):
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def storage_type() -> StorageType: pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def get_connection(host: Host, auth: Auth) -> StorageConnection: pass

@@ -1,31 +1,93 @@
+from dataclasses import dataclass
 from iiconstructor_storages.primitives import StorageType, Host, Auth
-from iiconstructor_storages.plugis_base import StoragePlugin, StorageConnection
+from iiconstructor_storages.plugis_base import StorageConnection, StoragePlugin
+from iiconstructor_storages.domain import StorageConnectionsManager
 
-class StoragesManager:
-    __all_plugins: dict[StorageType, StoragePlugin]
-    __connections: set[StorageConnection]
+@dataclass
+class StoragePluginViewModel:
+    name: str
+    inmem: bool
+
+@dataclass
+class StorageConnectionViewModel:
+    host: str
+    login: str
+    password: str
+    type_name: str
+    type_inmemory: bool
+
+class StorageConnectionPresenter:
+    @staticmethod
+    def present(obj: StorageConnection) -> StorageConnectionViewModel:
+        return StorageConnectionViewModel(
+            obj.host().addr, "", "",
+            obj.storage_type().name,
+            obj.storage_type().is_inmemory
+        )
+    
+    @staticmethod
+    def get(view: StorageConnectionViewModel, manager: StorageConnectionsManager) -> StorageConnection:
+        for _plugin in manager.available_plugins():
+            _type = _plugin.storage_type()
+            if _type.name == view.storage_type[0] and _type.is_inmemory == view.storage_type[1]:
+                for _conn in manager.conn_list():
+                    if (_conn.storage_type() == _plugin.storage_type()
+                        and _conn.host().addr == view.host ):
+                        return _conn
+
+        print(f"ERROR: попытка получить неизвестное подключение.")
+        raise ValueError(view)
+
+
+class StoragePluginPresenter:
+    @staticmethod
+    def present(obj: StoragePlugin) -> StoragePluginViewModel:
+        return StoragePluginViewModel(
+            obj.storage_type().name,
+            obj.storage_type().is_inmemory
+        )
+    
+    @staticmethod
+    def get(view: StoragePluginViewModel, manager: StorageConnectionsManager) -> StoragePlugin:
+        for plugin in manager.available_plugins():
+            _type = plugin.storage_type()
+            if _type.name == view.storage_type[0] and _type.is_inmemory == view.storage_type[1]:
+                return plugin
+        
+        print(f"ERROR: плагин `{view.name}` не поддерживается")
+        raise ValueError(view)
+
+class StorageConnectionsController:
+    __conn_presenter = StorageConnectionPresenter
+    __plugin_presenter = StoragePluginPresenter
+    __manager: StorageConnectionsManager
 
     def __init__(self, plugins: set[StoragePlugin]):
-        self.__connections = set[StorageConnection]()
-        self.__all_plugins = dict[StorageType, StoragePlugin]()
-        for plugin in plugins:
-            if plugin not in self.__all_plugins.keys():
-                self.__all_plugins[plugin.storage_type()] = plugin
+        self.__manager = StorageConnectionsManager(plugins)
 
-    def available_plugins(self) -> set[StoragePlugin]:
-        return set(self.__all_plugins.values())
+    def available_plugins(self) -> set[StoragePluginViewModel]:
+        return {self.__plugin_presenter.present(plugin) for plugin in self.__manager.available_plugins()}
 
-    def read(self) -> set[StorageConnection]:
-        return self.__connections
+    def get_connections(self) -> set[StorageConnectionViewModel]:
+        return {self.__conn_presenter.present(conn) for conn in self.__manager.conn_list()}
 
-    def connect(self, plugin: StorageType, host: Host, auth: Auth) -> StorageConnection:
-        _plugin = self.__all_plugins[plugin]
-        new_conn = _plugin.get_connection(host, auth)
-        self.__connections.add(new_conn)
-        return new_conn
+    def add_connection(self, conn_view_model:StorageConnectionViewModel):
+        plugin = self.__plugin_presenter.get(
+            StoragePluginViewModel(conn_view_model.type_name, conn_view_model.type_inmemory), self.__manager
+        )
+        conn = plugin.get_connection(Host(conn_view_model.host), Auth(conn_view_model.login, conn_view_model.password))
+        try:
+            conn.open()
+            ok = conn.is_open()
+            conn.close()
+        except:
+            print(f"ERROR: не удалось подключиться к {conn_view_model.host} для {conn_view_model.type_name}")
+            raise
 
-    def disconnect(self, connection: StorageConnection):
-        self.__connections.pop(connection)
+        if not ok:
+            print(f"ERROR: не удалось подключиться к {conn_view_model.host} для {conn_view_model.type_name}")
+            raise ValueError(conn_view_model)
 
-    def connected_types(self) -> set[StorageType]:
-        return {conn.storage_type() for conn in self.__connections}
+    def delete_connection(self, conn_view_model:StorageConnectionViewModel):
+        _conn = self.__conn_presenter.get(conn_view_model, self.__manager)
+        self.__manager.delete(_conn)
