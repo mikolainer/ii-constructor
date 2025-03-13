@@ -16,23 +16,7 @@ class StoragePluginView:
 
 class StoragePluginSelector(ABC):
     @abstractmethod
-    def show(self, items: set[StoragePluginView]):
-        pass
-
-    @abstractmethod
-    def select(self, item: StoragePluginView):
-        pass
-
-    @abstractmethod
     def get_selected(self) -> StoragePluginViewModel:
-        pass
-
-    @abstractmethod
-    def next(self) -> StoragePluginView:
-        pass
-
-    @abstractmethod
-    def prev(self) -> StoragePluginView:
         pass
 
 class StorageConnectionView:
@@ -46,30 +30,10 @@ class StorageConnectionView:
 
 class StorageConnectionConstructor(ABC):
     @abstractmethod
-    def get_value() -> StorageConnectionViewModel:
+    def get_value(self) -> StorageConnectionViewModel:
         pass
 
 class StorageConnectionSelector(ABC):
     @abstractmethod
-    def show(self, items: set[StorageConnectionView]):
-        pass
-
-    @abstractmethod
-    def select(self, item: StorageConnectionView):
-        pass
-
-    @abstractmethod
     def get_selected(self) -> StorageConnectionViewModel:
-        pass
-
-    @abstractmethod
-    def next(self) -> StorageConnectionView:
-        pass
-
-    @abstractmethod
-    def prev(self) -> StorageConnectionView:
-        pass
-
-    @abstractmethod
-    def count(self) -> int:
         pass

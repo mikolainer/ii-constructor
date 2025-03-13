@@ -15,7 +15,6 @@ if __name__ == "__main__":
     app.setOrganizationName("ii_constructor")
     app.setApplicationName("data_connections_qt_manager")
 
-    connections_controller = StorageConnectionsController( set([InmemoryStorageFakePlugin]) )
-    main_window = MainWindow()
+    main_window = MainWindow(StorageConnectionsController(set([InmemoryStorageFakePlugin])))
     main_window.show()
     app.exec()
