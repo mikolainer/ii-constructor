@@ -10,6 +10,7 @@ from PySide6.QtWidgets import(
     QStackedWidget,
     QSplitter,
     QListView,
+    QMessageBox,
 )
 
 from PySide6.QtCore import(
@@ -53,12 +54,19 @@ class StorageConnectionsModel(QAbstractItemModel):
     __controller: StorageConnectionsController
     __plugin: StoragePluginViewModel
     __use_display_role: bool
+    __items: list[StorageConnectionViewModel]
 
     def __init__(self, controller: StorageConnectionsController, plugin: StoragePluginViewModel, use_display_role: bool,parent: QObject | None = None):
         super().__init__(parent)
         self.__controller = controller
         self.__plugin = plugin
         self.__use_display_role = use_display_role
+        self.__items = list(self.__controller.get_connections(self.__plugin))
+
+    def update(self):
+        self.beginResetModel()
+        self.__items = list(self.__controller.get_connections(self.__plugin))
+        self.endResetModel()
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self.__controller.get_connections(self.__plugin))
@@ -67,8 +75,7 @@ class StorageConnectionsModel(QAbstractItemModel):
         return 1
 
     def index(self, row: int, column: int = 1, parent: QModelIndex = QModelIndex()) -> QModelIndex:
-        _conn_list = list(self.__controller.get_connections(self.__plugin))
-        return self.createIndex(row, column, _conn_list[row])
+        return self.createIndex(row, column, self.__items[row])
 
     def parent(self, index: QModelIndex) -> QModelIndex:
         return QModelIndex()
@@ -76,7 +83,7 @@ class StorageConnectionsModel(QAbstractItemModel):
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
         _data: StorageConnectionViewModel = index.internalPointer()
         if role == Qt.ItemDataRole.DisplayRole and self.__use_display_role:
-            return _data.host
+            return str(_data.host) + str("@") + str(_data.login)
 
 class AbstractQWidgetMeta(type(QWidget), ABCMeta):
     pass
@@ -217,7 +224,7 @@ class StorageConnectionSelectWgt(StorageConnectionSelector, Wgt):
         list_view.setSelectionBehavior(QListView.SelectionBehavior.SelectRows)
         list_view.setEditTriggers(QListView.EditTrigger.NoEditTriggers)
         self.__selection_model = list_view.selectionModel()
-        list_view.setCurrentIndex(self.__model.index(0))
+        #list_view.setCurrentIndex(self.__model.index(0))
         lay.addWidget(list_view)
 
     def get_selected(self) -> StorageConnectionViewModel:
@@ -229,6 +236,8 @@ class StoragePluginConnectionsWgt(QWidget):
     __controller: StorageConnectionsController
 
     __plugins_model: StoragePluginsModel
+    __connections_models: dict[StoragePluginViewModel, StorageConnectionsModel]
+    __connections_wgts: dict[StoragePluginViewModel, StorageConnectionSelectWgt]
     __new_connection_btn: QPushButton
 
     def __init__(self, controller: StorageConnectionsController, parent: QObject | None = None):
@@ -242,6 +251,20 @@ class StoragePluginConnectionsWgt(QWidget):
         self.__connestions_observer = QStackedWidget(self)
         self.__new_connection_btn = QPushButton("новое подключение", self)
         self.__new_connection_btn.clicked.connect(self.on_create_connection_clicked)
+
+        self.__connections_models = dict[StoragePluginViewModel, StorageConnectionsModel]()
+        self.__connections_wgts = dict[StoragePluginViewModel, StorageConnectionSelectWgt]()
+        for plugin in self.__controller.available_plugins():
+            self.__connections_models[plugin] = StorageConnectionsModel(self.__controller, plugin, True, self)
+            self.__connections_wgts[plugin] = StorageConnectionSelectWgt(self.__connections_models[plugin], self.__connestions_observer)
+            self.__connestions_observer.addWidget(self.__connections_wgts[plugin])
+
+        current_plugin: StoragePluginViewModel = self.__plugins_selector.selection_model().currentIndex().internalPointer()
+        self.__connestions_observer.setCurrentWidget(self.__connections_wgts[current_plugin])
+        self.__plugins_selector.selection_model().currentChanged.connect(
+            lambda cur, prev: self.__connestions_observer.setCurrentWidget(self.__connections_wgts[cur.internalPointer()])
+        )
+
 
         conn_wrapper = QWidget(self)
         conn_lay = QVBoxLayout(conn_wrapper)
@@ -278,6 +301,31 @@ class StoragePluginConnectionsWgt(QWidget):
     def on_create_connection_clicked(self):
         self.__dialog = StorageConnectionEditWgt(self.__plugins_model, self.__plugins_selector.selection_model(), self)
         self.__dialog.show()
+        self.__dialog.accepted.connect(self.on_create_connection_ok_clicked)
+
+    @Slot()
+    def on_create_connection_ok_clicked(self):
+        new_conn = self.__dialog.get_value()
+
+        for plugin in self.__controller.available_plugins():
+            if plugin.name == new_conn.type_name and plugin.inmem == new_conn.type_inmemory:
+                _conn_model = self.__connections_models[plugin]
+                break
+
+        try:
+            self.__controller.add_connection(new_conn)
+            for plugin in self.__controller.available_plugins():
+                if plugin.name == new_conn.type_name and plugin.inmem == new_conn.type_inmemory:
+                    _conn_model = self.__connections_models[plugin]
+                    _conn_model.update()
+                    break
+
+        except Exception:
+            QMessageBox.critical(self.__dialog, "Ошибка", "Не удалось добавить подключение")
+
+        self.__dialog.close()
+        #self.__dialog = None
+
 
 class MainWindow(QMainWindow):
     def __init__(self, controller: StorageConnectionsController):
