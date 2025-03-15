@@ -9,6 +9,7 @@ from PySide6.QtWidgets import(
     QMainWindow,
     QStackedWidget,
     QSplitter,
+    QListView,
 )
 
 from PySide6.QtCore import(
@@ -119,9 +120,15 @@ class StoragePluginSelectWgt(StoragePluginSelector, Wgt):
                  parent: QWidget | None = None, f = Qt.WindowType.Widget):
         super().__init__(parent)
         self.__model = plugins
-        self.__selection_model = QItemSelectionModel(self.__model, self)
-        azaza =QWidget(self)
-        # TODO: создать отображение
+        lay = QVBoxLayout(self)
+        list_view = QListView(self)
+        list_view.setModel(self.__model)
+        list_view.setSelectionMode(QListView.SelectionMode.SingleSelection)
+        list_view.setSelectionBehavior(QListView.SelectionBehavior.SelectRows)
+        list_view.setEditTriggers(QListView.EditTrigger.NoEditTriggers)
+        self.__selection_model = list_view.selectionModel()
+        list_view.setCurrentIndex(self.__model.index(0))
+        lay.addWidget(list_view)
 
     def get_selected(self) -> StoragePluginViewModel:
         return self.__selection_model.currentIndex().internalPointer()
