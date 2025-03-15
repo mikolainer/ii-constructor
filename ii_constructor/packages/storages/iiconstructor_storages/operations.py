@@ -3,12 +3,12 @@ from iiconstructor_storages.primitives import StorageType, Host, Auth
 from iiconstructor_storages.plugis_base import StorageConnection, StoragePlugin
 from iiconstructor_storages.domain import StorageConnectionsManager
 
-@dataclass
+@dataclass(frozen=True)
 class StoragePluginViewModel:
     name: str
     inmem: bool
 
-@dataclass
+@dataclass(frozen=True)
 class StorageConnectionViewModel:
     host: str
     login: str
@@ -68,8 +68,18 @@ class StorageConnectionsController:
     def available_plugins(self) -> set[StoragePluginViewModel]:
         return {self.__plugin_presenter.present(plugin) for plugin in self.__manager.available_plugins()}
 
-    def get_connections(self) -> set[StorageConnectionViewModel]:
-        return {self.__conn_presenter.present(conn) for conn in self.__manager.conn_list()}
+    def get_connections(self, plugin: StoragePluginViewModel | None = None) -> set[StorageConnectionViewModel]:
+        if plugin is None:
+            return {self.__conn_presenter.present(conn) for conn in self.__manager.conn_list()}
+        
+        result = set[StorageConnectionViewModel] = set()
+        _plugin_type = self.__plugin_presenter.get(plugin, self.__manager).storage_type()
+        if isinstance(plugin, StoragePluginViewModel):
+            for conn in self.__manager.conn_list():
+                if _plugin_type == conn.storage_type():
+                    result.add(self.__conn_presenter.present(conn))
+        
+        return result
 
     def add_connection(self, conn_view_model:StorageConnectionViewModel):
         plugin = self.__plugin_presenter.get(

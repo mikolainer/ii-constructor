@@ -3,7 +3,7 @@ if __name__ == "__main__":
     from PySide6.QtWidgets import QApplication
 
     from iiconstructor_storages import *
-    from iiconstructor_storages.inmemory_plugin import InmemoryStorageFakePlugin
+    from iiconstructor_storages.inmemory_plugin import InmemoryStorageFakePlugin, InmemoryStorageFake2Plugin
     from iiconstructor_storages.presentation_qt import MainWindow
 
     if sys.platform in ("windows", "win32", "win64"):
@@ -15,6 +15,6 @@ if __name__ == "__main__":
     app.setOrganizationName("ii_constructor")
     app.setApplicationName("data_connections_qt_manager")
 
-    main_window = MainWindow(StorageConnectionsController(set([InmemoryStorageFakePlugin])))
+    main_window = MainWindow(StorageConnectionsController(set([InmemoryStorageFakePlugin, InmemoryStorageFake2Plugin])))
     main_window.show()
     app.exec()
