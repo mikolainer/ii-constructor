@@ -105,9 +105,12 @@ class StoragePluginViewWgt(StoragePluginView, Label):
         self.setText(data.name)
 
 class StoragePluginSelectCombo(StoragePluginSelector, Combo):
-    def __init__(self, plugins: StoragePluginsModel, parent: QWidget | None = None, f = Qt.WindowType.Widget):
+    def __init__(self, plugins: StoragePluginsModel, current: QModelIndex = QModelIndex(),
+                 parent: QWidget | None = None, f = Qt.WindowType.Widget):
         super().__init__(parent)
         self.setModel(plugins)
+        if current.isValid():
+            self.setCurrentIndex(current.row())
 
     def get_selected(self) -> StoragePluginViewModel:
         return self.model().index(self.currentIndex(), 0).internalPointer()
@@ -116,22 +119,30 @@ class StoragePluginSelectWgt(StoragePluginSelector, Wgt):
     __model: StoragePluginsModel
     __selection_model: QItemSelectionModel
 
-    def __init__(self, plugins: StoragePluginsModel, 
+    def __init__(self, plugins: StoragePluginsModel, selection_model: QItemSelectionModel | None = None,
                  parent: QWidget | None = None, f = Qt.WindowType.Widget):
         super().__init__(parent)
         self.__model = plugins
         lay = QVBoxLayout(self)
+        lay.setContentsMargins(0,0,0,0)
         list_view = QListView(self)
         list_view.setModel(self.__model)
         list_view.setSelectionMode(QListView.SelectionMode.SingleSelection)
         list_view.setSelectionBehavior(QListView.SelectionBehavior.SelectRows)
         list_view.setEditTriggers(QListView.EditTrigger.NoEditTriggers)
-        self.__selection_model = list_view.selectionModel()
+        if selection_model is None:
+            self.__selection_model = list_view.selectionModel()
+        else:
+            self.__selection_model = selection_model
+            list_view.setSelectionModel(self.__selection_model)
         list_view.setCurrentIndex(self.__model.index(0))
         lay.addWidget(list_view)
 
     def get_selected(self) -> StoragePluginViewModel:
         return self.__selection_model.currentIndex().internalPointer()
+    
+    def selection_model(self) -> QItemSelectionModel:
+        return self.__selection_model
 
 class StorageConnectionWgt(StorageConnectionView, Wgt):
     __data: StorageConnectionViewModel
@@ -152,9 +163,13 @@ class StorageConnectionEditWgt(StorageConnectionConstructor, Wgt):
 
     accepted = Signal()
 
-    def __init__(self, model: StoragePluginsModel, parent: QWidget | None = None):
-        super().__init__(parent)
-        self.__plugin_selector = StoragePluginSelectCombo(model, self)
+    def __init__(self, model: StoragePluginsModel, selection_model: QItemSelectionModel | None = None, parent: QWidget | None = None):
+        super().__init__(parent, Qt.WindowType.Window)
+        self.setWindowTitle("Создание нового подключения")
+        cur_index = QModelIndex()
+        if isinstance(selection_model, QItemSelectionModel):
+            cur_index = selection_model.currentIndex()
+        self.__plugin_selector = StoragePluginSelectCombo(model, cur_index, self)
         self.__host_edit = QLineEdit(self)
         self.__login_edit = QLineEdit(self)
         self.__password_edit = QLineEdit(self)
@@ -194,8 +209,16 @@ class StorageConnectionSelectWgt(StorageConnectionSelector, Wgt):
     def __init__(self, model: StorageConnectionsModel, parent: QWidget | None = None):
         super().__init__(parent)
         self.__model = model
-        self.__selection_model = QItemSelectionModel(model, self)
-        # TODO: создать отображение
+
+        lay = QVBoxLayout(self)
+        list_view = QListView(self)
+        list_view.setModel(self.__model)
+        list_view.setSelectionMode(QListView.SelectionMode.SingleSelection)
+        list_view.setSelectionBehavior(QListView.SelectionBehavior.SelectRows)
+        list_view.setEditTriggers(QListView.EditTrigger.NoEditTriggers)
+        self.__selection_model = list_view.selectionModel()
+        list_view.setCurrentIndex(self.__model.index(0))
+        lay.addWidget(list_view)
 
     def get_selected(self) -> StorageConnectionViewModel:
         return self.__selection_model.currentIndex().internalPointer()
@@ -209,41 +232,56 @@ class StoragePluginConnectionsWgt(QWidget):
     __new_connection_btn: QPushButton
 
     def __init__(self, controller: StorageConnectionsController, parent: QObject | None = None):
+        # инициализация родителей
         super().__init__(parent)
+        
+        # собственная инициализация 
         self.__controller = controller
-        main_lay = QVBoxLayout(self)
-        splitter = QSplitter(Qt.Orientation.Horizontal, self)
         self.__plugins_model = StoragePluginsModel(self.__controller, self)
-        self.__plugins_selector = StoragePluginSelectWgt(self.__plugins_model, self)
+        self.__plugins_selector = StoragePluginSelectWgt(self.__plugins_model, None, self)
         self.__connestions_observer = QStackedWidget(self)
         self.__new_connection_btn = QPushButton("новое подключение", self)
         self.__new_connection_btn.clicked.connect(self.on_create_connection_clicked)
 
-        splitter.addWidget(self.__plugins_selector)
-        #splitter.addWidget(self.__connestions_observer)
         conn_wrapper = QWidget(self)
         conn_lay = QVBoxLayout(conn_wrapper)
         conn_lay.addWidget(self.__connestions_observer)
         conn_lay.addWidget(self.__new_connection_btn)
-        splitter.addWidget(conn_wrapper)
 
+        # формирование макета
+        main_lay = QVBoxLayout(self)
+        splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        splitter.addWidget(self.__plugins_selector)
+        splitter.addWidget(conn_wrapper)
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 1)
         splitter.setSizes([1,1])
         main_lay.addWidget(splitter)
-        # TODO: создать виджеты выбора подключений в self.__connestions_observer
-        # TODO: подключить изменение активного виджета в self.__connestions_observer
-        self.setStyleSheet("background-color: red;")
-        splitter.setStyleSheet("background-color: yellow;")
-        self.__plugins_selector.setStyleSheet("background-color: blue;")
-        self.__connestions_observer.setStyleSheet("background-color: green;")
+
+        # нстройка внешнего вида
+        #self.setStyleSheet("background-color: red;")
+        main_lay.setContentsMargins(0,0,0,0)
+
+        #splitter.setStyleSheet("background-color: yellow;")
+        splitter.setHandleWidth(0)
+
+        #self.__plugins_selector.setStyleSheet("background-color: blue;")
+        #self.__plugins_selector.setMinimumWidth(150)
+
+        conn_lay.setContentsMargins(0,0,0,0)
+        conn_lay.setSpacing(0)
+
+        #self.__connestions_observer.setStyleSheet("background-color: green;")
+        self.__new_connection_btn.setStyleSheet("background-color: white;")
 
     @Slot()
     def on_create_connection_clicked(self):
-        self.__dialog = StorageConnectionEditWgt(self.__plugins_model)
+        self.__dialog = StorageConnectionEditWgt(self.__plugins_model, self.__plugins_selector.selection_model(), self)
         self.__dialog.show()
 
 class MainWindow(QMainWindow):
     def __init__(self, controller: StorageConnectionsController):
         super().__init__()
         self.setCentralWidget(StoragePluginConnectionsWgt(controller, self))
+        self.resize(640, 480)
+        self.setWindowTitle("Управление подключениями к источникам данных")
